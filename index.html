@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Dashboard — Stocks &amp; ETFs</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --seq-400: #3987e5;
+    --status-good:      #0ca30c;
+    --status-critical:  #d03b3b;
+    --status-warning:   #b7791f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --status-good:      #0ca30c;
+      --status-critical:  #e66767;
+      --status-warning:   #eab244;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page-plane:     #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --status-good:      #0ca30c;
+    --status-critical:  #e66767;
+    --status-warning:   #eab244;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page-plane); color: var(--text-primary); }
+  .viz-root { padding: 28px 20px 60px; max-width: 1160px; margin: 0 auto; }
+
+  .header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+  .header .sub { color: var(--text-secondary); font-size: 13px; }
+  .theme-toggle { font-size: 12px; color: var(--text-secondary); background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; }
+  .status-pill.ok { color: var(--status-good); background: color-mix(in srgb, var(--status-good) 14%, transparent); }
+  .status-pill.syncing { color: var(--seq-400); background: color-mix(in srgb, var(--seq-400) 14%, transparent); }
+  .status-pill.err { color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 14%, transparent); }
+  .status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.syncing::before { animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .toolbar {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 18px; font-size: 12.5px;
+  }
+  .toolbar .grp { display: flex; align-items: center; gap: 8px; }
+  .toolbar button {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600;
+    color: var(--seq-400); background: transparent; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+  }
+  .toolbar button:hover { background: var(--gridline); }
+  .toolbar button.refresh-now { color: var(--status-good); }
+  .toolbar select {
+    font-size: 12.5px; font-weight: 600; color: var(--text-primary); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; cursor: pointer;
+  }
+  .toolbar .divider { width: 1px; height: 18px; background: var(--gridline); }
+  .toolbar .synced-at { color: var(--text-muted); margin-left: auto; }
+
+  .error-banner {
+    display: none; background: color-mix(in srgb, var(--status-critical) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--status-critical) 30%, transparent); color: var(--status-critical);
+    border-radius: 10px; padding: 12px 14px; font-size: 12.5px; margin-bottom: 18px; line-height: 1.6;
+  }
+  .error-banner a { color: inherit; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
+  .tile .value { font-size: 22px; font-weight: 700; font-variant-numeric: proportional-nums; }
+  .tile .note { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+  .panel h2 { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .panel h2 .meta { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+  .panel .sub-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+  .panel ol, .panel ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; }
+
+  .filter-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-row label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .filter-row select {
+    font-size: 12.5px; font-weight: 600; color: var(--text-primary); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; cursor: pointer;
+  }
+  .filter-row button {
+    font-size: 12px; font-weight: 600; color: var(--status-critical); background: transparent;
+    border: 1px solid color-mix(in srgb, var(--status-critical) 30%, transparent); border-radius: 6px;
+    padding: 3px 9px; cursor: pointer;
+  }
+  .bar-row.active .bar-label { color: var(--text-primary); font-weight: 700; }
+  .bar-row.active .bar-fill { background: var(--status-good); }
+  .bar-row { cursor: pointer; }
+
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 760px; }
+  thead th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); font-weight: 600; padding: 0 8px 8px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+  tbody td, tfoot td { padding: 8px; border-bottom: 1px solid var(--gridline); vertical-align: middle; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 1px solid var(--gridline); }
+  tfoot td { border-bottom: none; border-top: 1px solid var(--baseline); font-weight: 700; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.sym { font-weight: 700; }
+  td.sec { color: var(--text-secondary); }
+  .chg-up { color: var(--status-good); font-variant-numeric: tabular-nums; }
+  .chg-down { color: var(--status-critical); font-variant-numeric: tabular-nums; }
+  .chg-flat { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  .foot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, 1fr); } .foot-grid { grid-template-columns: 1fr; } }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-row .bar-label { width: 130px; flex: 0 0 130px; font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row .bar-track { flex: 1; background: var(--gridline); border-radius: 4px; height: 12px; overflow: hidden; }
+  .bar-row .bar-fill { height: 100%; background: var(--seq-400); border-radius: 4px; }
+  .bar-row .bar-val { width: 108px; flex: 0 0 108px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .bar-row .bar-val .g { font-size: 11px; margin-left: 4px; }
+
+  .footer-line { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-align: center; line-height: 1.6; }
+  .skel { color: var(--text-muted); }
+
+  .analysis-grid { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+  .donut-wrap { display: flex; align-items: center; gap: 20px; flex: 0 0 auto; }
+  .donut-wrap svg circle { transition: opacity .15s; }
+  .donut-wrap svg circle:hover { opacity: 0.75; }
+  .donut-legend { display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; color: var(--text-secondary); }
+  .donut-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 7px; flex: 0 0 10px; }
+  .donut-legend .lg-row { display: flex; align-items: center; }
+  .analysis-stats { flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--text-secondary); }
+  .analysis-stats .stat-row b.big { font-size: 15px; color: var(--text-primary); }
+  .analysis-stats .stat-row .stockname { color: var(--seq-400); font-weight: 600; }
+  .analysis-stats .stat-row .figpct { font-weight: 700; color: var(--text-primary); }
+  .analysis-stats hr { border: none; border-top: 1px solid var(--gridline); margin: 2px 0; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+
+  <div class="header">
+    <div>
+      <div class="status-pill ok" id="statusPill"><span id="statusText">Not synced yet</span></div>
+      <h1>Portfolio Dashboard</h1>
+      <div class="sub">Stocks (Zerodha + mStock) and ETFs (Fyers) — live from "Portfolio-Stocks and ETF"</div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="grp">
+      <button class="refresh-now" onclick="syncFromSheet()">↻ Refresh Now</button>
+    </div>
+    <div class="divider"></div>
+    <div class="grp">
+      <span style="color:var(--text-secondary)">Auto-refresh every</span>
+      <select id="intervalSelect" onchange="onIntervalChange()">
+        <option value="0">Off</option>
+        <option value="2">2 Minutes</option>
+        <option value="3">3 Minutes</option>
+        <option value="5" selected>5 Minutes</option>
+        <option value="10">10 Minutes</option>
+        <option value="15">15 Minutes</option>
+        <option value="30">30 Minutes</option>
+        <option value="60">60 Minutes</option>
+      </select>
+    </div>
+    <div class="divider"></div>
+    <div class="grp">
+      <button onclick="exportCSV()">⭳ Export CSV</button>
+      <button onclick="exportExcel()">⭳ Export Excel</button>
+    </div>
+    <div class="synced-at" id="syncedAt">Last synced: —</div>
+  </div>
+
+  <div class="error-banner" id="errorBanner"></div>
+
+  <div class="tiles">
+    <div class="tile"><div class="label">Total Portfolio Value</div><div class="value" id="tileTotalValue">—</div><div class="note" id="tileTotalNote">—</div></div>
+    <div class="tile"><div class="label">Overall Gain</div><div class="value" id="tileOverallGain">—</div><div class="note">Since respective buy dates</div></div>
+    <div class="tile"><div class="label">Today</div><div class="value" id="tileToday">—</div><div class="note" id="tileTodayNote">Day move</div></div>
+    <div class="tile"><div class="label">Stocks / ETF Split</div><div class="value" id="tileSplit">—</div><div class="note">By current value</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Stocks Portfolio <span class="meta">— Zerodha + mStock</span></h2>
+    <div class="sub-meta" id="stocksSubMeta">Waiting for first sync…</div>
+    <div class="filter-row">
+      <label>Sector
+        <select id="sectorFilterSelect" onchange="onFilterChange()"><option value="All">All</option></select>
+      </label>
+      <label>Market Cap
+        <select id="capFilterSelect" onchange="onFilterChange()"><option value="All">All</option></select>
+      </label>
+      <button id="clearFilterBtn" onclick="clearFilters()" style="display:none">✕ Clear filter</button>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Stock</th><th>Sector</th><th>Mkt Cap</th>
+          <th class="num">Qty</th><th class="num">Buy</th><th class="num">LTP</th>
+          <th class="num">Invested</th><th class="num">Value</th>
+          <th class="num">Gain</th><th class="num">Gain %</th>
+          <th class="num">Day ₹</th><th class="num">Day %</th><th class="num">Wt %</th>
+        </tr>
+      </thead>
+      <tbody id="stocksBody"><tr><td colspan="13" class="skel">Click "Refresh Now" to load your live holdings…</td></tr></tbody>
+      <tfoot id="stocksFoot"></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Analysis <span class="meta">— Stocks, live from your sheet</span></h2>
+    <div class="analysis-grid">
+      <div class="donut-wrap">
+        <svg id="sectorDonut" viewBox="0 0 140 140" width="150" height="150"></svg>
+        <div class="donut-legend" id="donutLegend"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
+      </div>
+      <div class="analysis-stats" id="analysisStats"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>ETF Portfolio <span class="meta">— Fyers</span></h2>
+    <div class="sub-meta" id="etfSubMeta">Waiting for first sync…</div>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>ETF</th><th class="num">Qty</th><th class="num">Buy</th><th class="num">LTP</th>
+          <th class="num">Invested</th><th class="num">Value</th>
+          <th class="num">Gain</th><th class="num">Gain %</th><th class="num">Day ₹</th><th class="num">Day %</th>
+        </tr>
+      </thead>
+      <tbody id="etfBody"><tr><td colspan="10" class="skel">Click "Refresh Now" to load your live holdings…</td></tr></tbody>
+      <tfoot id="etfFoot"></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="foot-grid">
+    <div class="panel">
+      <h2>Sector Allocation <span class="meta">— Stocks, by weight</span></h2>
+      <div id="sectorBars" style="margin-top:12px"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
+    </div>
+    <div class="panel">
+      <h2>Market Cap Allocation <span class="meta">— Stocks, by weight</span></h2>
+      <div id="marketCapBars" style="margin-top:12px"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>How this stays live</h2>
+    <ol>
+      <li>This page fetches your Google Sheet directly — "Refresh Now" pulls it instantly, or pick an auto-refresh interval above and it re-pulls on that schedule while this page is open.</li>
+      <li>The sheet must stay shared as "Anyone with the link – Viewer" for the fetch to work. If you ever see a sync error below, that setting is the first thing to check.</li>
+      <li>Just edit the sheet as usual — no separate "tell Claude" step needed anymore for routine trades. Reopening this page always starts from the interval above (5 min by default); it doesn't remember your last choice between visits.</li>
+    </ol>
+  </div>
+
+  <div class="footer-line">Reads two tabs directly from your Sheet — "Portfolio" (stocks) and "ETF Summary" (ETFs). Export buttons download exactly what's currently on screen.</div>
+</div>
+
+<script>
+  const SHEET_ID = '19JTwr2EmfZO-ng3x-ydM7gpn5SSAyBaJ3iQIp4KEBaw';
+  const STOCKS_SHEET_NAME = 'Portfolio';
+  const ETF_SHEET_NAME = 'ETF Summary';
+
+  let autoTimer = null;
+  let lastStocks = [];
+  let lastEtfs = [];
+  let sectorFilter = 'All';
+  let capFilter = 'All';
+
+  function toggleTheme() {
+    const el = document.documentElement;
+    const current = el.getAttribute('data-theme');
+    el.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  }
+
+  // ---- JSONP loader (bypasses CORS entirely — script tags aren't fetch/XHR) ----
+  let jsonpSeq = 0;
+  function jsonpFetch(url) {
+    return new Promise((resolve, reject) => {
+      const cbName = `__gvizCB_${Date.now()}_${jsonpSeq++}`;
+      const script = document.createElement('script');
+      let done = false;
+      const cleanup = () => { delete window[cbName]; script.remove(); clearTimeout(timer); };
+      const timer = setTimeout(() => { if (!done) { done = true; cleanup(); reject(new Error('timed out waiting for Google to respond')); } }, 15000);
+      window[cbName] = (resp) => { if (!done) { done = true; cleanup(); resolve(resp); } };
+      script.onerror = () => { if (!done) { done = true; cleanup(); reject(new Error('script load failed')); } };
+      script.src = url.replace('__CALLBACK__', cbName);
+      document.head.appendChild(script);
+    });
+  }
+
+  function gvizUrl(sheetName) {
+    return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:__CALLBACK__&sheet=${encodeURIComponent(sheetName)}&_=${Date.now()}`;
+  }
+
+  // Converts a gviz {table:{cols,rows}} response into an array of plain objects keyed by column label.
+  function gvizToObjects(resp) {
+    if (!resp || resp.status === 'error') {
+      const msg = (resp && resp.errors && resp.errors[0] && resp.errors[0].detailed_message) || 'unknown gviz error';
+      throw new Error(msg);
+    }
+    const table = resp.table;
+    const headers = table.cols.map(c => (c.label || '').trim());
+    return table.rows.map(r => {
+      const o = {};
+      headers.forEach((h, i) => {
+        if (!h) return;
+        const cell = r.c[i];
+        o[h] = cell ? (cell.v !== null && cell.v !== undefined ? cell.v : '') : '';
+      });
+      return o;
+    });
+  }
+
+  function pick(obj, ...names) {
+    for (const n of names) {
+      for (const k of Object.keys(obj)) {
+        if (k.toLowerCase().replace(/\s+/g, ' ').trim() === n.toLowerCase()) return obj[k];
+      }
+    }
+    return undefined;
+  }
+
+  function num(v) {
+    if (v === undefined || v === null || v === '') return NaN;
+    if (typeof v === 'number') return v;
+    const n = parseFloat(String(v).replace(/,/g, ''));
+    return n;
+  }
+
+  function fmtMoney(n) {
+    if (!isFinite(n)) return '—';
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+  function fmtNum(n, d = 2) {
+    if (!isFinite(n)) return '—';
+    return n.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function fmtPct(n, d = 2) {
+    if (!isFinite(n)) return '—';
+    return (n >= 0 ? '+' : '') + n.toFixed(d) + '%';
+  }
+  function chgClass(n) {
+    if (!isFinite(n) || n === 0) return 'chg-flat';
+    return n > 0 ? 'chg-up' : 'chg-down';
+  }
+
+  async function fetchSheet(sheetName) {
+    const resp = await jsonpFetch(gvizUrl(sheetName));
+    return gvizToObjects(resp);
+  }
+
+  function extractHoldings(objs, qtyKeys) {
+    return objs
+      .map(o => ({
+        raw: o,
+        symbol: pick(o, 'Stock', 'ETF', 'Symbol'),
+        qty: num(pick(o, ...qtyKeys)),
+      }))
+      .filter(x => x.symbol && x.symbol.length && isFinite(x.qty) && x.qty > 0);
+  }
+
+  function setStatus(mode, text) {
+    const pill = document.getElementById('statusPill');
+    pill.className = 'status-pill ' + mode;
+    document.getElementById('statusText').textContent = text;
+  }
+
+  function showDiagnosis(html) {
+    const el = document.getElementById('errorBanner');
+    el.style.display = 'block';
+    el.innerHTML = html;
+  }
+  function clearError() { document.getElementById('errorBanner').style.display = 'none'; }
+
+  async function syncFromSheet() {
+    setStatus('syncing', 'Syncing…');
+    try {
+      const [stockRows, etfRows] = await Promise.all([
+        fetchSheet(STOCKS_SHEET_NAME),
+        fetchSheet(ETF_SHEET_NAME),
+      ]);
+
+      const stocks = extractHoldings(stockRows, ['Quantity']).map(x => {
+        const o = x.raw;
+        return {
+          symbol: x.symbol, qty: x.qty,
+          buy: num(pick(o, 'Buy Price')),
+          ltp: num(pick(o, 'Last Price')),
+          invested: num(pick(o, 'Invest Amt', 'Inv. Amt')),
+          value: num(pick(o, 'Latest Value', 'Latest')),
+          gain: num(pick(o, 'Overall Gain')),
+          gainPct: num(pick(o, 'Overall %', 'Overall Gain %')) * 100,
+          dayGain: num(pick(o, 'Day Gain')),
+          dayPct: num(pick(o, 'Day %', 'Day Gain %')) * 100,
+          sector: pick(o, 'Sector') || '—',
+          cap: pick(o, 'Market Cap') || '—',
+        };
+      });
+
+      const etfs = extractHoldings(etfRows, ['Quantity']).map(x => {
+        const o = x.raw;
+        return {
+          symbol: x.symbol, qty: x.qty,
+          buy: num(pick(o, 'Buy Price')),
+          ltp: num(pick(o, 'Last Price')),
+          invested: num(pick(o, 'Inv. Amt', 'Invest Amt')),
+          value: num(pick(o, 'Latest', 'Latest Value')),
+          gain: num(pick(o, 'Overall Gain')),
+          gainPct: num(pick(o, 'Overall Gain %', 'Overall %')) * 100,
+          dayGain: num(pick(o, 'Day Gain')),
+          dayPct: num(pick(o, 'Day Gain %', 'Day %')) * 100,
+        };
+      });
+
+      if (!stocks.length && !etfs.length) throw new Error('sheet returned no readable holding rows');
+
+      lastStocks = stocks; lastEtfs = etfs;
+      render(stocks, etfs);
+      clearError();
+      const now = new Date();
+      document.getElementById('syncedAt').textContent = 'Last synced: ' + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setStatus('ok', 'Live — synced from Google Sheet');
+    } catch (err) {
+      setStatus('err', 'Sync failed');
+      showDiagnosis(`⚠ <b>Couldn't sync:</b> ${err.message || err}. This dashboard now loads your sheet via a script tag rather than a background
+        fetch, so this usually means either the sheet name changed, a tab was renamed, or this page's environment blocks loading external scripts
+        outright. Tell Claude in chat with this exact message and it'll dig in.`);
+    }
+  }
+
+  function sumBy(arr, key) { return arr.reduce((s, x) => s + (isFinite(x[key]) ? x[key] : 0), 0); }
+
+  function computeAgg(list) {
+    const invested = sumBy(list, 'invested');
+    const value = sumBy(list, 'value');
+    const gain = value - invested;
+    const gainPct = invested ? (gain / invested) * 100 : 0;
+    const dayGain = sumBy(list, 'dayGain');
+    const prevValue = value - dayGain;
+    const dayPct = prevValue ? (dayGain / prevValue) * 100 : 0;
+    return { invested, value, gain, gainPct, dayGain, dayPct };
+  }
+
+  function populateFilterOptions(stocks) {
+    const sectorSel = document.getElementById('sectorFilterSelect');
+    const capSel = document.getElementById('capFilterSelect');
+    const sectors = ['All', ...new Set(stocks.map(s => s.sector).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
+    const caps = ['All', ...new Set(stocks.map(s => s.cap).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
+    const fill = (sel, values, current) => {
+      sel.innerHTML = values.map(v => `<option value="${v}"${v === current ? ' selected' : ''}>${v}</option>`).join('');
+      if (!values.includes(current)) sel.value = 'All';
+    };
+    fill(sectorSel, sectors, sectorFilter);
+    fill(capSel, caps, capFilter);
+    if (!sectors.includes(sectorFilter)) sectorFilter = 'All';
+    if (!caps.includes(capFilter)) capFilter = 'All';
+    document.getElementById('clearFilterBtn').style.display = (sectorFilter !== 'All' || capFilter !== 'All') ? 'inline-block' : 'none';
+  }
+
+  function onFilterChange() {
+    sectorFilter = document.getElementById('sectorFilterSelect').value;
+    capFilter = document.getElementById('capFilterSelect').value;
+    render(lastStocks, lastEtfs);
+  }
+  function clearFilters() {
+    sectorFilter = 'All'; capFilter = 'All';
+    render(lastStocks, lastEtfs);
+  }
+  function setSectorFilter(v) { sectorFilter = (sectorFilter === v) ? 'All' : v; render(lastStocks, lastEtfs); }
+  function setCapFilter(v) { capFilter = (capFilter === v) ? 'All' : v; render(lastStocks, lastEtfs); }
+
+  function render(stocks, etfs) {
+    // ---- Stocks table (full totals feed the top tiles; filtered subset feeds the table) ----
+    populateFilterOptions(stocks);
+    const visibleStocks = stocks.filter(s =>
+      (sectorFilter === 'All' || s.sector === sectorFilter) &&
+      (capFilter === 'All' || s.cap === capFilter));
+
+    const stocksAgg = computeAgg(stocks);           // whole stock book — drives tiles/bars
+    const stocksValue = stocksAgg.value;
+    const stocksInvested = stocksAgg.invested;
+    const stocksDayGain = stocksAgg.dayGain;
+
+    const view = computeAgg(visibleStocks);          // filtered slice — drives the table
+    const isFiltered = sectorFilter !== 'All' || capFilter !== 'All';
+    const filterLabel = isFiltered
+      ? ` <span class="chg-flat">· filtered: ${sectorFilter !== 'All' ? sectorFilter : ''}${sectorFilter !== 'All' && capFilter !== 'All' ? ' + ' : ''}${capFilter !== 'All' ? capFilter : ''}</span>`
+      : '';
+
+    document.getElementById('stocksSubMeta').innerHTML =
+      `${visibleStocks.length}${isFiltered ? ` of ${stocks.length}` : ''} holdings · Invested ${fmtMoney(view.invested)} → ${fmtMoney(view.value)} <span class="${chgClass(view.gainPct)}">(${fmtPct(view.gainPct)})</span> · Today <span class="${chgClass(view.dayPct)}">${fmtMoney(view.dayGain)} (${fmtPct(view.dayPct)})</span>${filterLabel}`;
+
+    const stocksBody = document.getElementById('stocksBody');
+    if (!visibleStocks.length) {
+      stocksBody.innerHTML = `<tr><td colspan="13" class="skel">No holdings match this filter.</td></tr>`;
+    } else {
+      stocksBody.innerHTML = visibleStocks
+        .sort((a, b) => a.symbol.localeCompare(b.symbol))
+        .map(s => {
+          const wt = stocksValue ? (s.value / stocksValue) * 100 : 0;
+          return `<tr>
+            <td class="sym">${s.symbol}</td><td class="sec">${s.sector}</td><td class="sec">${s.cap.replace(' Cap', '')}</td>
+            <td class="num">${fmtNum(s.qty, 0)}</td><td class="num">${fmtNum(s.buy)}</td><td class="num">${fmtNum(s.ltp)}</td>
+            <td class="num">${fmtMoney(s.invested)}</td><td class="num">${fmtMoney(s.value)}</td>
+            <td class="num ${chgClass(s.gain)}">${s.gain >= 0 ? '+' : ''}${fmtMoney(s.gain)}</td>
+            <td class="num ${chgClass(s.gainPct)}">${fmtPct(s.gainPct)}</td>
+            <td class="num ${chgClass(s.dayGain)}">${s.dayGain >= 0 ? '+' : ''}${fmtMoney(s.dayGain)}</td>
+            <td class="num ${chgClass(s.dayPct)}">${fmtPct(s.dayPct)}</td>
+            <td class="num">${fmtNum(wt)}%</td>
+          </tr>`;
+        }).join('');
+    }
+    const shareOfBook = stocksInvested ? (view.invested / stocksInvested) * 100 : 0;
+    document.getElementById('stocksFoot').innerHTML =
+      `<tr><td>${isFiltered ? 'Filtered Total' : 'Stocks Total'}</td><td></td><td></td><td></td><td></td><td></td>
+        <td class="num">${fmtMoney(view.invested)}</td><td class="num">${fmtMoney(view.value)}</td>
+        <td class="num ${chgClass(view.gain)}">${view.gain >= 0 ? '+' : ''}${fmtMoney(view.gain)}</td>
+        <td class="num ${chgClass(view.gainPct)}">${fmtPct(view.gainPct)}</td>
+        <td class="num ${chgClass(view.dayGain)}">${view.dayGain >= 0 ? '+' : ''}${fmtMoney(view.dayGain)}</td>
+        <td class="num ${chgClass(view.dayPct)}">${fmtPct(view.dayPct)}</td><td class="num">${fmtNum(shareOfBook, 1)}%</td></tr>`;
+
+    // ---- ETF table ----
+    const etfAgg = computeAgg(etfs);
+    const etfInvested = etfAgg.invested, etfValue = etfAgg.value, etfGain = etfAgg.gain;
+    const etfGainPct = etfAgg.gainPct, etfDayGain = etfAgg.dayGain, etfDayPct = etfAgg.dayPct;
+
+    document.getElementById('etfSubMeta').innerHTML =
+      `${etfs.length} holdings · Invested ${fmtMoney(etfInvested)} → ${fmtMoney(etfValue)} <span class="${chgClass(etfGainPct)}">(${fmtPct(etfGainPct)})</span> · Today <span class="${chgClass(etfDayPct)}">${fmtMoney(etfDayGain)} (${fmtPct(etfDayPct)})</span>`;
+
+    document.getElementById('etfBody').innerHTML = etfs
+      .sort((a, b) => a.symbol.localeCompare(b.symbol))
+      .map(e => `<tr>
+        <td class="sym">${e.symbol}</td><td class="num">${fmtNum(e.qty, 0)}</td><td class="num">${fmtNum(e.buy)}</td><td class="num">${fmtNum(e.ltp)}</td>
+        <td class="num">${fmtMoney(e.invested)}</td><td class="num">${fmtMoney(e.value)}</td>
+        <td class="num ${chgClass(e.gain)}">${e.gain >= 0 ? '+' : ''}${fmtMoney(e.gain)}</td>
+        <td class="num ${chgClass(e.gainPct)}">${fmtPct(e.gainPct)}</td>
+        <td class="num ${chgClass(e.dayGain)}">${e.dayGain >= 0 ? '+' : ''}${fmtMoney(e.dayGain)}</td>
+        <td class="num ${chgClass(e.dayPct)}">${fmtPct(e.dayPct)}</td>
+      </tr>`).join('');
+    document.getElementById('etfFoot').innerHTML =
+      `<tr><td>ETF Total</td><td></td><td></td><td></td>
+        <td class="num">${fmtMoney(etfInvested)}</td><td class="num">${fmtMoney(etfValue)}</td>
+        <td class="num ${chgClass(etfGain)}">${etfGain >= 0 ? '+' : ''}${fmtMoney(etfGain)}</td>
+        <td class="num ${chgClass(etfGainPct)}">${fmtPct(etfGainPct)}</td>
+        <td class="num ${chgClass(etfDayGain)}">${etfDayGain >= 0 ? '+' : ''}${fmtMoney(etfDayGain)}</td>
+        <td class="num ${chgClass(etfDayPct)}">${fmtPct(etfDayPct)}</td></tr>`;
+
+    // ---- Top tiles ----
+    const totalValue = stocksValue + etfValue;
+    const totalInvested = stocksInvested + etfInvested;
+    const totalGain = totalValue - totalInvested;
+    const totalGainPct = totalInvested ? (totalGain / totalInvested) * 100 : 0;
+    const totalDayGain = stocksDayGain + etfDayGain;
+    const totalPrevValue = totalValue - totalDayGain;
+    const totalDayPct = totalPrevValue ? (totalDayGain / totalPrevValue) * 100 : 0;
+
+    document.getElementById('tileTotalValue').textContent = fmtMoney(totalValue);
+    document.getElementById('tileTotalNote').textContent = `Invested ${fmtMoney(totalInvested)} · Gain ${totalGain >= 0 ? '+' : ''}${fmtMoney(totalGain)}`;
+    const gainTile = document.getElementById('tileOverallGain');
+    gainTile.textContent = fmtPct(totalGainPct); gainTile.className = 'value ' + chgClass(totalGainPct);
+    const todayTile = document.getElementById('tileToday');
+    todayTile.textContent = (totalDayGain >= 0 ? '+' : '') + fmtMoney(totalDayGain); todayTile.className = 'value ' + chgClass(totalDayGain);
+    document.getElementById('tileTodayNote').textContent = fmtPct(totalDayPct) + ' day move';
+    document.getElementById('tileSplit').textContent =
+      totalValue ? `${((stocksValue / totalValue) * 100).toFixed(1)}% / ${((etfValue / totalValue) * 100).toFixed(1)}%` : '—';
+
+    // ---- Sector / Market cap bars (stocks only, click a bar to filter the table above) ----
+    renderGroupBars('sectorBars', stocks, s => s.sector, stocksInvested, stocksValue, 'sector', sectorFilter);
+    renderGroupBars('marketCapBars', stocks, s => s.cap, stocksInvested, stocksValue, 'cap', capFilter);
+
+    // ---- Analysis: sector donut + movers/leaders panel (stocks only) ----
+    renderAnalysis(stocks, stocksValue);
+  }
+
+  const SECTOR_PALETTE_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+  const SECTOR_PALETTE_DARK = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+
+  function isDarkMode() {
+    const stamp = document.documentElement.getAttribute('data-theme');
+    if (stamp === 'dark') return true;
+    if (stamp === 'light') return false;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function renderAnalysis(stocks, stocksValue) {
+    if (!stocks.length) {
+      document.getElementById('donutLegend').innerHTML = `<div class="skel" style="font-size:12.5px">No data yet.</div>`;
+      document.getElementById('analysisStats').innerHTML = '';
+      document.getElementById('sectorDonut').innerHTML = '';
+      return;
+    }
+
+    // Sector totals — top 7 by value, smaller sectors folded into "Other" (8-slot categorical ceiling)
+    const bySector = {};
+    stocks.forEach(s => {
+      const k = s.sector || '—';
+      bySector[k] = (bySector[k] || 0) + (isFinite(s.value) ? s.value : 0);
+    });
+    const sectorEntries = Object.entries(bySector).sort((a, b) => b[1] - a[1]);
+    const total = sectorEntries.reduce((s, [, v]) => s + v, 0);
+    let donutEntries = sectorEntries.slice(0, 7);
+    const rest = sectorEntries.slice(7);
+    if (rest.length) donutEntries = donutEntries.concat([['Other', rest.reduce((s, [, v]) => s + v, 0)]]);
+
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
+    const r = 54, cx = 70, cy = 70, strokeW = 20, circ = 2 * Math.PI * r;
+    let offset = 0;
+    document.getElementById('sectorDonut').innerHTML = donutEntries.map(([k, v], i) => {
+      const pct = total ? (v / total) * 100 : 0;
+      const len = (pct / 100) * circ;
+      const dashoffset = -offset;
+      offset += len;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${palette[i % palette.length]}" stroke-width="${strokeW}"
+        stroke-dasharray="${len} ${circ - len}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})">
+        <title>${k}: ${pct.toFixed(2)}%</title></circle>`;
+    }).join('');
+
+    document.getElementById('donutLegend').innerHTML = donutEntries.map(([k, v], i) => {
+      const pct = total ? (v / total) * 100 : 0;
+      return `<div class="lg-row"><span class="dot" style="background:${palette[i % palette.length]}"></span>${k} : ${pct.toFixed(2)}</div>`;
+    }).join('');
+
+    // Movers, based on today's Day Gain per stock
+    const gaining = stocks.filter(s => isFinite(s.dayGain) && s.dayGain > 0);
+    const losing = stocks.filter(s => isFinite(s.dayGain) && s.dayGain < 0);
+    const flat = stocks.filter(s => isFinite(s.dayGain) && s.dayGain === 0);
+    const gainSum = sumBy(gaining, 'dayGain');
+    const loseSum = sumBy(losing, 'dayGain');
+
+    const byValue = stocks.filter(s => isFinite(s.value)).sort((a, b) => b.value - a.value);
+    const topStock = byValue[0];
+    const leastStock = byValue[byValue.length - 1];
+    const topSector = sectorEntries[0];
+
+    document.getElementById('analysisStats').innerHTML = `
+      <div class="stat-row"><b class="big chg-up">${gaining.length}</b> Stocks Gaining &nbsp; <span class="chg-up">${fmtMoney(gainSum)}</span></div>
+      <div class="stat-row"><b class="big chg-down">${losing.length}</b> Stocks Losing &nbsp; <span class="chg-down">${loseSum >= 0 ? '' : ''}${fmtMoney(loseSum)}</span></div>
+      <div class="stat-row"><b class="big">${flat.length}</b> Stocks No Change</div>
+      <hr>
+      <div class="stat-row"><span class="figpct">${total && topStock ? ((topStock.value / stocksValue) * 100).toFixed(1) + '%' : '—'}</span> Top Value Stock &nbsp; <span class="stockname">${topStock ? topStock.symbol : '—'}</span></div>
+      <div class="stat-row"><span class="figpct">${total && leastStock ? ((leastStock.value / stocksValue) * 100).toFixed(1) + '%' : '—'}</span> Least Value Stock &nbsp; <span class="stockname">${leastStock ? leastStock.symbol : '—'}</span></div>
+      <div class="stat-row"><span class="figpct">${topSector ? ((topSector[1] / total) * 100).toFixed(2) + '%' : '—'}</span> Top Sector &nbsp; <span class="stockname">${topSector ? topSector[0] : '—'}</span></div>
+    `;
+  }
+
+  function renderGroupBars(elId, stocks, keyFn, totalInvested, totalValue, filterKind, activeValue) {
+    const groups = {};
+    stocks.forEach(s => {
+      const k = keyFn(s) || '—';
+      if (!groups[k]) groups[k] = { invested: 0, value: 0 };
+      groups[k].invested += isFinite(s.invested) ? s.invested : 0;
+      groups[k].value += isFinite(s.value) ? s.value : 0;
+    });
+    const rows = Object.entries(groups)
+      .map(([k, v]) => ({ k, wt: totalInvested ? (v.invested / totalInvested) * 100 : 0, gainPct: v.invested ? ((v.value - v.invested) / v.invested) * 100 : 0 }))
+      .sort((a, b) => b.wt - a.wt);
+    const maxWt = rows.length ? rows[0].wt : 1;
+    const setter = filterKind === 'sector' ? 'setSectorFilter' : 'setCapFilter';
+    document.getElementById(elId).innerHTML = rows.map(r => `
+      <div class="bar-row${r.k === activeValue ? ' active' : ''}" onclick="${setter}('${r.k.replace(/'/g, "\\'")}')" title="Click to ${r.k === activeValue ? 'clear this' : 'filter by this'} ${filterKind}">
+        <div class="bar-label" title="${r.k}">${r.k}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${maxWt ? (r.wt / maxWt) * 100 : 0}%"></div></div>
+        <div class="bar-val">${r.wt.toFixed(1)}% <span class="g ${chgClass(r.gainPct)}">${fmtPct(r.gainPct)}</span></div>
+      </div>`).join('');
+  }
+
+  // ---- Auto-refresh ----
+  function onIntervalChange() {
+    const mins = parseInt(document.getElementById('intervalSelect').value, 10);
+    if (autoTimer) clearInterval(autoTimer);
+    if (mins > 0) autoTimer = setInterval(syncFromSheet, mins * 60 * 1000);
+  }
+
+  // ---- Export ----
+  function download(filename, content, mime) {
+    const blob = new Blob([content], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+  function csvEscape(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function toCSVBlock(title, headers, rows) {
+    const lines = [title, headers.join(',')];
+    rows.forEach(r => lines.push(r.map(csvEscape).join(',')));
+    return lines.join('\n');
+  }
+  function stocksRows() {
+    return lastStocks.map(s => [s.symbol, s.sector, s.cap, s.qty, s.buy, s.ltp, s.invested, s.value, s.gain, s.gainPct.toFixed(2) + '%', s.dayGain, s.dayPct.toFixed(2) + '%']);
+  }
+  function etfRows() {
+    return lastEtfs.map(e => [e.symbol, e.qty, e.buy, e.ltp, e.invested, e.value, e.gain, e.gainPct.toFixed(2) + '%', e.dayGain, e.dayPct.toFixed(2) + '%']);
+  }
+  function exportCSV() {
+    if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
+    const stocksCsv = toCSVBlock('Stocks', ['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], stocksRows());
+    const etfCsv = toCSVBlock('ETFs', ['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], etfRows());
+    download('portfolio-dashboard.csv', stocksCsv + '\n\n' + etfCsv, 'text/csv');
+  }
+  function exportExcel() {
+    if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
+    const rowsHtml = (headers, rows) =>
+      `<table border="1"><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>` +
+      rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') + `</table>`;
+    const html = `<html><head><meta charset="UTF-8"></head><body>
+      <h3>Stocks</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], stocksRows())}
+      <br/><h3>ETFs</h3>${rowsHtml(['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], etfRows())}
+      </body></html>`;
+    download('portfolio-dashboard.xls', html, 'application/vnd.ms-excel');
+  }
+
+  // ---- Boot ----
+  onIntervalChange();
+  syncFromSheet();
+</script>
+</body>
+</html>
