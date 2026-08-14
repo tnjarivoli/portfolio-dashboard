@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portfolio Dashboard — Stocks &amp; ETFs</title>
 <style>
-  .viz-root {
+  :root {
     color-scheme: light;
     --surface-1:      #fcfcfb;
     --page-plane:     #f9f9f7;
@@ -21,7 +21,7 @@
     --status-warning:   #b7791f;
   }
   @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) .viz-root {
+    :root:where(:not([data-theme="light"])) {
       color-scheme: dark;
       --surface-1:      #1a1a19;
       --page-plane:     #0d0d0d;
@@ -36,7 +36,7 @@
       --status-warning:   #eab244;
     }
   }
-  :root[data-theme="dark"] .viz-root {
+  :root[data-theme="dark"] {
     color-scheme: dark;
     --surface-1:      #1a1a19;
     --page-plane:     #0d0d0d;
@@ -81,6 +81,8 @@
   }
   .toolbar button:hover { background: var(--gridline); }
   .toolbar button.refresh-now { color: var(--status-good); }
+  .toolbar button.quiet { color: var(--text-secondary); font-weight: 400; font-size: 11.5px; }
+  .toolbar button.quiet:hover { color: var(--text-primary); }
   .toolbar select {
     font-size: 12.5px; font-weight: 600; color: var(--text-primary); background: var(--surface-1);
     border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; cursor: pointer;
@@ -95,17 +97,36 @@
   }
   .error-banner a { color: inherit; }
 
-  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px; }
   .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
   .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
   .tile .value { font-size: 22px; font-weight: 700; font-variant-numeric: proportional-nums; }
   .tile .note { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  .movers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 560px) { .movers-grid { grid-template-columns: 1fr; } }
+  .mover-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+  .mover-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); }
+  .mover-row:first-child { border-top: none; padding-top: 2px; }
+  .mover-row .mover-rank { color: var(--text-muted); font-size: 11px; width: 14px; flex: none; }
+  .mover-row .mover-sym { font-weight: 600; font-size: 13px; flex: 1; }
+  .mover-row .mover-chg { font-size: 12px; font-variant-numeric: proportional-nums; text-align: right; white-space: nowrap; }
 
   .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
   .panel h2 { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
   .panel h2 .meta { font-weight: 400; color: var(--text-muted); font-size: 12px; }
   .panel .sub-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
   .panel ol, .panel ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; }
+
+  .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
+  .panel-head-left { flex: 1 1 260px; min-width: 220px; }
+  .panel-head-left h2, .panel-head-left .sub-meta { margin-bottom: 0; }
+  .panel-head-left .sub-meta { margin-top: 4px; }
+  .mini-tiles { display: flex; gap: 24px; flex-wrap: wrap; padding-bottom: 12px; }
+  .mini-tile { text-align: right; }
+  .mini-tile .mini-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 3px; }
+  .mini-tile .mini-value { font-size: 15.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) { .mini-tiles { justify-content: flex-start; } .mini-tile { text-align: left; } }
 
   .filter-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
   .filter-row label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
@@ -125,17 +146,37 @@
   .table-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 760px; }
   thead th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); font-weight: 600; padding: 0 8px 8px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+  thead th.sortable-th { cursor: pointer; user-select: none; }
+  thead th.sortable-th:hover { color: var(--text-primary); }
+  thead th.active-sort { color: var(--text-primary); }
+  thead th .sort-arrow { font-size: 8px; margin-left: 2px; }
   tbody td, tfoot td { padding: 8px; border-bottom: 1px solid var(--gridline); vertical-align: middle; white-space: nowrap; }
   tbody tr:last-child td { border-bottom: 1px solid var(--gridline); }
   tfoot td { border-bottom: none; border-top: 1px solid var(--baseline); font-weight: 700; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   td.sym { font-weight: 700; }
+  td.sym a.sym-link { color: var(--text-primary); text-decoration: none; }
+  td.sym a.sym-link:hover { color: var(--seq-400); text-decoration: underline; }
+  td.sym a.sym-chart-link { margin-left: 6px; text-decoration: none; opacity: .5; font-size: 11.5px; }
+  td.sym a.sym-chart-link:hover { opacity: 1; }
   td.sec { color: var(--text-secondary); }
   .chg-up { color: var(--status-good); font-variant-numeric: tabular-nums; }
   .chg-down { color: var(--status-critical); font-variant-numeric: tabular-nums; }
   .chg-flat { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .wt-flag { color: var(--status-warning); font-weight: 700; }
+  .ltcg-badge { display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: .02em; padding: 1.5px 5px; border-radius: 4px; margin-left: 5px; vertical-align: middle; }
+  .ltcg-lt { color: var(--status-good); background: color-mix(in srgb, var(--status-good) 14%, transparent); }
+  .ltcg-st { color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 14%, transparent); }
+  .holding-caveat { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: -6px 0 12px; }
+  .mover-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; margin-top: 10px; }
+  .movers-period-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .movers-period-label select {
+    font-size: 12px; font-weight: 400; color: var(--text-secondary); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 7px; cursor: pointer;
+  }
 
   .foot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 920px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, 1fr); } .foot-grid { grid-template-columns: 1fr; } }
 
   .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -148,8 +189,10 @@
   .footer-line { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-align: center; line-height: 1.6; }
   .skel { color: var(--text-muted); }
 
-  .analysis-grid { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
-  .donut-wrap { display: flex; align-items: center; gap: 20px; flex: 0 0 auto; }
+  .analysis-grid { display: flex; gap: 36px; align-items: flex-start; flex-wrap: wrap; }
+  .donut-wrap { display: flex; flex-direction: column; gap: 10px; flex: 0 0 auto; }
+  .donut-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .donut-body { display: flex; align-items: center; gap: 18px; }
   .donut-wrap svg circle { transition: opacity .15s; }
   .donut-wrap svg circle:hover { opacity: 0.75; }
   .donut-legend { display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; color: var(--text-secondary); }
@@ -160,6 +203,57 @@
   .analysis-stats .stat-row .stockname { color: var(--seq-400); font-weight: 600; }
   .analysis-stats .stat-row .figpct { font-weight: 700; color: var(--text-primary); }
   .analysis-stats hr { border: none; border-top: 1px solid var(--gridline); margin: 2px 0; }
+
+  .viz-tooltip {
+    position: fixed; z-index: 40; pointer-events: none; display: none; min-width: 168px;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 11px; font-size: 12px; color: var(--text-secondary);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+  }
+  .viz-tooltip.show { display: block; }
+  .viz-tooltip .tt-head { display: flex; align-items: center; gap: 7px; font-weight: 700; color: var(--text-primary); margin-bottom: 7px; font-size: 12.5px; }
+  .viz-tooltip .tt-head .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px; }
+  .viz-tooltip .tt-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 2px 0; }
+  .viz-tooltip .tt-row .tt-label { color: var(--text-muted); }
+  .viz-tooltip .tt-row .tt-value { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .history-legend { display: flex; gap: 18px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px; flex-wrap: wrap; }
+  .history-legend .lg-item { display: flex; align-items: center; gap: 7px; }
+  .history-legend .lg-item .line-key { width: 14px; height: 2px; border-radius: 1px; flex: 0 0 14px; }
+  .history-legend .lg-item .swatch-key { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 11px; }
+  .history-chart-wrap { position: relative; }
+  .history-chart-wrap svg { display: block; width: 100%; height: auto; }
+  .history-chart-wrap .grid-line { stroke: var(--gridline); stroke-width: 1; }
+  .history-chart-wrap .axis-label { fill: var(--text-muted); font-size: 10px; }
+  .history-chart-wrap .crosshair-line { stroke: var(--baseline); stroke-width: 1; pointer-events: none; opacity: 0; }
+  .history-chart-wrap .hit-layer { fill: transparent; cursor: crosshair; }
+  .history-chart-wrap .daily-hit { fill: transparent; cursor: crosshair; }
+  .history-empty { font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding: 8px 2px; }
+  .history-empty b { color: var(--text-primary); }
+  .history-cagr-note { font-size: 11.5px; color: var(--text-muted); margin: -2px 0 10px; }
+
+  @media print {
+    :root, :root[data-theme="dark"] {
+      color-scheme: light;
+      --surface-1:      #ffffff;
+      --page-plane:     #ffffff;
+      --text-primary:   #000000;
+      --text-secondary: #333333;
+      --text-muted:     #666666;
+      --gridline:       #cccccc;
+      --baseline:       #999999;
+      --border:         rgba(0,0,0,0.15);
+    }
+    body { background: #fff; }
+    .toolbar, .theme-toggle, .status-pill, .filter-row, .viz-tooltip,
+    .movers-period-label { display: none !important; }
+    .viz-root { padding: 0 8px; max-width: none; }
+    .panel { break-inside: avoid; box-shadow: none; }
+    .table-scroll { overflow: visible; }
+    table { min-width: 0; }
+    a { text-decoration: none; color: inherit; }
+    .tiles { grid-template-columns: repeat(5, 1fr); }
+  }
 </style>
 </head>
 <body>
@@ -194,8 +288,14 @@
     </div>
     <div class="divider"></div>
     <div class="grp">
-      <button onclick="exportCSV()">⭳ Export CSV</button>
-      <button onclick="exportExcel()">⭳ Export Excel</button>
+      <button class="quiet" onclick="exportCSV()">⭳ Export CSV</button>
+      <button class="quiet" onclick="exportExcel()">⭳ Export Excel</button>
+      <button class="quiet" onclick="exportWord()">⭳ Export Word</button>
+      <button class="quiet" onclick="exportPDF()" id="exportPdfBtn">⭳ Export PDF</button>
+    </div>
+    <div class="divider"></div>
+    <div class="grp">
+      <button class="quiet" onclick="printDashboard()">🖶 Print</button>
     </div>
     <div class="synced-at" id="syncedAt">Last synced: —</div>
   </div>
@@ -206,12 +306,60 @@
     <div class="tile"><div class="label">Total Portfolio Value</div><div class="value" id="tileTotalValue">—</div><div class="note" id="tileTotalNote">—</div></div>
     <div class="tile"><div class="label">Overall Gain</div><div class="value" id="tileOverallGain">—</div><div class="note">Since respective buy dates</div></div>
     <div class="tile"><div class="label">Today</div><div class="value" id="tileToday">—</div><div class="note" id="tileTodayNote">Day move</div></div>
+    <div class="tile" title="Money-weighted annualized return — the same rate a mutual fund NAV calc would give, accounting for exactly when and how much you invested"><div class="label">Portfolio XIRR</div><div class="value" id="tileXirr">—</div><div class="note" id="tileXirrNote">Annualized, money-weighted</div></div>
     <div class="tile"><div class="label">Stocks / ETF Split</div><div class="value" id="tileSplit">—</div><div class="note">By current value</div></div>
   </div>
 
+  <div class="panel" id="topMoversPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Portfolio Top Movers <span class="meta" id="topMoversMeta">— today's biggest movers among your stocks</span></h2>
+      </div>
+      <label class="movers-period-label">Period
+        <select id="moversPeriodSelect" onchange="onMoversPeriodChange()">
+          <option value="today">Today</option>
+          <option value="week">1 Week</option>
+          <option value="month">1 Month</option>
+          <option value="year">1 Year</option>
+          <option value="sinceBuy">Since Buy Date</option>
+        </select>
+      </label>
+    </div>
+    <div class="movers-grid">
+      <div class="tile"><div class="label">Top 3 Gainers</div><div class="mover-list" id="topGainersList"></div></div>
+      <div class="tile"><div class="label">Top 3 Losers</div><div class="mover-list" id="topLosersList"></div></div>
+    </div>
+    <div class="mover-note" id="moversNote" style="display:none"></div>
+  </div>
+
   <div class="panel">
-    <h2>Stocks Portfolio <span class="meta">— Zerodha + mStock</span></h2>
-    <div class="sub-meta" id="stocksSubMeta">Waiting for first sync…</div>
+    <h2>Portfolio NAV vs Nifty <span class="meta">— indexed to 100, adjusted for money added or withdrawn</span></h2>
+    <div id="historyChartArea">
+      <div class="history-empty" id="historyEmpty">
+        Not set up yet — this chart plots your portfolio value over time against NiftyBees, once daily
+        snapshots start landing in a <b>History</b> tab in your sheet. Ask Claude for the one-time setup
+        script if you'd like this turned on.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="dailyPerfPanel" style="display:none">
+    <h2>Daily Performance <span class="meta">— Portfolio vs Nifty, day-by-day</span></h2>
+    <div id="dailyPerfChartArea"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Stocks Portfolio <span class="meta">— Zerodha + mStock</span></h2>
+        <div class="sub-meta" id="stocksSubMeta">Waiting for first sync…</div>
+      </div>
+      <div class="mini-tiles">
+        <div class="mini-tile"><div class="mini-label">Value</div><div class="mini-value" id="stocksMiniValue">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="stocksMiniGain">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="stocksMiniToday">—</div></div>
+      </div>
+    </div>
     <div class="filter-row">
       <label>Sector
         <select id="sectorFilterSelect" onchange="onFilterChange()"><option value="All">All</option></select>
@@ -221,18 +369,11 @@
       </label>
       <button id="clearFilterBtn" onclick="clearFilters()" style="display:none">✕ Clear filter</button>
     </div>
+    <div class="holding-caveat" id="stocksHoldingCaveat" style="display:none">📅 <b>Held</b> and <b>Ann. %</b> are estimated from each stock's first Buy Date in your sheet — if you added to a position later, the actual holding period for those later shares will be shorter than shown.</div>
     <div class="table-scroll">
     <table>
-      <thead>
-        <tr>
-          <th>Stock</th><th>Sector</th><th>Mkt Cap</th>
-          <th class="num">Qty</th><th class="num">Buy</th><th class="num">LTP</th>
-          <th class="num">Invested</th><th class="num">Value</th>
-          <th class="num">Gain</th><th class="num">Gain %</th>
-          <th class="num">Day ₹</th><th class="num">Day %</th><th class="num">Wt %</th>
-        </tr>
-      </thead>
-      <tbody id="stocksBody"><tr><td colspan="13" class="skel">Click "Refresh Now" to load your live holdings…</td></tr></tbody>
+      <thead id="stocksThead"></thead>
+      <tbody id="stocksBody"><tr><td colspan="15" class="skel">Click "Refresh Now" to load your live holdings…</td></tr></tbody>
       <tfoot id="stocksFoot"></tfoot>
     </table>
     </div>
@@ -242,26 +383,40 @@
     <h2>Analysis <span class="meta">— Stocks, live from your sheet</span></h2>
     <div class="analysis-grid">
       <div class="donut-wrap">
-        <svg id="sectorDonut" viewBox="0 0 140 140" width="150" height="150"></svg>
-        <div class="donut-legend" id="donutLegend"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
+        <div class="donut-title">By Sector</div>
+        <div class="donut-body">
+          <svg id="sectorDonut" viewBox="0 0 140 140" width="150" height="150"></svg>
+          <div class="donut-legend" id="donutLegend"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
+        </div>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut-title">By Market Cap</div>
+        <div class="donut-body">
+          <svg id="capDonut" viewBox="0 0 140 140" width="150" height="150"></svg>
+          <div class="donut-legend" id="capDonutLegend"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
+        </div>
       </div>
       <div class="analysis-stats" id="analysisStats"></div>
     </div>
   </div>
 
   <div class="panel">
-    <h2>ETF Portfolio <span class="meta">— Fyers</span></h2>
-    <div class="sub-meta" id="etfSubMeta">Waiting for first sync…</div>
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>ETF Portfolio <span class="meta">— Fyers</span></h2>
+        <div class="sub-meta" id="etfSubMeta">Waiting for first sync…</div>
+      </div>
+      <div class="mini-tiles">
+        <div class="mini-tile"><div class="mini-label">Value</div><div class="mini-value" id="etfMiniValue">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="etfMiniGain">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="etfMiniToday">—</div></div>
+      </div>
+    </div>
+    <div class="holding-caveat" id="etfHoldingCaveat" style="display:none">📅 <b>Held</b> and <b>Ann. %</b> are estimated from each ETF's earliest purchase lot in your "ETF" tab — if you added to a position later, the actual holding period for those later units will be shorter than shown.</div>
     <div class="table-scroll">
     <table>
-      <thead>
-        <tr>
-          <th>ETF</th><th class="num">Qty</th><th class="num">Buy</th><th class="num">LTP</th>
-          <th class="num">Invested</th><th class="num">Value</th>
-          <th class="num">Gain</th><th class="num">Gain %</th><th class="num">Day ₹</th><th class="num">Day %</th>
-        </tr>
-      </thead>
-      <tbody id="etfBody"><tr><td colspan="10" class="skel">Click "Refresh Now" to load your live holdings…</td></tr></tbody>
+      <thead id="etfThead"></thead>
+      <tbody id="etfBody"><tr><td colspan="13" class="skel">Click "Refresh Now" to load your live holdings…</td></tr></tbody>
       <tfoot id="etfFoot"></tfoot>
     </table>
     </div>
@@ -287,6 +442,8 @@
     </ol>
   </div>
 
+  <div class="viz-tooltip" id="vizTooltip"></div>
+
   <div class="footer-line">Reads two tabs directly from your Sheet — "Portfolio" (stocks) and "ETF Summary" (ETFs). Export buttons download exactly what's currently on screen.</div>
 </div>
 
@@ -294,17 +451,87 @@
   const SHEET_ID = '19JTwr2EmfZO-ng3x-ydM7gpn5SSAyBaJ3iQIp4KEBaw';
   const STOCKS_SHEET_NAME = 'Portfolio';
   const ETF_SHEET_NAME = 'ETF Summary';
+  const ETF_LOTS_SHEET_NAME = 'ETF'; // per-purchase-lot ledger (Buy Date per tranche) that ETF Summary is aggregated from
+  const HISTORY_SHEET_NAME = 'History';
+  const PRICE_HISTORY_SHEET_NAME = 'Price History'; // daily per-symbol price snapshots — powers the Top Movers period dropdown
 
   let autoTimer = null;
   let lastStocks = [];
   let lastEtfs = [];
+  let lastEtfLots = []; // [{symbol, buyDate, invested}], one row per ETF purchase lot — used for precise XIRR cash flow
+  let lastHistoryPoints = [];
+  let lastPriceHistory = {}; // normalized symbol -> [{date, price}, ...] sorted ascending by date
+  let moversPeriod = 'today';
   let sectorFilter = 'All';
   let capFilter = 'All';
+  let stocksSort = { key: 'symbol', dir: 1 };
+  let etfSort = { key: 'symbol', dir: 1 };
+
+  const CONCENTRATION_THRESHOLD = 15; // % of book — flag any single holding above this
+  const LTCG_DAYS = 365; // India: listed equity held 365+ days qualifies for LTCG tax treatment
+  const ANN_RETURN_MIN_DAYS = 30; // shorter holds annualize wildly — wait before showing a per-stock rate
+
+  // Top Movers period dropdown — "today"/"sinceBuy" use figures already on each stock; week/month/year
+  // look up a past price from the daily "Price History" snapshots (`days` = how far back to look).
+  const MOVER_PERIODS = {
+    today:    { label: "today's biggest movers among your stocks", days: 0 },
+    week:     { label: "biggest movers over the past week", days: 7 },
+    month:    { label: "biggest movers over the past month", days: 30 },
+    year:     { label: "biggest movers over the past year", days: 365 },
+    sinceBuy: { label: "biggest movers since each stock's buy date", days: null },
+  };
+
+  const STOCKS_COLUMNS = [
+    { key: 'symbol', label: 'Stock' }, { key: 'sector', label: 'Sector' }, { key: 'cap', label: 'Mkt Cap' },
+    { key: 'qty', label: 'Qty', num: true }, { key: 'buy', label: 'Buy', num: true }, { key: 'ltp', label: 'LTP', num: true },
+    { key: 'invested', label: 'Invested', num: true }, { key: 'value', label: 'Value', num: true },
+    { key: 'gain', label: 'Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
+    { key: 'dayGain', label: 'Day ₹', num: true }, { key: 'dayPct', label: 'Day %', num: true }, { key: 'wt', label: 'Wt %', num: true },
+    { key: 'daysHeld', label: 'Held', num: true, title: 'Days held since first Buy Date — LT badge = 365+ days (LTCG-eligible), ST = still short-term' },
+    { key: 'annReturn', label: 'Ann. %', num: true, title: 'Annualized return since first Buy Date (shown after 30 days held). Approximate — based on first purchase date only.' },
+  ];
+  const ETF_COLUMNS = [
+    { key: 'symbol', label: 'ETF' }, { key: 'qty', label: 'Qty', num: true }, { key: 'buy', label: 'Buy', num: true }, { key: 'ltp', label: 'LTP', num: true },
+    { key: 'invested', label: 'Invested', num: true }, { key: 'value', label: 'Value', num: true },
+    { key: 'gain', label: 'Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
+    { key: 'dayGain', label: 'Day ₹', num: true }, { key: 'dayPct', label: 'Day %', num: true }, { key: 'wt', label: 'Wt %', num: true },
+    { key: 'daysHeld', label: 'Held', num: true, title: 'Days held since earliest purchase lot in your "ETF" tab — LT badge = 365+ days (LTCG-eligible), ST = still short-term' },
+    { key: 'annReturn', label: 'Ann. %', num: true, title: 'Annualized return since earliest purchase lot (shown after 30 days held). Approximate — based on first lot date only.' },
+  ];
+
+  function sortRows(rows, key, dir) {
+    return [...rows].sort((a, b) => {
+      const av = a[key], bv = b[key];
+      if (typeof av === 'string') return av.localeCompare(bv) * dir;
+      const an = isFinite(av) ? av : -Infinity, bn = isFinite(bv) ? bv : -Infinity;
+      return (an - bn) * dir;
+    });
+  }
+
+  function setSort(table, key) {
+    const s = table === 'stocks' ? stocksSort : etfSort;
+    if (s.key === key) s.dir *= -1; else { s.key = key; s.dir = 1; }
+    render(lastStocks, lastEtfs);
+  }
+
+  function renderThead(theadId, columns, table) {
+    const s = table === 'stocks' ? stocksSort : etfSort;
+    document.getElementById(theadId).innerHTML = '<tr>' + columns.map(c => {
+      const active = s.key === c.key;
+      const arrow = active ? `<span class="sort-arrow">${s.dir === 1 ? '▲' : '▼'}</span>` : '';
+      const title = c.title ? ` title="${escapeAttr(c.title)}"` : '';
+      return `<th class="sortable-th${c.num ? ' num' : ''}${active ? ' active-sort' : ''}" onclick="setSort('${table}','${c.key}')"${title}>${c.label}${arrow}</th>`;
+    }).join('') + '</tr>';
+  }
 
   function toggleTheme() {
     const el = document.documentElement;
     const current = el.getAttribute('data-theme');
-    el.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    const effectivelyDark = current ? current === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    el.setAttribute('data-theme', effectivelyDark ? 'light' : 'dark');
+    // Donut and history/daily-perf chart colors are picked at draw time, not via CSS vars — redraw so they match the new theme.
+    if (lastStocks.length) renderAnalysis(lastStocks, computeAgg(lastStocks).value);
+    if (lastHistoryPoints.length >= 2) { renderHistoryChart(lastHistoryPoints); renderDailyPerfChart(lastHistoryPoints); }
   }
 
   // ---- JSONP loader (bypasses CORS entirely — script tags aren't fetch/XHR) ----
@@ -355,6 +582,8 @@
     return undefined;
   }
 
+  function normSym(s) { return String(s).trim().toUpperCase(); }
+
   function num(v) {
     if (v === undefined || v === null || v === '') return NaN;
     if (typeof v === 'number') return v;
@@ -378,6 +607,10 @@
     if (!isFinite(n) || n === 0) return 'chg-flat';
     return n > 0 ? 'chg-up' : 'chg-down';
   }
+
+  // Stock name → external research links (fundamentals + technical chart), opened in a new tab.
+  function screenerUrl(symbol) { return 'https://www.screener.in/company/' + encodeURIComponent(symbol) + '/consolidated/'; }
+  function tradingViewUrl(symbol) { return 'https://www.tradingview.com/chart/?symbol=NSE:' + encodeURIComponent(symbol); }
 
   async function fetchSheet(sheetName) {
     const resp = await jsonpFetch(gvizUrl(sheetName));
@@ -429,6 +662,7 @@
           dayPct: num(pick(o, 'Day %', 'Day Gain %')) * 100,
           sector: pick(o, 'Sector') || '—',
           cap: pick(o, 'Market Cap') || '—',
+          buyDate: parseGvizDate(pick(o, 'Buy Date', 'Purchase Date')),
         };
       });
 
@@ -455,6 +689,11 @@
       const now = new Date();
       document.getElementById('syncedAt').textContent = 'Last synced: ' + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setStatus('ok', 'Live — synced from Google Sheet');
+      await Promise.all([
+        syncHistory(),       // independent, optional — never fails the main sync
+        syncEtfLots(),       // independent, optional — precise per-lot dates for ETF XIRR, when available
+        syncPriceHistory(),  // independent, optional — daily per-symbol snapshots for the Top Movers period dropdown
+      ]);
     } catch (err) {
       setStatus('err', 'Sync failed');
       showDiagnosis(`⚠ <b>Couldn't sync:</b> ${err.message || err}. This dashboard now loads your sheet via a script tag rather than a background
@@ -516,32 +755,82 @@
     const stocksInvested = stocksAgg.invested;
     const stocksDayGain = stocksAgg.dayGain;
 
+    // Weight is computed against the FULL book (not the filtered view) so concentration reads true regardless of filter.
+    const nowTs = new Date();
+    stocks.forEach(s => {
+      s.wt = stocksValue ? (s.value / stocksValue) * 100 : 0;
+      s.buyDateIsFuture = !!(s.buyDate && s.buyDate > nowTs);
+      if (s.buyDate && !s.buyDateIsFuture) {
+        s.daysHeld = Math.max(0, Math.floor((nowTs - s.buyDate) / 86400000));
+        s.ltEligible = s.daysHeld >= LTCG_DAYS;
+        s.annReturn = (s.daysHeld >= ANN_RETURN_MIN_DAYS && isFinite(s.invested) && s.invested > 0 && isFinite(s.value))
+          ? (Math.pow(s.value / s.invested, 365 / s.daysHeld) - 1) * 100
+          : NaN;
+      } else {
+        // No usable date — either never set, or a Buy Date that lands in the future (almost always a
+        // day/month mix-up, e.g. "11/08/2026" typed as 11 Aug got stored as 8 Nov). Flagged in the UI
+        // rather than silently shown as "0d", and excluded from XIRR's precise-dates path below.
+        s.daysHeld = NaN; s.ltEligible = null; s.annReturn = NaN;
+      }
+    });
+    const stocksConcentrated = stocks.filter(s => s.wt > CONCENTRATION_THRESHOLD).length;
+    const futureDateCount = stocks.filter(s => s.buyDateIsFuture).length;
+    const caveatEl = document.getElementById('stocksHoldingCaveat');
+    if (futureDateCount) {
+      caveatEl.style.display = 'block';
+      caveatEl.innerHTML = `⚠ <b>${futureDateCount} Buy Date${futureDateCount > 1 ? 's look' : ' looks'} like a day/month mix-up</b> — stored in the future, so <b>Held</b>/<b>Ann. %</b> can't be computed for ${futureDateCount > 1 ? 'them' : 'it'} (see the ⚠ in the table). Re-enter using YYYY-MM-DD to avoid the ambiguity.`;
+    } else {
+      caveatEl.style.display = stocks.some(s => isFinite(s.daysHeld)) ? 'block' : 'none';
+      caveatEl.innerHTML = `📅 <b>Held</b> and <b>Ann. %</b> are estimated from each stock's first Buy Date in your sheet — if you added to a position later, the actual holding period for those later shares will be shorter than shown.`;
+    }
+
+    document.getElementById('stocksMiniValue').textContent = fmtMoney(stocksValue);
+    const stocksMiniGainEl = document.getElementById('stocksMiniGain');
+    stocksMiniGainEl.textContent = (stocksAgg.gain >= 0 ? '+' : '') + fmtMoney(stocksAgg.gain) + ' (' + fmtPct(stocksAgg.gainPct) + ')';
+    stocksMiniGainEl.className = 'mini-value ' + chgClass(stocksAgg.gainPct);
+    const stocksMiniTodayEl = document.getElementById('stocksMiniToday');
+    stocksMiniTodayEl.textContent = (stocksDayGain >= 0 ? '+' : '') + fmtMoney(stocksDayGain);
+    stocksMiniTodayEl.className = 'mini-value ' + chgClass(stocksDayGain);
+
     const view = computeAgg(visibleStocks);          // filtered slice — drives the table
     const isFiltered = sectorFilter !== 'All' || capFilter !== 'All';
     const filterLabel = isFiltered
       ? ` <span class="chg-flat">· filtered: ${sectorFilter !== 'All' ? sectorFilter : ''}${sectorFilter !== 'All' && capFilter !== 'All' ? ' + ' : ''}${capFilter !== 'All' ? capFilter : ''}</span>`
       : '';
+    const concentrationLabel = stocksConcentrated
+      ? ` <span class="wt-flag">⚠ ${stocksConcentrated} holding${stocksConcentrated > 1 ? 's' : ''} over ${CONCENTRATION_THRESHOLD}%</span>`
+      : '';
 
     document.getElementById('stocksSubMeta').innerHTML =
-      `${visibleStocks.length}${isFiltered ? ` of ${stocks.length}` : ''} holdings · Invested ${fmtMoney(view.invested)} → ${fmtMoney(view.value)} <span class="${chgClass(view.gainPct)}">(${fmtPct(view.gainPct)})</span> · Today <span class="${chgClass(view.dayPct)}">${fmtMoney(view.dayGain)} (${fmtPct(view.dayPct)})</span>${filterLabel}`;
+      `${visibleStocks.length}${isFiltered ? ` of ${stocks.length}` : ''} holdings · Invested ${fmtMoney(view.invested)} → ${fmtMoney(view.value)} <span class="${chgClass(view.gainPct)}">(${fmtPct(view.gainPct)})</span> · Today <span class="${chgClass(view.dayPct)}">${fmtMoney(view.dayGain)} (${fmtPct(view.dayPct)})</span>${filterLabel}${concentrationLabel}`;
 
+    renderThead('stocksThead', STOCKS_COLUMNS, 'stocks');
     const stocksBody = document.getElementById('stocksBody');
     if (!visibleStocks.length) {
-      stocksBody.innerHTML = `<tr><td colspan="13" class="skel">No holdings match this filter.</td></tr>`;
+      stocksBody.innerHTML = `<tr><td colspan="15" class="skel">No holdings match this filter.</td></tr>`;
     } else {
-      stocksBody.innerHTML = visibleStocks
-        .sort((a, b) => a.symbol.localeCompare(b.symbol))
+      stocksBody.innerHTML = sortRows(visibleStocks, stocksSort.key, stocksSort.dir)
         .map(s => {
-          const wt = stocksValue ? (s.value / stocksValue) * 100 : 0;
+          const flagged = s.wt > CONCENTRATION_THRESHOLD;
+          const heldCell = s.buyDateIsFuture
+            ? `<span class="wt-flag" title="This Buy Date (${s.buyDate.toDateString()}) is in the future — almost always a day/month mix-up, e.g. 11/08 typed and stored as 8 Nov instead of 11 Aug. Fix the cell in your sheet to a date already in the past.">⚠ check date</span>`
+            : isFinite(s.daysHeld)
+            ? `${fmtNum(s.daysHeld, 0)}d<span class="ltcg-badge ${s.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${s.ltEligible ? 'Long-term — held 365+ days, eligible for LTCG tax treatment' : `Short-term — ${LTCG_DAYS - s.daysHeld} more day${LTCG_DAYS - s.daysHeld === 1 ? '' : 's'} until LTCG (365-day) eligibility`}">${s.ltEligible ? 'LT' : 'ST'}</span>`
+            : '—';
+          const annCell = isFinite(s.annReturn)
+            ? `<span class="${chgClass(s.annReturn)}">${fmtPct(s.annReturn)}</span>`
+            : (isFinite(s.daysHeld) ? `<span class="chg-flat" title="Available after ${ANN_RETURN_MIN_DAYS} days held — ${s.daysHeld} so far">—</span>` : '—');
           return `<tr>
-            <td class="sym">${s.symbol}</td><td class="sec">${s.sector}</td><td class="sec">${s.cap.replace(' Cap', '')}</td>
+            <td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${s.symbol}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a></td><td class="sec">${s.sector}</td><td class="sec">${s.cap.replace(' Cap', '')}</td>
             <td class="num">${fmtNum(s.qty, 0)}</td><td class="num">${fmtNum(s.buy)}</td><td class="num">${fmtNum(s.ltp)}</td>
             <td class="num">${fmtMoney(s.invested)}</td><td class="num">${fmtMoney(s.value)}</td>
             <td class="num ${chgClass(s.gain)}">${s.gain >= 0 ? '+' : ''}${fmtMoney(s.gain)}</td>
             <td class="num ${chgClass(s.gainPct)}">${fmtPct(s.gainPct)}</td>
             <td class="num ${chgClass(s.dayGain)}">${s.dayGain >= 0 ? '+' : ''}${fmtMoney(s.dayGain)}</td>
             <td class="num ${chgClass(s.dayPct)}">${fmtPct(s.dayPct)}</td>
-            <td class="num">${fmtNum(wt)}%</td>
+            <td class="num${flagged ? ' wt-flag' : ''}"${flagged ? ` title="High concentration — over ${CONCENTRATION_THRESHOLD}% of your stocks book"` : ''}>${flagged ? '⚠ ' : ''}${fmtNum(s.wt)}%</td>
+            <td class="num">${heldCell}</td>
+            <td class="num">${annCell}</td>
           </tr>`;
         }).join('');
     }
@@ -552,33 +841,96 @@
         <td class="num ${chgClass(view.gain)}">${view.gain >= 0 ? '+' : ''}${fmtMoney(view.gain)}</td>
         <td class="num ${chgClass(view.gainPct)}">${fmtPct(view.gainPct)}</td>
         <td class="num ${chgClass(view.dayGain)}">${view.dayGain >= 0 ? '+' : ''}${fmtMoney(view.dayGain)}</td>
-        <td class="num ${chgClass(view.dayPct)}">${fmtPct(view.dayPct)}</td><td class="num">${fmtNum(shareOfBook, 1)}%</td></tr>`;
+        <td class="num ${chgClass(view.dayPct)}">${fmtPct(view.dayPct)}</td><td class="num">${fmtNum(shareOfBook, 1)}%</td><td class="num"></td><td class="num"></td></tr>`;
 
     // ---- ETF table ----
     const etfAgg = computeAgg(etfs);
     const etfInvested = etfAgg.invested, etfValue = etfAgg.value, etfGain = etfAgg.gain;
     const etfGainPct = etfAgg.gainPct, etfDayGain = etfAgg.dayGain, etfDayPct = etfAgg.dayPct;
 
-    document.getElementById('etfSubMeta').innerHTML =
-      `${etfs.length} holdings · Invested ${fmtMoney(etfInvested)} → ${fmtMoney(etfValue)} <span class="${chgClass(etfGainPct)}">(${fmtPct(etfGainPct)})</span> · Today <span class="${chgClass(etfDayPct)}">${fmtMoney(etfDayGain)} (${fmtPct(etfDayPct)})</span>`;
+    // Held / Ann. % for ETFs — ETF Summary has no Buy Date of its own, so this uses the earliest
+    // purchase lot for that symbol from the "ETF" ledger tab (same tab that gives XIRR precise dates).
+    // Falls back to '—' for a symbol with no lots in that tab, or if the tab isn't set up at all.
+    etfs.forEach(e => {
+      e.wt = etfValue ? (e.value / etfValue) * 100 : 0;
+      const lots = lastEtfLots.filter(l => normSym(l.symbol) === normSym(e.symbol));
+      if (lots.length) {
+        e.buyDate = new Date(Math.min(...lots.map(l => l.buyDate.getTime())));
+        e.buyDateIsFuture = e.buyDate > nowTs;
+        if (!e.buyDateIsFuture) {
+          e.daysHeld = Math.max(0, Math.floor((nowTs - e.buyDate) / 86400000));
+          e.ltEligible = e.daysHeld >= LTCG_DAYS;
+          e.annReturn = (e.daysHeld >= ANN_RETURN_MIN_DAYS && isFinite(e.invested) && e.invested > 0 && isFinite(e.value))
+            ? (Math.pow(e.value / e.invested, 365 / e.daysHeld) - 1) * 100
+            : NaN;
+        } else {
+          e.daysHeld = NaN; e.ltEligible = null; e.annReturn = NaN;
+        }
+      } else {
+        e.buyDate = null; e.buyDateIsFuture = false;
+        e.daysHeld = NaN; e.ltEligible = null; e.annReturn = NaN;
+      }
+    });
+    const etfConcentrated = etfs.filter(e => e.wt > CONCENTRATION_THRESHOLD).length;
+    const etfConcentrationLabel = etfConcentrated
+      ? ` <span class="wt-flag">⚠ ${etfConcentrated} holding${etfConcentrated > 1 ? 's' : ''} over ${CONCENTRATION_THRESHOLD}%</span>`
+      : '';
+    const etfFutureDateCount = etfs.filter(e => e.buyDateIsFuture).length;
+    const etfCaveatEl = document.getElementById('etfHoldingCaveat');
+    if (etfFutureDateCount) {
+      etfCaveatEl.style.display = 'block';
+      etfCaveatEl.innerHTML = `⚠ <b>${etfFutureDateCount} ETF lot Buy Date${etfFutureDateCount > 1 ? 's look' : ' looks'} like a day/month mix-up</b> — stored in the future, so <b>Held</b>/<b>Ann. %</b> can't be computed for ${etfFutureDateCount > 1 ? 'them' : 'it'} (see the ⚠ in the table). Fix it in the "ETF" tab, re-entered as YYYY-MM-DD.`;
+    } else {
+      etfCaveatEl.style.display = etfs.some(e => isFinite(e.daysHeld)) ? 'block' : 'none';
+      etfCaveatEl.innerHTML = `📅 <b>Held</b> and <b>Ann. %</b> are estimated from each ETF's earliest purchase lot in your "ETF" tab — if you added to a position later, the actual holding period for those later units will be shorter than shown.`;
+    }
 
-    document.getElementById('etfBody').innerHTML = etfs
-      .sort((a, b) => a.symbol.localeCompare(b.symbol))
-      .map(e => `<tr>
+    document.getElementById('etfMiniValue').textContent = fmtMoney(etfValue);
+    const etfMiniGainEl = document.getElementById('etfMiniGain');
+    etfMiniGainEl.textContent = (etfGain >= 0 ? '+' : '') + fmtMoney(etfGain) + ' (' + fmtPct(etfGainPct) + ')';
+    etfMiniGainEl.className = 'mini-value ' + chgClass(etfGainPct);
+    const etfMiniTodayEl = document.getElementById('etfMiniToday');
+    etfMiniTodayEl.textContent = (etfDayGain >= 0 ? '+' : '') + fmtMoney(etfDayGain);
+    etfMiniTodayEl.className = 'mini-value ' + chgClass(etfDayGain);
+
+    document.getElementById('etfSubMeta').innerHTML =
+      `${etfs.length} holdings · Invested ${fmtMoney(etfInvested)} → ${fmtMoney(etfValue)} <span class="${chgClass(etfGainPct)}">(${fmtPct(etfGainPct)})</span> · Today <span class="${chgClass(etfDayPct)}">${fmtMoney(etfDayGain)} (${fmtPct(etfDayPct)})</span>${etfConcentrationLabel}`;
+
+    renderThead('etfThead', ETF_COLUMNS, 'etf');
+    if (!etfs.length) {
+      document.getElementById('etfBody').innerHTML = `<tr><td colspan="13" class="skel">No ETF holdings found.</td></tr>`;
+    } else {
+      document.getElementById('etfBody').innerHTML = sortRows(etfs, etfSort.key, etfSort.dir)
+        .map(e => {
+          const flagged = e.wt > CONCENTRATION_THRESHOLD;
+          const heldCell = e.buyDateIsFuture
+            ? `<span class="wt-flag" title="This lot's Buy Date (${e.buyDate.toDateString()}) is in the future — almost always a day/month mix-up. Fix it in your \"ETF\" tab to a date already in the past.">⚠ check date</span>`
+            : isFinite(e.daysHeld)
+            ? `${fmtNum(e.daysHeld, 0)}d<span class="ltcg-badge ${e.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${e.ltEligible ? 'Long-term — held 365+ days, eligible for LTCG tax treatment' : `Short-term — ${LTCG_DAYS - e.daysHeld} more day${LTCG_DAYS - e.daysHeld === 1 ? '' : 's'} until LTCG (365-day) eligibility`}">${e.ltEligible ? 'LT' : 'ST'}</span>`
+            : '—';
+          const annCell = isFinite(e.annReturn)
+            ? `<span class="${chgClass(e.annReturn)}">${fmtPct(e.annReturn)}</span>`
+            : (isFinite(e.daysHeld) ? `<span class="chg-flat" title="Available after ${ANN_RETURN_MIN_DAYS} days held — ${e.daysHeld} so far">—</span>` : '—');
+          return `<tr>
         <td class="sym">${e.symbol}</td><td class="num">${fmtNum(e.qty, 0)}</td><td class="num">${fmtNum(e.buy)}</td><td class="num">${fmtNum(e.ltp)}</td>
         <td class="num">${fmtMoney(e.invested)}</td><td class="num">${fmtMoney(e.value)}</td>
         <td class="num ${chgClass(e.gain)}">${e.gain >= 0 ? '+' : ''}${fmtMoney(e.gain)}</td>
         <td class="num ${chgClass(e.gainPct)}">${fmtPct(e.gainPct)}</td>
         <td class="num ${chgClass(e.dayGain)}">${e.dayGain >= 0 ? '+' : ''}${fmtMoney(e.dayGain)}</td>
         <td class="num ${chgClass(e.dayPct)}">${fmtPct(e.dayPct)}</td>
-      </tr>`).join('');
+        <td class="num${flagged ? ' wt-flag' : ''}"${flagged ? ` title="High concentration — over ${CONCENTRATION_THRESHOLD}% of your ETF book"` : ''}>${flagged ? '⚠ ' : ''}${fmtNum(e.wt)}%</td>
+        <td class="num">${heldCell}</td>
+        <td class="num">${annCell}</td>
+      </tr>`;
+        }).join('');
+    }
     document.getElementById('etfFoot').innerHTML =
       `<tr><td>ETF Total</td><td></td><td></td><td></td>
         <td class="num">${fmtMoney(etfInvested)}</td><td class="num">${fmtMoney(etfValue)}</td>
         <td class="num ${chgClass(etfGain)}">${etfGain >= 0 ? '+' : ''}${fmtMoney(etfGain)}</td>
         <td class="num ${chgClass(etfGainPct)}">${fmtPct(etfGainPct)}</td>
         <td class="num ${chgClass(etfDayGain)}">${etfDayGain >= 0 ? '+' : ''}${fmtMoney(etfDayGain)}</td>
-        <td class="num ${chgClass(etfDayPct)}">${fmtPct(etfDayPct)}</td></tr>`;
+        <td class="num ${chgClass(etfDayPct)}">${fmtPct(etfDayPct)}</td><td class="num">${etfValue ? '100.0%' : '—'}</td><td class="num"></td><td class="num"></td></tr>`;
 
     // ---- Top tiles ----
     const totalValue = stocksValue + etfValue;
@@ -605,6 +957,239 @@
 
     // ---- Analysis: sector donut + movers/leaders panel (stocks only) ----
     renderAnalysis(stocks, stocksValue);
+
+    // ---- Today's Movers: biggest single-day gainer/loser across Stocks + ETFs ----
+    renderTopMovers(stocks);
+
+    // ---- Portfolio XIRR: money-weighted annualized return, from each stock's Buy Date ----
+    computeXirrTile();
+  }
+
+  // Finds the closest daily snapshot at or before targetDate for a symbol, from the "Price History"
+  // tab. `hist` is pre-sorted ascending by date (see syncPriceHistory), so this is a single linear pass.
+  function priceAsOf(symbol, targetDate) {
+    const hist = lastPriceHistory[normSym(symbol)];
+    if (!hist || !hist.length) return null;
+    let candidate = null;
+    for (const pt of hist) {
+      if (pt.date <= targetDate) candidate = pt; else break;
+    }
+    return candidate;
+  }
+
+  // Earliest date we have ANY price snapshot for — used to tell "not set up yet" apart from "set up,
+  // still collecting" in the period dropdown's empty state.
+  function earliestPriceHistoryDate() {
+    let min = null;
+    Object.values(lastPriceHistory).forEach(arr => {
+      if (arr.length && (!min || arr[0].date < min)) min = arr[0].date;
+    });
+    return min;
+  }
+
+  function onMoversPeriodChange() {
+    moversPeriod = document.getElementById('moversPeriodSelect').value;
+    renderTopMovers(lastStocks);
+  }
+
+  // Top 3 gainers/losers among stocks (the "Portfolio" tab) only, for the selected period. "Today" and
+  // "Since Buy Date" use figures already computed per stock; Week/Month/Year look up a past price from
+  // the daily "Price History" snapshots and fall back to a "collecting data" message when there isn't
+  // yet enough history to cover that period, rather than showing an empty or misleading ranking.
+  function renderTopMovers(stocks) {
+    const panel = document.getElementById('topMoversPanel');
+    if (!stocks.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const period = MOVER_PERIODS[moversPeriod] || MOVER_PERIODS.today;
+    document.getElementById('topMoversMeta').textContent = '— ' + period.label;
+    const gainersEl = document.getElementById('topGainersList');
+    const losersEl = document.getElementById('topLosersList');
+    const noteEl = document.getElementById('moversNote');
+    noteEl.style.display = 'none';
+
+    let movers;
+    if (moversPeriod === 'today') {
+      movers = stocks
+        .map(s => ({ symbol: s.symbol, chg: s.dayGain, pct: s.dayPct }))
+        .filter(x => isFinite(x.pct));
+    } else if (moversPeriod === 'sinceBuy') {
+      movers = stocks
+        .map(s => ({ symbol: s.symbol, chg: s.gain, pct: s.gainPct }))
+        .filter(x => isFinite(x.pct));
+    } else {
+      const days = period.days;
+      const now = new Date();
+      const cutoff = new Date(now.getTime() - days * 86400000);
+      const earliest = earliestPriceHistoryDate();
+      if (!earliest) {
+        gainersEl.innerHTML = ''; losersEl.innerHTML = '';
+        noteEl.style.display = 'block';
+        noteEl.innerHTML = `📊 <b>Collecting data</b> — daily price snapshots haven't started yet. Once the Apps Script's daily snapshot runs a few times, this view fills in automatically.`;
+        return;
+      }
+      const daysCollected = Math.max(0, Math.floor((now - earliest) / 86400000));
+      if (earliest > cutoff) {
+        gainersEl.innerHTML = ''; losersEl.innerHTML = '';
+        noteEl.style.display = 'block';
+        noteEl.innerHTML = `📊 <b>Collecting data</b> — ${daysCollected} day${daysCollected === 1 ? '' : 's'} of price history so far, need ~${days} for this view. Run the daily snapshot (or wait for its 7 PM trigger) and check back.`;
+        return;
+      }
+      movers = stocks.map(s => {
+        const past = priceAsOf(s.symbol, cutoff);
+        if (!past || !isFinite(s.ltp) || !isFinite(s.qty) || !past.price) return null;
+        const pct = ((s.ltp - past.price) / past.price) * 100;
+        const chg = (s.ltp - past.price) * s.qty;
+        return { symbol: s.symbol, chg, pct };
+      }).filter(x => x && isFinite(x.pct));
+    }
+
+    if (!movers.length) {
+      gainersEl.innerHTML = '<div class="mover-row"><span class="mover-sym">—</span></div>';
+      losersEl.innerHTML = '<div class="mover-row"><span class="mover-sym">—</span></div>';
+      return;
+    }
+    const rowHtml = (x, i) => `
+      <div class="mover-row">
+        <span class="mover-rank">${i + 1}</span>
+        <span class="mover-sym">${x.symbol}</span>
+        <span class="mover-chg ${chgClass(x.pct)}">${x.chg >= 0 ? '+' : ''}${fmtMoney(x.chg)} (${fmtPct(x.pct)})</span>
+      </div>`;
+    const gainers = [...movers].sort((a, b) => b.pct - a.pct).slice(0, 3);
+    const losers = [...movers].sort((a, b) => a.pct - b.pct).slice(0, 3);
+    gainersEl.innerHTML = gainers.map(rowHtml).join('') || '<div class="mover-row"><span class="mover-sym">—</span></div>';
+    losersEl.innerHTML = losers.map(rowHtml).join('') || '<div class="mover-row"><span class="mover-sym">—</span></div>';
+  }
+
+  // ---- Portfolio XIRR: the money-weighted "true" return — accounts for exactly when and how much
+  // you put in (each stock's Buy Date + Invested amount), not just two snapshot points like CAGR/NAV. ----
+
+  // Solves for the annualized rate that makes the discounted cash flows net to zero, via bisection
+  // (robust for this shape of cash flow — outflows then one terminal inflow — unlike Newton's method,
+  // which can diverge). cashflows: [{date, amount}], amount negative for money going in, positive for value out.
+  function xirr(cashflows) {
+    if (cashflows.length < 2) return NaN;
+    const sorted = [...cashflows].sort((a, b) => a.date - b.date);
+    const d0 = sorted[0].date;
+    const t = cf => (cf.date - d0) / (365 * 86400000);
+    const npv = (rate) => sorted.reduce((sum, cf) => sum + cf.amount / Math.pow(1 + rate, t(cf)), 0);
+    let lo = -0.99, hi = 10; // -99% to +1000% annualized — wide enough to bracket any sane real-world rate
+    let fLo = npv(lo), fHi = npv(hi);
+    if (!isFinite(fLo) || !isFinite(fHi) || fLo * fHi > 0) return NaN; // no sign change — can't bracket a root
+    const scale = Math.abs(sorted[sorted.length - 1].amount) || 1;
+    for (let i = 0; i < 100; i++) {
+      const mid = (lo + hi) / 2;
+      const fMid = npv(mid);
+      if (Math.abs(fMid) < 1e-6 * scale || (hi - lo) < 1e-9) return mid * 100;
+      if ((fLo < 0) === (fMid < 0)) { lo = mid; fLo = fMid; } else { hi = mid; }
+    }
+    return ((lo + hi) / 2) * 100;
+  }
+
+  // Builds the cash-flow series from Buy Dates and updates the Portfolio XIRR tile. Stocks without a
+  // Buy Date, and ETFs (no Buy Date column yet), fall back to the earliest date we know about anything
+  // (earliest stock Buy Date, or the first History snapshot) rather than being silently dropped — but
+  // only if their value is also included in the terminal cash flow, so the books stay consistent.
+  function computeXirrTile() {
+    const tileEl = document.getElementById('tileXirr');
+    const noteEl = document.getElementById('tileXirrNote');
+    if (!tileEl || !noteEl) return;
+    const stocks = lastStocks, etfs = lastEtfs;
+    if (!stocks.length && !etfs.length) { tileEl.textContent = '—'; tileEl.className = 'value'; return; }
+
+    const now = new Date();
+    // A Buy Date later than today is unusable as a real cash-flow date (almost always a day/month
+    // mix-up in the sheet, e.g. "11/08" typed and stored as 8 Nov instead of 11 Aug) — and letting one
+    // through breaks the solver, since it'd sort after the terminal valuation. Treat it like "no date".
+    const isUsableDate = d => d && d <= now;
+
+    const earliestHistoryDate = lastHistoryPoints.length ? lastHistoryPoints[0].date : null;
+    const stockBuyTimes = stocks.filter(s => isUsableDate(s.buyDate)).map(s => s.buyDate.getTime());
+    let fallbackDate = stockBuyTimes.length ? new Date(Math.min(...stockBuyTimes)) : null;
+    if (earliestHistoryDate && (!fallbackDate || earliestHistoryDate < fallbackDate)) fallbackDate = earliestHistoryDate;
+
+    const lotsBySymbol = {};
+    lastEtfLots.forEach(l => {
+      const k = normSym(l.symbol);
+      (lotsBySymbol[k] = lotsBySymbol[k] || []).push(l);
+    });
+
+    const flows = [];
+    let includedValue = 0;
+    let hasApprox = false;
+    let hasFutureDate = false;
+    let excludedValue = 0;
+
+    stocks.forEach(s => {
+      if (!isFinite(s.invested) || s.invested <= 0 || !isFinite(s.value)) return;
+      if (s.buyDate && s.buyDate > now) hasFutureDate = true;
+      if (isUsableDate(s.buyDate)) {
+        flows.push({ date: s.buyDate, amount: -s.invested });
+        includedValue += s.value;
+      } else if (fallbackDate) {
+        flows.push({ date: fallbackDate, amount: -s.invested });
+        includedValue += s.value;
+        hasApprox = true;
+      } else {
+        excludedValue += s.value;
+      }
+    });
+    etfs.forEach(e => {
+      if (!isFinite(e.invested) || e.invested <= 0 || !isFinite(e.value)) return;
+      const allLots = lotsBySymbol[normSym(e.symbol)] || [];
+      const usableLots = allLots.filter(l => isUsableDate(l.buyDate));
+      if (allLots.some(l => l.buyDate && l.buyDate > now)) hasFutureDate = true;
+      if (usableLots.length) {
+        // Precise path: one real cash flow per purchase lot, straight from the "ETF" ledger tab.
+        let lotTotal = 0;
+        usableLots.forEach(l => { flows.push({ date: l.buyDate, amount: -l.invested }); lotTotal += l.invested; });
+        includedValue += e.value;
+        // Lots dropped for a bad date (or never in the ledger) leave a gap versus the ETF's real
+        // invested total — cover it with an approximate flow rather than silently understating capital.
+        const shortfall = e.invested - lotTotal;
+        if (shortfall > 1 && fallbackDate) {
+          flows.push({ date: fallbackDate, amount: -shortfall });
+          hasApprox = true;
+        }
+      } else if (fallbackDate) {
+        flows.push({ date: fallbackDate, amount: -e.invested });
+        includedValue += e.value;
+        hasApprox = true;
+      } else {
+        excludedValue += e.value;
+      }
+    });
+
+    if (!flows.length || includedValue <= 0) {
+      tileEl.textContent = '—'; tileEl.className = 'value';
+      noteEl.textContent = 'Add a Buy Date to your holdings to see this';
+      return;
+    }
+
+    flows.push({ date: now, amount: includedValue });
+    flows.sort((a, b) => a.date - b.date);
+    const spanDays = (flows[flows.length - 1].date - flows[0].date) / 86400000;
+
+    if (spanDays < CAGR_MIN_DAYS) {
+      tileEl.textContent = '—'; tileEl.className = 'value';
+      noteEl.textContent = `Available once your earliest holding is ${CAGR_MIN_DAYS}+ days old — ${Math.round(spanDays)} so far`;
+      return;
+    }
+
+    const rate = xirr(flows);
+    if (!isFinite(rate)) {
+      tileEl.textContent = '—'; tileEl.className = 'value';
+      noteEl.textContent = 'Could not solve for a rate — check for an unusual Buy Date';
+      return;
+    }
+
+    tileEl.textContent = fmtPct(rate);
+    tileEl.className = 'value ' + chgClass(rate);
+    const futureNote = hasFutureDate ? ' · some Buy Dates look like a day/month mix-up (see ⚠ in the table) — excluded' : '';
+    const excludedNote = (excludedValue > 0 ? ' · some holdings without any date data excluded' : '') + futureNote;
+    noteEl.textContent = (hasApprox
+      ? 'Annualized, money-weighted — approximates entry date for ETFs/stocks without a Buy Date'
+      : 'Annualized, money-weighted, from each buy date') + excludedNote;
   }
 
   const SECTOR_PALETTE_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
@@ -617,43 +1202,142 @@
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
+  const CAP_ORDER = ['Large Cap', 'Mid Cap', 'Small Cap'];
+
+  function escapeAttr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function escapeHtmlText(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  // Sums a group of holdings into the aggregate a donut slice / tooltip needs.
+  function sumGroup(list) {
+    const invested = sumBy(list, 'invested');
+    const value = sumBy(list, 'value');
+    return { invested, value, gain: value - invested, gainPct: invested ? ((value - invested) / invested) * 100 : 0 };
+  }
+
+  // ---- Donut hover/focus tooltip (Invested / Value / Gain per slice) ----
+  function positionVizTooltip(x, y) {
+    const tt = document.getElementById('vizTooltip');
+    const pad = 14;
+    const rect = tt.getBoundingClientRect();
+    let left = x + pad, top = y + pad;
+    if (left + rect.width > window.innerWidth - 8) left = x - rect.width - pad;
+    if (top + rect.height > window.innerHeight - 8) top = y - rect.height - pad;
+    tt.style.left = Math.max(8, left) + 'px';
+    tt.style.top = Math.max(8, top) + 'px';
+  }
+  function showVizTooltip(x, y, data) {
+    const tt = document.getElementById('vizTooltip');
+    tt.innerHTML = '';
+    const head = document.createElement('div'); head.className = 'tt-head';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = data.color;
+    const name = document.createElement('span'); name.textContent = data.name;
+    head.appendChild(dot); head.appendChild(name);
+    tt.appendChild(head);
+    const addRow = (label, value, cls) => {
+      const row = document.createElement('div'); row.className = 'tt-row';
+      const l = document.createElement('span'); l.className = 'tt-label'; l.textContent = label;
+      const v = document.createElement('span'); v.className = 'tt-value' + (cls ? ' ' + cls : ''); v.textContent = value;
+      row.appendChild(l); row.appendChild(v);
+      tt.appendChild(row);
+    };
+    addRow('Value', fmtMoney(data.value));
+    addRow('Invested', fmtMoney(data.invested));
+    addRow('Gain', (data.gain >= 0 ? '+' : '') + fmtMoney(data.gain) + ' (' + fmtPct(data.gainPct) + ')', chgClass(data.gain));
+    addRow('Weight', data.pct.toFixed(2) + '%');
+    tt.classList.add('show');
+    positionVizTooltip(x, y);
+  }
+  function hideVizTooltip() { document.getElementById('vizTooltip').classList.remove('show'); }
+
+  function setupDonutTooltips(svgId) {
+    const svg = document.getElementById(svgId);
+    if (svg.dataset.ttBound) return;
+    svg.dataset.ttBound = '1';
+    const readTt = (e) => {
+      const c = e.target.closest && e.target.closest('circle[data-tt]');
+      return c ? { c, data: JSON.parse(c.getAttribute('data-tt')) } : null;
+    };
+    svg.addEventListener('pointerover', (e) => { const hit = readTt(e); if (hit) showVizTooltip(e.clientX, e.clientY, hit.data); });
+    svg.addEventListener('pointermove', (e) => { if (readTt(e)) positionVizTooltip(e.clientX, e.clientY); });
+    svg.addEventListener('pointerout', (e) => { if (readTt(e)) hideVizTooltip(); });
+    svg.addEventListener('focusin', (e) => {
+      const hit = readTt(e); if (!hit) return;
+      const r = hit.c.getBoundingClientRect();
+      showVizTooltip(r.left + r.width / 2, r.top + r.height / 2, hit.data);
+    });
+    svg.addEventListener('focusout', (e) => { if (readTt(e)) hideVizTooltip(); });
+  }
+
+  function drawDonut(svgId, legendId, entries, palette) {
+    const total = entries.reduce((s, [, agg]) => s + agg.value, 0);
+    const r = 54, cx = 70, cy = 70, strokeW = 20, circ = 2 * Math.PI * r;
+    let offset = 0;
+    document.getElementById(svgId).innerHTML = entries.map(([k, agg], i) => {
+      const pct = total ? (agg.value / total) * 100 : 0;
+      const len = (pct / 100) * circ;
+      const dashoffset = -offset;
+      offset += len;
+      const color = palette[i % palette.length];
+      const payload = { name: k, value: agg.value, invested: agg.invested, gain: agg.gain, gainPct: agg.gainPct, pct, color };
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}"
+        stroke-dasharray="${len} ${circ - len}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})"
+        tabindex="0" role="img" aria-label="${escapeAttr(k)}: ${pct.toFixed(2)}%" data-tt="${escapeAttr(JSON.stringify(payload))}"></circle>`;
+    }).join('');
+    document.getElementById(legendId).innerHTML = entries.map(([k, agg], i) => {
+      const pct = total ? (agg.value / total) * 100 : 0;
+      return `<div class="lg-row"><span class="dot" style="background:${palette[i % palette.length]}"></span>${escapeHtmlText(k)} : ${pct.toFixed(2)}</div>`;
+    }).join('');
+    setupDonutTooltips(svgId);
+  }
+
   function renderAnalysis(stocks, stocksValue) {
     if (!stocks.length) {
       document.getElementById('donutLegend').innerHTML = `<div class="skel" style="font-size:12.5px">No data yet.</div>`;
+      document.getElementById('capDonutLegend').innerHTML = `<div class="skel" style="font-size:12.5px">No data yet.</div>`;
       document.getElementById('analysisStats').innerHTML = '';
       document.getElementById('sectorDonut').innerHTML = '';
+      document.getElementById('capDonut').innerHTML = '';
       return;
     }
+
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
 
     // Sector totals — top 7 by value, smaller sectors folded into "Other" (8-slot categorical ceiling)
     const bySector = {};
     stocks.forEach(s => {
       const k = s.sector || '—';
-      bySector[k] = (bySector[k] || 0) + (isFinite(s.value) ? s.value : 0);
+      (bySector[k] = bySector[k] || []).push(s);
     });
-    const sectorEntries = Object.entries(bySector).sort((a, b) => b[1] - a[1]);
-    const total = sectorEntries.reduce((s, [, v]) => s + v, 0);
+    const sectorEntries = Object.entries(bySector)
+      .map(([k, list]) => [k, sumGroup(list)])
+      .sort((a, b) => b[1].value - a[1].value);
+    const total = sectorEntries.reduce((s, [, agg]) => s + agg.value, 0);
     let donutEntries = sectorEntries.slice(0, 7);
     const rest = sectorEntries.slice(7);
-    if (rest.length) donutEntries = donutEntries.concat([['Other', rest.reduce((s, [, v]) => s + v, 0)]]);
+    if (rest.length) {
+      const otherInvested = rest.reduce((s, [, agg]) => s + agg.invested, 0);
+      const otherValue = rest.reduce((s, [, agg]) => s + agg.value, 0);
+      donutEntries = donutEntries.concat([['Other', { invested: otherInvested, value: otherValue, gain: otherValue - otherInvested, gainPct: otherInvested ? ((otherValue - otherInvested) / otherInvested) * 100 : 0 }]]);
+    }
+    drawDonut('sectorDonut', 'donutLegend', donutEntries, palette);
 
-    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
-    const r = 54, cx = 70, cy = 70, strokeW = 20, circ = 2 * Math.PI * r;
-    let offset = 0;
-    document.getElementById('sectorDonut').innerHTML = donutEntries.map(([k, v], i) => {
-      const pct = total ? (v / total) * 100 : 0;
-      const len = (pct / 100) * circ;
-      const dashoffset = -offset;
-      offset += len;
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${palette[i % palette.length]}" stroke-width="${strokeW}"
-        stroke-dasharray="${len} ${circ - len}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})">
-        <title>${k}: ${pct.toFixed(2)}%</title></circle>`;
-    }).join('');
-
-    document.getElementById('donutLegend').innerHTML = donutEntries.map(([k, v], i) => {
-      const pct = total ? (v / total) * 100 : 0;
-      return `<div class="lg-row"><span class="dot" style="background:${palette[i % palette.length]}"></span>${k} : ${pct.toFixed(2)}</div>`;
-    }).join('');
+    // Market cap totals — fixed Large/Mid/Small order so a slice's color always means the same
+    // category regardless of which is biggest this refresh (color follows the entity, not its rank).
+    const byCap = {};
+    stocks.forEach(s => {
+      const k = s.cap || '—';
+      (byCap[k] = byCap[k] || []).push(s);
+    });
+    const capGroups = {};
+    Object.entries(byCap).forEach(([k, list]) => { capGroups[k] = sumGroup(list); });
+    const capEntries = CAP_ORDER.filter(k => capGroups[k]).map(k => [k, capGroups[k]]);
+    const otherCapKeys = Object.keys(capGroups).filter(k => !CAP_ORDER.includes(k));
+    if (otherCapKeys.length) {
+      const otherInvested = otherCapKeys.reduce((s, k) => s + capGroups[k].invested, 0);
+      const otherValue = otherCapKeys.reduce((s, k) => s + capGroups[k].value, 0);
+      capEntries.push(['Other', { invested: otherInvested, value: otherValue, gain: otherValue - otherInvested, gainPct: otherInvested ? ((otherValue - otherInvested) / otherInvested) * 100 : 0 }]);
+    }
+    drawDonut('capDonut', 'capDonutLegend', capEntries, palette);
 
     // Movers, based on today's Day Gain per stock
     const gaining = stocks.filter(s => isFinite(s.dayGain) && s.dayGain > 0);
@@ -674,7 +1358,7 @@
       <hr>
       <div class="stat-row"><span class="figpct">${total && topStock ? ((topStock.value / stocksValue) * 100).toFixed(1) + '%' : '—'}</span> Top Value Stock &nbsp; <span class="stockname">${topStock ? topStock.symbol : '—'}</span></div>
       <div class="stat-row"><span class="figpct">${total && leastStock ? ((leastStock.value / stocksValue) * 100).toFixed(1) + '%' : '—'}</span> Least Value Stock &nbsp; <span class="stockname">${leastStock ? leastStock.symbol : '—'}</span></div>
-      <div class="stat-row"><span class="figpct">${topSector ? ((topSector[1] / total) * 100).toFixed(2) + '%' : '—'}</span> Top Sector &nbsp; <span class="stockname">${topSector ? topSector[0] : '—'}</span></div>
+      <div class="stat-row"><span class="figpct">${topSector ? ((topSector[1].value / total) * 100).toFixed(2) + '%' : '—'}</span> Top Sector &nbsp; <span class="stockname">${topSector ? topSector[0] : '—'}</span></div>
     `;
   }
 
@@ -697,6 +1381,455 @@
         <div class="bar-track"><div class="bar-fill" style="width:${maxWt ? (r.wt / maxWt) * 100 : 0}%"></div></div>
         <div class="bar-val">${r.wt.toFixed(1)}% <span class="g ${chgClass(r.gainPct)}">${fmtPct(r.gainPct)}</span></div>
       </div>`).join('');
+  }
+
+  // ---- History / benchmark chart (reads an optional "History" tab; never blocks the main sync) ----
+  function parseGvizDate(v) {
+    if (v instanceof Date) return v;
+    if (typeof v === 'string') {
+      const gvizM = v.match(/^Date\((\d+),(\d+),(\d+)/);
+      if (gvizM) return new Date(+gvizM[1], +gvizM[2], +gvizM[3]); // gviz month is already 0-indexed, matches JS Date
+      // Plain-text Buy Date cells (this dashboard reads them as text so the sheet never silently
+      // reinterprets them) — parsed explicitly by position, in LOCAL time. Deliberately not routed
+      // through `new Date(string)` for these: that parses date-only ISO strings as UTC midnight,
+      // which can land on the previous day for viewers west of UTC — explicit parsing sidesteps it.
+      const isoM = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);           // YYYY-MM-DD
+      if (isoM) return new Date(+isoM[1], +isoM[2] - 1, +isoM[3]);
+      const usM = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);          // MM/DD/YYYY
+      if (usM) return new Date(+usM[3], +usM[1] - 1, +usM[2]);
+      const parsed = new Date(v);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return null;
+  }
+
+  // Reads the per-lot "ETF" ledger (Buy Date + Inv. Amt per tranche) that "ETF Summary" is aggregated
+  // from — when present, this gives XIRR real per-purchase dates for ETFs instead of an approximation.
+  // Optional: if this tab doesn't exist or isn't laid out this way, ETFs just fall back to the old
+  // approximate-entry-date behavior in computeXirrTile().
+  async function syncEtfLots() {
+    try {
+      const rows = await fetchSheet(ETF_LOTS_SHEET_NAME);
+      const lots = rows
+        .map(o => ({
+          symbol: pick(o, 'Stock', 'ETF', 'Symbol'),
+          buyDate: parseGvizDate(pick(o, 'Buy Date')),
+          invested: num(pick(o, 'Inv. Amt', 'Invest Amt')),
+        }))
+        .filter(l => l.symbol && l.buyDate && isFinite(l.invested) && l.invested > 0);
+      lastEtfLots = lots;
+      computeXirrTile(); // recompute now that precise lot dates may be available
+      if (lastEtfs.length) render(lastStocks, lastEtfs); // re-render so the ETF table's Held/Ann. % picks up lot dates
+    } catch (err) {
+      lastEtfLots = [];
+    }
+  }
+
+  // Reads the daily per-symbol "Price History" tab (Date | Symbol | Type | Price, one row per holding
+  // per day) and groups it by normalized symbol, sorted ascending by date, for the Top Movers period
+  // dropdown. Optional — if this tab doesn't exist yet (script not set up, or hasn't run yet), the
+  // dropdown just shows a "collecting data" message for Week/Month/Year and Today/Since Buy Date keep
+  // working as before.
+  async function syncPriceHistory() {
+    try {
+      const rows = await fetchSheet(PRICE_HISTORY_SHEET_NAME);
+      const bySymbol = {};
+      rows.forEach(o => {
+        const symbol = normSym(pick(o, 'Symbol'));
+        const date = parseGvizDate(pick(o, 'Date'));
+        const price = num(pick(o, 'Price'));
+        if (!symbol || !date || !isFinite(price)) return;
+        (bySymbol[symbol] = bySymbol[symbol] || []).push({ date, price });
+      });
+      Object.values(bySymbol).forEach(arr => arr.sort((a, b) => a.date - b.date));
+      lastPriceHistory = bySymbol;
+      if (lastStocks.length) renderTopMovers(lastStocks); // re-render now that period data may be available
+    } catch (err) {
+      lastPriceHistory = {};
+    }
+  }
+
+  async function syncHistory() {
+    try {
+      const rows = await fetchSheet(HISTORY_SHEET_NAME);
+      const points = rows
+        .map(o => ({
+          date: parseGvizDate(pick(o, 'Date')),
+          value: num(pick(o, 'Total Value', 'Portfolio Value')),
+          nifty: num(pick(o, 'NiftyBees Price', 'Nifty Price', 'Nifty')),
+          invested: num(pick(o, 'Total Invested', 'Invested Amount', 'Total Invested Amount')),
+        }))
+        .filter(p => p.date && isFinite(p.value));
+      points.sort((a, b) => a.date - b.date);
+      if (points.length < 2) { lastHistoryPoints = []; showHistoryEmpty(); computeXirrTile(); return; }
+      applyNavSeries(points); // adds a .nav field to each point, cash-flow-adjusted like a mutual fund NAV
+      lastHistoryPoints = points;
+      renderHistoryChart(points);
+      renderDailyPerfChart(points);
+      computeXirrTile(); // History's earliest date can improve the XIRR fallback for undated holdings
+    } catch (err) {
+      lastHistoryPoints = [];
+      showHistoryEmpty(); // tab doesn't exist yet, or a transient fetch error — treat the same as "not set up"
+      computeXirrTile();
+    }
+  }
+
+  const NAV_START = 100; // starting NAV, mutual-fund style — units are backed out from this
+
+  // Cash-flow-adjusted NAV, computed like a mutual fund: money you add/withdraw buys/redeems "units" at
+  // that day's NAV rather than showing up as fake performance. Needs a "Total Invested" column in the
+  // History tab (recorded daily); if that's missing for a stretch, cash flow for those days is assumed
+  // zero, so NAV quietly falls back to being a plain indexed-value line for that stretch.
+  function applyNavSeries(points) {
+    let units = null;
+    points.forEach((p, i) => {
+      if (i === 0) {
+        units = p.value > 0 ? p.value / NAV_START : 1;
+        p.nav = NAV_START;
+        return;
+      }
+      const prev = points[i - 1];
+      const cashFlow = (isFinite(p.invested) && isFinite(prev.invested)) ? (p.invested - prev.invested) : 0;
+      let nav = units > 0 ? (p.value - cashFlow) / units : NAV_START;
+      if (!isFinite(nav) || nav <= 0) nav = prev.nav; // guard against a bad/missing row breaking the whole series
+      if (cashFlow !== 0 && nav > 0) units += cashFlow / nav;
+      p.nav = nav;
+    });
+  }
+
+  function showHistoryEmpty() {
+    document.getElementById('historyChartArea').innerHTML = `
+      <div class="history-empty" id="historyEmpty">
+        Not set up yet — this chart plots your portfolio value over time against NiftyBees, once daily
+        snapshots start landing in a <b>History</b> tab in your sheet. Ask Claude for the one-time setup
+        script if you'd like this turned on.
+      </div>`;
+    document.getElementById('dailyPerfPanel').style.display = 'none';
+  }
+
+  function fmtDateShort(d) { return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }); }
+
+  const CAGR_MIN_DAYS = 30; // shorter spans annualize wildly — wait for a real trend before showing one
+
+  // Annualized return, computed from the first and last History snapshot. Gated behind CAGR_MIN_DAYS
+  // so a 3-day blip doesn't get extrapolated into a scary/misleading "annual" number.
+  function cagrNote(points) {
+    const first = points[0], last = points[points.length - 1];
+    const days = (last.date - first.date) / 86400000;
+    if (days < 1 || !first.nav || !last.nav) return '';
+    if (days < CAGR_MIN_DAYS) {
+      return `<div class="history-cagr-note">Annualized return (CAGR) available after ${CAGR_MIN_DAYS} days of history — ${Math.round(days)} day${Math.round(days) === 1 ? '' : 's'} so far.</div>`;
+    }
+    const cagrPort = (Math.pow(last.nav / first.nav, 365 / days) - 1) * 100;
+    const niftyFirstIdx = points.findIndex(p => isFinite(p.nifty));
+    let cagrNiftyHtml = '';
+    if (niftyFirstIdx >= 0 && isFinite(last.nifty) && points[niftyFirstIdx].nifty) {
+      const niftyDays = (last.date - points[niftyFirstIdx].date) / 86400000;
+      if (niftyDays >= 1) {
+        const cagrNifty = (Math.pow(last.nifty / points[niftyFirstIdx].nifty, 365 / niftyDays) - 1) * 100;
+        cagrNiftyHtml = ` · NiftyBees <span class="${chgClass(cagrNifty)}">${fmtPct(cagrNifty)}</span>`;
+      }
+    }
+    return `<div class="history-cagr-note">Annualized (CAGR over ${Math.round(days)} days): Portfolio NAV <span class="${chgClass(cagrPort)}">${fmtPct(cagrPort)}</span>${cagrNiftyHtml}</div>`;
+  }
+
+  // Shown only while the History tab has no "Total Invested" data at all — once that column starts
+  // getting recorded, NAV silently starts adjusting for cash flow and this note stops appearing.
+  function navCaveatNote(points) {
+    const hasCashFlowData = points.some(p => isFinite(p.invested));
+    if (hasCashFlowData) return '';
+    return `<div class="history-cagr-note">ℹ NAV can't yet tell deposits/withdrawals apart from real gains — your History tab doesn't have a "Total Invested" column. Ask Claude to add that to your snapshot script and this'll auto-correct.</div>`;
+  }
+
+  function renderHistoryChart(points) {
+    const W = 760, H = 220, padL = 46, padR = 14, padT = 14, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const niftyBaseIdx = points.findIndex(p => isFinite(p.nifty));
+    const niftyBase = niftyBaseIdx >= 0 ? points[niftyBaseIdx].nifty : NaN;
+
+    const portIdx = points.map(p => p.nav); // cash-flow-adjusted NAV, already indexed to start at 100
+    const niftyIdx = points.map(p => isFinite(p.nifty) && isFinite(niftyBase) ? (p.nifty / niftyBase) * 100 : null);
+
+    const allVals = portIdx.concat(niftyIdx.filter(v => v !== null));
+    let yMin = Math.min(...allVals), yMax = Math.max(...allVals);
+    if (yMin === yMax) { yMin -= 5; yMax += 5; }
+    const pad = (yMax - yMin) * 0.12 || 5;
+    yMin -= pad; yMax += pad;
+
+    const xAt = i => padL + (points.length > 1 ? (i / (points.length - 1)) * plotW : plotW / 2);
+    const yAt = v => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+
+    const pathFor = (arr) => {
+      let d = '', open = false;
+      arr.forEach((v, i) => {
+        if (v === null || !isFinite(v)) { open = false; return; }
+        d += (open ? ' L ' : ' M ') + xAt(i).toFixed(1) + ' ' + yAt(v).toFixed(1);
+        open = true;
+      });
+      return d.trim();
+    };
+
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
+    const portColor = palette[0], niftyColor = palette[1];
+
+    // 4 horizontal gridlines, labeled as % change from the base rather than raw index 100/110/...
+    const GRID_STEPS = 4;
+    let gridSvg = '', gridLabels = '';
+    for (let i = 0; i <= GRID_STEPS; i++) {
+      const v = yMin + ((yMax - yMin) / GRID_STEPS) * i;
+      const y = yAt(v);
+      const pctFromBase = v - 100;
+      gridSvg += `<line class="grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"></line>`;
+      gridLabels += `<text class="axis-label" x="${padL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${(pctFromBase >= 0 ? '+' : '')}${pctFromBase.toFixed(0)}%</text>`;
+    }
+
+    // A handful of evenly-spaced date ticks along the x-axis
+    const TICK_COUNT = Math.min(6, points.length);
+    let xLabels = '';
+    for (let t = 0; t < TICK_COUNT; t++) {
+      const i = TICK_COUNT === 1 ? 0 : Math.round((t / (TICK_COUNT - 1)) * (points.length - 1));
+      xLabels += `<text class="axis-label" x="${xAt(i).toFixed(1)}" y="${H - 6}" text-anchor="middle">${escapeHtmlText(fmtDateShort(points[i].date))}</text>`;
+    }
+
+    const lastPort = portIdx[portIdx.length - 1];
+    const lastNiftyIdxPos = (() => { for (let i = niftyIdx.length - 1; i >= 0; i--) if (niftyIdx[i] !== null) return i; return -1; })();
+    const lastNifty = lastNiftyIdxPos >= 0 ? niftyIdx[lastNiftyIdxPos] : null;
+
+    let endDots = `<circle cx="${xAt(points.length - 1).toFixed(1)}" cy="${yAt(lastPort).toFixed(1)}" r="4" fill="${portColor}" stroke="var(--surface-1)" stroke-width="2"></circle>`;
+    if (lastNifty !== null) {
+      endDots += `<circle cx="${xAt(lastNiftyIdxPos).toFixed(1)}" cy="${yAt(lastNifty).toFixed(1)}" r="4" fill="${niftyColor}" stroke="var(--surface-1)" stroke-width="2"></circle>`;
+    }
+
+    document.getElementById('historyChartArea').innerHTML = `
+      <div class="history-legend">
+        <div class="lg-item"><span class="line-key" style="background:${portColor}"></span>Portfolio NAV <span class="${chgClass(lastPort - 100)}">(${(lastPort - 100 >= 0 ? '+' : '')}${(lastPort - 100).toFixed(1)}%)</span></div>
+        <div class="lg-item"><span class="line-key" style="background:${niftyColor}"></span>NiftyBees (proxy) ${lastNifty !== null ? `<span class="${chgClass(lastNifty - 100)}">(${(lastNifty - 100 >= 0 ? '+' : '')}${(lastNifty - 100).toFixed(1)}%)</span>` : '<span class="chg-flat">(no data yet)</span>'}</div>
+      </div>
+      ${navCaveatNote(points)}
+      ${cagrNote(points)}
+      <div class="history-chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" id="historySvg">
+          ${gridSvg}${gridLabels}${xLabels}
+          <path d="${pathFor(portIdx)}" fill="none" stroke="${portColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+          <path d="${pathFor(niftyIdx)}" fill="none" stroke="${niftyColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+          ${endDots}
+          <line class="crosshair-line" id="historyCrosshair" x1="0" y1="${padT}" x2="0" y2="${padT + plotH}"></line>
+          <rect class="hit-layer" x="${padL}" y="${padT}" width="${plotW}" height="${plotH}"></rect>
+        </svg>
+      </div>`;
+
+    setupHistoryCrosshair(points, portIdx, niftyIdx, xAt, padL, plotW);
+  }
+
+  function setupHistoryCrosshair(points, portIdx, niftyIdx, xAt, padL, plotW) {
+    const svg = document.getElementById('historySvg');
+    const hit = svg.querySelector('.hit-layer');
+    const crosshair = document.getElementById('historyCrosshair');
+
+    const nearestIndex = (clientX) => {
+      const rect = svg.getBoundingClientRect();
+      const scale = rect.width / 760; // matches the SVG's viewBox width
+      const localX = (clientX - rect.left) / scale;
+      const frac = Math.min(1, Math.max(0, (localX - padL) / plotW));
+      return Math.round(frac * (points.length - 1));
+    };
+
+    const onMove = (e) => {
+      const i = nearestIndex(e.clientX);
+      const x = xAt(i);
+      crosshair.setAttribute('x1', x.toFixed(1));
+      crosshair.setAttribute('x2', x.toFixed(1));
+      crosshair.style.opacity = '1';
+      showHistoryTooltip(e.clientX, e.clientY, points[i], portIdx[i], niftyIdx[i]);
+    };
+    const onLeave = () => { crosshair.style.opacity = '0'; hideVizTooltip(); };
+
+    hit.addEventListener('pointermove', onMove);
+    hit.addEventListener('pointerleave', onLeave);
+  }
+
+  function showHistoryTooltip(x, y, point, portIdxVal, niftyIdxVal) {
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
+    const tt = document.getElementById('vizTooltip');
+    tt.innerHTML = '';
+    const head = document.createElement('div'); head.className = 'tt-head';
+    head.textContent = fmtDateShort(point.date);
+    tt.appendChild(head);
+    const addRow = (label, value, color) => {
+      const row = document.createElement('div'); row.className = 'tt-row';
+      const l = document.createElement('span'); l.className = 'tt-label';
+      const dot = document.createElement('span'); dot.style.cssText = 'display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:' + color;
+      l.appendChild(dot);
+      l.appendChild(document.createTextNode(label));
+      row.appendChild(l);
+      const v = document.createElement('span'); v.className = 'tt-value'; v.textContent = value;
+      row.appendChild(v);
+      tt.appendChild(row);
+    };
+    addRow('Portfolio NAV', fmtMoney(point.value) + ' (' + (portIdxVal - 100 >= 0 ? '+' : '') + (portIdxVal - 100).toFixed(1) + '%)', palette[0]);
+    if (niftyIdxVal !== null && isFinite(point.nifty)) {
+      addRow('NiftyBees', fmtMoney(point.nifty) + ' (' + (niftyIdxVal - 100 >= 0 ? '+' : '') + (niftyIdxVal - 100).toFixed(1) + '%)', palette[1]);
+    }
+    tt.classList.add('show');
+    positionVizTooltip(x, y);
+  }
+
+  // ---- Daily performance chart (day-over-day % change, Portfolio vs Nifty — "did I beat the market today?") ----
+  const DAILY_PERF_MAX_SESSIONS = 20;
+
+  function renderDailyPerfChart(points) {
+    // Derived purely from consecutive History rows — no separate sheet columns needed.
+    const daily = [];
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1], cur = points[i];
+      const portPct = prev.nav ? ((cur.nav - prev.nav) / prev.nav) * 100 : null;
+      const niftyPct = (isFinite(prev.nifty) && isFinite(cur.nifty) && prev.nifty) ? ((cur.nifty - prev.nifty) / prev.nifty) * 100 : null;
+      daily.push({ date: cur.date, portPct, niftyPct });
+    }
+    if (!daily.length) { document.getElementById('dailyPerfPanel').style.display = 'none'; return; }
+
+    const truncated = daily.length > DAILY_PERF_MAX_SESSIONS;
+    const shown = truncated ? daily.slice(daily.length - DAILY_PERF_MAX_SESSIONS) : daily;
+    document.getElementById('dailyPerfPanel').style.display = '';
+
+    const W = 760, H = 220, padL = 46, padR = 14, padT = 14, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const allVals = shown.flatMap(d => [d.portPct, d.niftyPct]).filter(v => v !== null && isFinite(v));
+    let maxAbs = allVals.length ? Math.max(...allVals.map(Math.abs)) : 1;
+    maxAbs = (maxAbs === 0 ? 1 : maxAbs) * 1.25;
+    const yMin = -maxAbs, yMax = maxAbs;
+
+    const n = shown.length;
+    const groupW = plotW / n;
+    const barW = Math.min(12, Math.max(3, groupW * 0.32));
+    const gap = 2;
+
+    const yAt = v => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+    const yZero = yAt(0);
+    const xGroup = i => padL + groupW * i;
+
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
+    const portColor = palette[0], niftyColor = palette[1];
+
+    // Rounded tip, square at the zero baseline — regardless of whether the bar grows up or down.
+    const roundedBar = (x, width, v, r) => {
+      if (v === null || !isFinite(v) || v === 0) return '';
+      const yTip = yAt(v);
+      const top = Math.min(yZero, yTip), bottom = Math.max(yZero, yTip);
+      const rr = Math.min(r, (bottom - top) / 2);
+      if (yTip < yZero) {
+        return `M ${x} ${bottom} L ${x} ${top + rr} Q ${x} ${top} ${x + rr} ${top} L ${x + width - rr} ${top} Q ${x + width} ${top} ${x + width} ${top + rr} L ${x + width} ${bottom} Z`;
+      }
+      return `M ${x} ${top} L ${x} ${bottom - rr} Q ${x} ${bottom} ${x + rr} ${bottom} L ${x + width - rr} ${bottom} Q ${x + width} ${bottom} ${x + width} ${bottom - rr} L ${x + width} ${top} Z`;
+    };
+
+    let barsSvg = '', hitSvg = '';
+    const groupCenters = [];
+    shown.forEach((d, i) => {
+      const gx = xGroup(i);
+      const totalBarsW = barW * 2 + gap;
+      const startX = gx + (groupW - totalBarsW) / 2;
+      groupCenters.push(gx + groupW / 2);
+      barsSvg += `<path d="${roundedBar(startX, barW, d.portPct, 3)}" fill="${portColor}"></path>`;
+      barsSvg += `<path d="${roundedBar(startX + barW + gap, barW, d.niftyPct, 3)}" fill="${niftyColor}"></path>`;
+      hitSvg += `<rect class="daily-hit" data-i="${i}" x="${gx.toFixed(1)}" y="${padT}" width="${groupW.toFixed(1)}" height="${plotH}"></rect>`;
+    });
+
+    const GRID_STEPS = 4;
+    let gridSvg = '', gridLabels = '';
+    for (let i = 0; i <= GRID_STEPS; i++) {
+      const v = yMin + ((yMax - yMin) / GRID_STEPS) * i;
+      const y = yAt(v);
+      gridSvg += `<line class="grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"></line>`;
+      gridLabels += `<text class="axis-label" x="${padL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${(v >= 0 ? '+' : '')}${v.toFixed(1)}%</text>`;
+    }
+
+    const TICK_COUNT = Math.min(6, n);
+    let xLabels = '';
+    for (let t = 0; t < TICK_COUNT; t++) {
+      const i = TICK_COUNT === 1 ? 0 : Math.round((t / (TICK_COUNT - 1)) * (n - 1));
+      xLabels += `<text class="axis-label" x="${groupCenters[i].toFixed(1)}" y="${H - 6}" text-anchor="middle">${escapeHtmlText(fmtDateShort(shown[i].date))}</text>`;
+    }
+
+    document.getElementById('dailyPerfChartArea').innerHTML = `
+      <div class="history-legend">
+        <div class="lg-item"><span class="swatch-key" style="background:${portColor}"></span>Portfolio NAV</div>
+        <div class="lg-item"><span class="swatch-key" style="background:${niftyColor}"></span>NiftyBees (proxy)</div>
+        ${truncated ? `<div class="lg-item chg-flat">Showing last ${DAILY_PERF_MAX_SESSIONS} sessions</div>` : ''}
+      </div>
+      <div class="history-chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" id="dailyPerfSvg">
+          ${gridSvg}${gridLabels}${xLabels}
+          <rect id="dailyHitHighlight" x="0" y="${padT}" width="0" height="${plotH}" fill="var(--gridline)" opacity="0"></rect>
+          <line x1="${padL}" y1="${yZero.toFixed(1)}" x2="${W - padR}" y2="${yZero.toFixed(1)}" stroke="var(--baseline)" stroke-width="1.2"></line>
+          ${barsSvg}
+          ${hitSvg}
+        </svg>
+      </div>`;
+
+    setupDailyPerfHover(shown, groupW);
+  }
+
+  function setupDailyPerfHover(shown, groupW) {
+    const svg = document.getElementById('dailyPerfSvg');
+    const highlight = document.getElementById('dailyHitHighlight');
+    svg.querySelectorAll('.daily-hit').forEach(hit => {
+      const i = parseInt(hit.getAttribute('data-i'), 10);
+      const gx = parseFloat(hit.getAttribute('x'));
+      const onEnter = (e) => {
+        highlight.setAttribute('x', gx);
+        highlight.setAttribute('width', groupW);
+        highlight.setAttribute('opacity', '0.6');
+        showDailyPerfTooltip(e.clientX, e.clientY, shown[i]);
+      };
+      const onMove = (e) => showDailyPerfTooltip(e.clientX, e.clientY, shown[i]);
+      const onLeave = () => { highlight.setAttribute('opacity', '0'); hideVizTooltip(); };
+      hit.addEventListener('pointerenter', onEnter);
+      hit.addEventListener('pointermove', onMove);
+      hit.addEventListener('pointerleave', onLeave);
+    });
+  }
+
+  function showDailyPerfTooltip(x, y, d) {
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
+    const tt = document.getElementById('vizTooltip');
+    tt.innerHTML = '';
+    const head = document.createElement('div'); head.className = 'tt-head';
+    head.textContent = fmtDateShort(d.date);
+    tt.appendChild(head);
+    const addRow = (label, value, color, valueColor) => {
+      const row = document.createElement('div'); row.className = 'tt-row';
+      const l = document.createElement('span'); l.className = 'tt-label';
+      if (color) {
+        const dot = document.createElement('span'); dot.style.cssText = 'display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:' + color;
+        l.appendChild(dot);
+      }
+      l.appendChild(document.createTextNode(label));
+      row.appendChild(l);
+      const v = document.createElement('span'); v.className = 'tt-value'; v.textContent = value;
+      if (valueColor) v.style.color = valueColor;
+      row.appendChild(v);
+      tt.appendChild(row);
+    };
+    addRow('Portfolio NAV', d.portPct !== null ? (d.portPct >= 0 ? '+' : '') + d.portPct.toFixed(2) + '%' : '—', palette[0]);
+    addRow('NiftyBees', d.niftyPct !== null ? (d.niftyPct >= 0 ? '+' : '') + d.niftyPct.toFixed(2) + '%' : '—', palette[1]);
+    if (d.portPct !== null && d.niftyPct !== null) {
+      const diff = d.portPct - d.niftyPct;
+      const row = document.createElement('div'); row.className = 'tt-row';
+      row.style.cssText = 'border-top:1px solid var(--gridline);margin-top:4px;padding-top:6px';
+      const l = document.createElement('span'); l.className = 'tt-label';
+      l.appendChild(document.createTextNode(diff >= 0 ? 'Beat market by' : 'Trailed market by'));
+      row.appendChild(l);
+      const v = document.createElement('span'); v.className = 'tt-value';
+      v.textContent = Math.abs(diff).toFixed(2) + '%';
+      v.style.color = diff >= 0 ? 'var(--status-good)' : 'var(--status-critical)';
+      row.appendChild(v);
+      tt.appendChild(row);
+    }
+    tt.classList.add('show');
+    positionVizTooltip(x, y);
   }
 
   // ---- Auto-refresh ----
@@ -722,15 +1855,17 @@
     return lines.join('\n');
   }
   function stocksRows() {
-    return lastStocks.map(s => [s.symbol, s.sector, s.cap, s.qty, s.buy, s.ltp, s.invested, s.value, s.gain, s.gainPct.toFixed(2) + '%', s.dayGain, s.dayPct.toFixed(2) + '%']);
+    return lastStocks.map(s => [s.symbol, s.sector, s.cap, s.qty, s.buy, s.ltp, s.invested, s.value, s.gain, s.gainPct.toFixed(2) + '%', s.dayGain, s.dayPct.toFixed(2) + '%', (s.wt || 0).toFixed(2) + '%',
+      isFinite(s.daysHeld) ? s.daysHeld + (s.ltEligible ? ' (LT)' : ' (ST)') : '', isFinite(s.annReturn) ? s.annReturn.toFixed(2) + '%' : '']);
   }
   function etfRows() {
-    return lastEtfs.map(e => [e.symbol, e.qty, e.buy, e.ltp, e.invested, e.value, e.gain, e.gainPct.toFixed(2) + '%', e.dayGain, e.dayPct.toFixed(2) + '%']);
+    return lastEtfs.map(e => [e.symbol, e.qty, e.buy, e.ltp, e.invested, e.value, e.gain, e.gainPct.toFixed(2) + '%', e.dayGain, e.dayPct.toFixed(2) + '%', (e.wt || 0).toFixed(2) + '%',
+      isFinite(e.daysHeld) ? e.daysHeld + (e.ltEligible ? ' (LT)' : ' (ST)') : '', isFinite(e.annReturn) ? e.annReturn.toFixed(2) + '%' : '']);
   }
   function exportCSV() {
     if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
-    const stocksCsv = toCSVBlock('Stocks', ['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], stocksRows());
-    const etfCsv = toCSVBlock('ETFs', ['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], etfRows());
+    const stocksCsv = toCSVBlock('Stocks', ['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], stocksRows());
+    const etfCsv = toCSVBlock('ETFs', ['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], etfRows());
     download('portfolio-dashboard.csv', stocksCsv + '\n\n' + etfCsv, 'text/csv');
   }
   function exportExcel() {
@@ -739,11 +1874,233 @@
       `<table border="1"><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>` +
       rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') + `</table>`;
     const html = `<html><head><meta charset="UTF-8"></head><body>
-      <h3>Stocks</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], stocksRows())}
-      <br/><h3>ETFs</h3>${rowsHtml(['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %'], etfRows())}
+      <h3>Stocks</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], stocksRows())}
+      <br/><h3>ETFs</h3>${rowsHtml(['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], etfRows())}
       </body></html>`;
     download('portfolio-dashboard.xls', html, 'application/vnd.ms-excel');
   }
+
+  // ---- Export: Word (report-style .doc via the HTML-in-Word trick — Word opens this fine, no server needed) ----
+  function currentTileSnapshot() {
+    const get = id => { const el = document.getElementById(id); return el ? el.textContent : '—'; };
+    return {
+      totalValue: get('tileTotalValue'), totalNote: get('tileTotalNote'),
+      overallGain: get('tileOverallGain'), today: get('tileToday'), todayNote: get('tileTodayNote'),
+      xirr: get('tileXirr'), split: get('tileSplit'),
+    };
+  }
+  function reportGainColor(n) { return isFinite(n) ? (n >= 0 ? '#0ca30c' : '#d03b3b') : '#666'; }
+  function reportStocksTableRows() {
+    return lastStocks.map(s => {
+      const heldStr = s.buyDateIsFuture ? '⚠ check date' : isFinite(s.daysHeld) ? `${fmtNum(s.daysHeld, 0)}d (${s.ltEligible ? 'LT' : 'ST'})` : '—';
+      const annStr = isFinite(s.annReturn) ? fmtPct(s.annReturn) : '—';
+      return `<tr>
+        <td>${escapeHtmlText(s.symbol)}</td><td>${escapeHtmlText(s.sector)}</td><td>${escapeHtmlText(s.cap)}</td>
+        <td align="right">${fmtNum(s.qty, 0)}</td><td align="right">${fmtNum(s.buy)}</td><td align="right">${fmtNum(s.ltp)}</td>
+        <td align="right">${fmtMoney(s.invested)}</td><td align="right">${fmtMoney(s.value)}</td>
+        <td align="right" style="color:${reportGainColor(s.gain)}">${s.gain >= 0 ? '+' : ''}${fmtMoney(s.gain)}</td>
+        <td align="right" style="color:${reportGainColor(s.gainPct)}">${fmtPct(s.gainPct)}</td>
+        <td align="right" style="color:${reportGainColor(s.dayGain)}">${s.dayGain >= 0 ? '+' : ''}${fmtMoney(s.dayGain)}</td>
+        <td align="right" style="color:${reportGainColor(s.dayPct)}">${fmtPct(s.dayPct)}</td>
+        <td align="right">${fmtNum(s.wt || 0, 2)}%</td><td align="right">${heldStr}</td><td align="right">${annStr}</td>
+      </tr>`;
+    }).join('');
+  }
+  function reportEtfTableRows() {
+    return lastEtfs.map(e => {
+      const heldStr = e.buyDateIsFuture ? '⚠ check date' : isFinite(e.daysHeld) ? `${fmtNum(e.daysHeld, 0)}d (${e.ltEligible ? 'LT' : 'ST'})` : '—';
+      const annStr = isFinite(e.annReturn) ? fmtPct(e.annReturn) : '—';
+      return `<tr>
+        <td>${escapeHtmlText(e.symbol)}</td>
+        <td align="right">${fmtNum(e.qty, 0)}</td><td align="right">${fmtNum(e.buy)}</td><td align="right">${fmtNum(e.ltp)}</td>
+        <td align="right">${fmtMoney(e.invested)}</td><td align="right">${fmtMoney(e.value)}</td>
+        <td align="right" style="color:${reportGainColor(e.gain)}">${e.gain >= 0 ? '+' : ''}${fmtMoney(e.gain)}</td>
+        <td align="right" style="color:${reportGainColor(e.gainPct)}">${fmtPct(e.gainPct)}</td>
+        <td align="right" style="color:${reportGainColor(e.dayGain)}">${e.dayGain >= 0 ? '+' : ''}${fmtMoney(e.dayGain)}</td>
+        <td align="right" style="color:${reportGainColor(e.dayPct)}">${fmtPct(e.dayPct)}</td>
+        <td align="right">${fmtNum(e.wt || 0, 2)}%</td><td align="right">${heldStr}</td><td align="right">${annStr}</td>
+      </tr>`;
+    }).join('');
+  }
+  function reportMoversHtml() {
+    const panel = document.getElementById('topMoversPanel');
+    if (!panel || panel.style.display === 'none') return '';
+    const periodLabel = document.getElementById('topMoversMeta').textContent.replace(/^—\s*/, '');
+    const listText = id => Array.from(document.querySelectorAll(`#${id} .mover-row`))
+      .map(row => {
+        const sym = row.querySelector('.mover-sym'); const chg = row.querySelector('.mover-chg');
+        return sym && chg ? `<li>${escapeHtmlText(sym.textContent)} — ${escapeHtmlText(chg.textContent)}</li>` : '';
+      }).join('');
+    return `<h2 style="margin-top:24px">Portfolio Top Movers <span style="font-weight:normal;color:#666;font-size:13px">— ${escapeHtmlText(periodLabel)}</span></h2>
+      <table border="0" cellpadding="8" style="width:100%"><tr>
+        <td valign="top" width="50%"><b>Top 3 Gainers</b><ul>${listText('topGainersList')}</ul></td>
+        <td valign="top" width="50%"><b>Top 3 Losers</b><ul>${listText('topLosersList')}</ul></td>
+      </tr></table>`;
+  }
+  function reportTableShell(headers, rowsHtml) {
+    return `<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;font-size:12px;width:100%">
+      <tr style="background:#f2f2f0">${headers.map(h => `<th align="left">${h}</th>`).join('')}</tr>${rowsHtml}
+    </table>`;
+  }
+  function exportWord() {
+    if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
+    const t = currentTileSnapshot();
+    const now = new Date();
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="UTF-8"><title>Portfolio Dashboard</title>
+    <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+    </head>
+    <body style="font-family:Calibri,Arial,sans-serif;color:#111">
+      <h1 style="margin-bottom:2px">Portfolio Dashboard</h1>
+      <div style="color:#666;font-size:12px;margin-bottom:18px">Generated ${escapeHtmlText(now.toLocaleString('en-IN'))} · Stocks (Zerodha + mStock) and ETFs (Fyers)</div>
+      <table border="0" cellpadding="8" style="width:100%;margin-bottom:8px"><tr>
+        <td><b>Total Value</b><br>${t.totalValue}<br><span style="font-size:11px;color:#666">${escapeHtmlText(t.totalNote)}</span></td>
+        <td><b>Overall Gain</b><br>${t.overallGain}</td>
+        <td><b>Today</b><br>${t.today}<br><span style="font-size:11px;color:#666">${escapeHtmlText(t.todayNote)}</span></td>
+        <td><b>Portfolio XIRR</b><br>${t.xirr}</td>
+        <td><b>Stocks/ETF Split</b><br>${t.split}</td>
+      </tr></table>
+      ${reportMoversHtml()}
+      <h2 style="margin-top:24px">Stocks Portfolio</h2>
+      ${reportTableShell(['Stock', 'Sector', 'Mkt Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day ₹', 'Day %', 'Wt %', 'Held', 'Ann. %'], reportStocksTableRows())}
+      <h2 style="margin-top:24px">ETF Portfolio</h2>
+      ${reportTableShell(['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day ₹', 'Day %', 'Wt %', 'Held', 'Ann. %'], reportEtfTableRows())}
+    </body></html>`;
+    download('portfolio-dashboard.doc', html, 'application/msword');
+  }
+
+  // ---- Export: PDF (loads html2canvas + jsPDF from cdnjs on first use, then snapshots the dashboard) ----
+  let pdfLibsPromise = null;
+  function loadPdfLibs() {
+    if (pdfLibsPromise) return pdfLibsPromise;
+    const loadScript = src => new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('failed to load ' + src));
+      document.head.appendChild(s);
+    });
+    pdfLibsPromise = loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')
+      .then(() => loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'));
+    return pdfLibsPromise;
+  }
+  // html2canvas's CSS parser doesn't understand color-mix() — the handful of translucent badge/pill/
+  // banner backgrounds in this stylesheet use it, which crashes html2canvas with "unsupported color
+  // function". Rather than rewrite the whole stylesheet around an older CSS dialect, this resolves those
+  // few colors to plain rgba() at export time and overwrites them as inline styles on the *cloned* DOM
+  // html2canvas renders from (via onclone) — the live page and its CSS variables are never touched.
+  function hexToRgba(hex, alpha) {
+    hex = String(hex).trim().replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  function neutralizeColorMixForExport(clonedDoc) {
+    const rootStyle = getComputedStyle(document.documentElement);
+    const cGood = rootStyle.getPropertyValue('--status-good').trim();
+    const cCrit = rootStyle.getPropertyValue('--status-critical').trim();
+    const cWarn = rootStyle.getPropertyValue('--status-warning').trim();
+    const cSeq = rootStyle.getPropertyValue('--seq-400').trim();
+    const setStyle = (sel, prop, value) => clonedDoc.querySelectorAll(sel).forEach(el => { el.style[prop] = value; });
+    setStyle('.status-pill.ok', 'background', hexToRgba(cGood, 0.14));
+    setStyle('.status-pill.syncing', 'background', hexToRgba(cSeq, 0.14));
+    setStyle('.status-pill.err', 'background', hexToRgba(cCrit, 0.14));
+    setStyle('.error-banner', 'background', hexToRgba(cCrit, 0.10));
+    setStyle('.error-banner', 'borderColor', hexToRgba(cCrit, 0.30));
+    setStyle('.filter-row button', 'borderColor', hexToRgba(cCrit, 0.30));
+    setStyle('.ltcg-lt', 'background', hexToRgba(cGood, 0.14));
+    setStyle('.ltcg-st', 'background', hexToRgba(cWarn, 0.14));
+  }
+  // Captures one block (a panel, the tiles row, etc.) and places it on the PDF as its own image,
+  // starting a new page first if it wouldn't fit in what's left of the current one. This is what keeps
+  // a panel from being sliced in half across a page break — each block is a self-contained image, laid
+  // out top-to-bottom, rather than one giant screenshot chopped at arbitrary pixel offsets.
+  function makePdfPager(pdf, pageW, pageH, marginMM) {
+    let cursorY = marginMM;
+    const usableW = pageW - marginMM * 2;
+    return function placeCanvas(canvas, opts) {
+      const forceNewPage = !!(opts && opts.forceNewPage);
+      const imgW = usableW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      if (cursorY > marginMM && (forceNewPage || cursorY + imgH > pageH - marginMM)) {
+        pdf.addPage();
+        cursorY = marginMM;
+      }
+      const data = canvas.toDataURL('image/jpeg', 0.85);
+      pdf.addImage(data, 'JPEG', marginMM, cursorY, imgW, imgH);
+      cursorY += imgH + 4;
+      return imgH;
+    };
+  }
+  // Splits a single oversized canvas (a block taller than one full page — e.g. a long holdings table)
+  // into page-sized horizontal slices, each becoming its own page-filling image.
+  function sliceOversizedCanvas(canvas, usableWmm, usableHmm) {
+    const pxPerMM = canvas.width / usableWmm;
+    const pageHeightPx = Math.floor(usableHmm * pxPerMM);
+    const slices = [];
+    let y = 0;
+    while (y < canvas.height) {
+      const h = Math.min(pageHeightPx, canvas.height - y);
+      const c = document.createElement('canvas');
+      c.width = canvas.width; c.height = h;
+      c.getContext('2d').drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+      slices.push(c);
+      y += h;
+    }
+    return slices;
+  }
+  async function exportPDF() {
+    if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
+    const btn = document.getElementById('exportPdfBtn');
+    const original = btn.textContent;
+    btn.textContent = '⏳ Generating…'; btn.disabled = true;
+    try {
+      await loadPdfLibs();
+      const root = document.querySelector('.viz-root');
+      const blocks = Array.from(root.children).filter(el => {
+        if (el.classList.contains('toolbar')) return false;
+        if (el.id === 'vizTooltip') return false;
+        return getComputedStyle(el).display !== 'none';
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pageW = 210, pageH = 297, marginMM = 8; // A4, mm
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const place = makePdfPager(pdf, pageW, pageH, marginMM);
+      const usableW = pageW - marginMM * 2, usableH = pageH - marginMM * 2;
+      // Moderate scale + JPEG compression — a lossless PNG of the full dashboard at 2x easily lands in
+      // the tens of MB; this keeps text crisp on an A4 page at a fraction of the size.
+      const captureScale = 1.5;
+
+      for (const block of blocks) {
+        const canvas = await html2canvas(block, {
+          backgroundColor: getComputedStyle(document.body).backgroundColor || '#ffffff',
+          scale: captureScale, useCORS: true,
+          onclone: neutralizeColorMixForExport,
+        });
+        const fullImgH = (canvas.height * usableW) / canvas.width;
+        if (fullImgH <= usableH) {
+          place(canvas, {});
+        } else {
+          // Taller than one page (e.g. a long holdings table) — give it dedicated, page-filling slices
+          // rather than letting it spill mid-row across the pager's normal flow.
+          sliceOversizedCanvas(canvas, usableW, usableH).forEach(slice => place(slice, { forceNewPage: true }));
+        }
+      }
+
+      pdf.save('portfolio-dashboard.pdf');
+    } catch (err) {
+      const msg = String((err && err.message) || err || '');
+      const looksLikeLoadFailure = /failed to load/i.test(msg);
+      const hint = looksLikeLoadFailure
+        ? 'This needs your browser to reach cdnjs.cloudflare.com — if that\'s blocked on your network, use "Print" instead and choose "Save as PDF" as the destination.'
+        : 'Use "Print" instead and choose "Save as PDF" as the destination — that route doesn\'t depend on this library.';
+      alert('Could not generate a PDF (' + msg + '). ' + hint);
+    } finally {
+      btn.textContent = original; btn.disabled = false;
+    }
+  }
+
+  // ---- Print ----
+  function printDashboard() { window.print(); }
 
   // ---- Boot ----
   onIntervalChange();
