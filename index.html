@@ -168,6 +168,15 @@
   .ltcg-lt { color: var(--status-good); background: color-mix(in srgb, var(--status-good) 14%, transparent); }
   .ltcg-st { color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 14%, transparent); }
   .holding-caveat { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: -6px 0 12px; }
+  .fy-caption { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+  .fy-caption .meta-note { color: var(--text-muted); font-size: 11px; }
+  .fy-table-wrap { margin: 0 0 16px; overflow-x: auto; }
+  .fy-table { width: auto; min-width: 0; border-collapse: collapse; font-size: 12.5px; }
+  .fy-table th, .fy-table td { padding: 6px 16px 6px 0; text-align: left; white-space: nowrap; }
+  .fy-table th.num, .fy-table td.num { text-align: right; }
+  .fy-table thead th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--gridline); }
+  .fy-table tbody td { border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; }
+  .fy-table tbody tr:last-child td { border-bottom: none; }
   .mover-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; margin-top: 10px; }
   .movers-period-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
   .movers-period-label select {
@@ -198,6 +207,17 @@
   .donut-legend { display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; color: var(--text-secondary); }
   .donut-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 7px; flex: 0 0 10px; }
   .donut-legend .lg-row { display: flex; align-items: center; }
+
+  .asset-mix { margin: 4px 0 22px; }
+  .asset-mix-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; background: var(--gridline); margin-bottom: 10px; }
+  .asset-mix-bar .seg { height: 100%; transition: opacity .15s; cursor: default; }
+  .asset-mix-bar .seg:hover { opacity: 0.8; }
+  .asset-mix-legend { display: flex; gap: 28px; flex-wrap: wrap; font-size: 12.5px; }
+  .asset-mix-legend .am-row { display: flex; align-items: baseline; gap: 7px; }
+  .asset-mix-legend .am-row .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: 0 0 10px; }
+  .asset-mix-legend .am-label { color: var(--text-secondary); }
+  .asset-mix-legend .am-value { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .asset-mix-legend .am-pct { color: var(--text-muted); }
   .analysis-stats { flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--text-secondary); }
   .analysis-stats .stat-row b.big { font-size: 15px; color: var(--text-primary); }
   .analysis-stats .stat-row .stockname { color: var(--seq-400); font-weight: 600; }
@@ -422,6 +442,52 @@
     </div>
   </div>
 
+  <div class="panel" id="allocationPanel" style="display:none">
+    <h2>Portfolio Allocation <span class="meta">— Stocks + ETFs combined, by current value</span></h2>
+    <div class="asset-mix" id="assetMix"></div>
+    <div class="analysis-grid">
+      <div class="donut-wrap">
+        <div class="donut-title">By Sector</div>
+        <div class="donut-body">
+          <svg id="allocSectorDonut" viewBox="0 0 140 140" width="150" height="150"></svg>
+          <div class="donut-legend" id="allocSectorLegend"></div>
+        </div>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut-title">By Market Cap</div>
+        <div class="donut-body">
+          <svg id="allocCapDonut" viewBox="0 0 140 140" width="150" height="150"></svg>
+          <div class="donut-legend" id="allocCapLegend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="realizedGainsPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Realized Gains <span class="meta">— booked profit/loss from stocks you've sold</span></h2>
+        <div class="sub-meta" id="realizedSubMeta">Waiting for first sync…</div>
+      </div>
+      <div class="mini-tiles">
+        <div class="mini-tile"><div class="mini-label">Total Realized</div><div class="mini-value" id="realizedMiniTotal">—</div></div>
+        <div class="mini-tile" title="Held 365+ days — eligible for LTCG tax treatment"><div class="mini-label">Long-Term</div><div class="mini-value" id="realizedMiniLT">—</div></div>
+        <div class="mini-tile" title="Held under 365 days"><div class="mini-label">Short-Term</div><div class="mini-value" id="realizedMiniST">—</div></div>
+      </div>
+    </div>
+    <div id="fyBreakdownWrap" style="display:none">
+      <div class="fy-caption">By financial year <span class="meta-note">— Indian FY (Apr–Mar), grouped by Sell Date. Reference only, not tax advice — actual liability depends on applicable rates, exemptions, and any other capital gains not tracked here.</span></div>
+      <div class="fy-table-wrap"><table class="fy-table" id="fyTable"></table></div>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead id="realizedThead"></thead>
+      <tbody id="realizedBody"></tbody>
+      <tfoot id="realizedFoot"></tfoot>
+    </table>
+    </div>
+  </div>
+
   <div class="foot-grid">
     <div class="panel">
       <h2>Sector Allocation <span class="meta">— Stocks, by weight</span></h2>
@@ -454,6 +520,7 @@
   const ETF_LOTS_SHEET_NAME = 'ETF'; // per-purchase-lot ledger (Buy Date per tranche) that ETF Summary is aggregated from
   const HISTORY_SHEET_NAME = 'History';
   const PRICE_HISTORY_SHEET_NAME = 'Price History'; // daily per-symbol price snapshots — powers the Top Movers period dropdown
+  const SOLD_STOCKS_SHEET_NAME = 'Sold Stocks'; // manually-maintained closed-positions ledger — powers the Realized Gains panel
 
   let autoTimer = null;
   let lastStocks = [];
@@ -461,11 +528,13 @@
   let lastEtfLots = []; // [{symbol, buyDate, invested}], one row per ETF purchase lot — used for precise XIRR cash flow
   let lastHistoryPoints = [];
   let lastPriceHistory = {}; // normalized symbol -> [{date, price}, ...] sorted ascending by date
+  let lastSoldStocks = []; // closed positions read from the Sold Stocks tab
   let moversPeriod = 'today';
   let sectorFilter = 'All';
   let capFilter = 'All';
   let stocksSort = { key: 'symbol', dir: 1 };
   let etfSort = { key: 'symbol', dir: 1 };
+  let soldSort = { key: 'sellDate', dir: -1 }; // most recently sold first, by default
 
   const CONCENTRATION_THRESHOLD = 15; // % of book — flag any single holding above this
   const LTCG_DAYS = 365; // India: listed equity held 365+ days qualifies for LTCG tax treatment
@@ -498,6 +567,14 @@
     { key: 'daysHeld', label: 'Held', num: true, title: 'Days held since earliest purchase lot in your "ETF" tab — LT badge = 365+ days (LTCG-eligible), ST = still short-term' },
     { key: 'annReturn', label: 'Ann. %', num: true, title: 'Annualized return since earliest purchase lot (shown after 30 days held). Approximate — based on first lot date only.' },
   ];
+  const SOLD_COLUMNS = [
+    { key: 'symbol', label: 'Stock' }, { key: 'sector', label: 'Sector' }, { key: 'cap', label: 'Mkt Cap' },
+    { key: 'buyDate', label: 'Buy Date' }, { key: 'sellDate', label: 'Sell Date' },
+    { key: 'qty', label: 'Qty', num: true }, { key: 'buyPrice', label: 'Buy', num: true }, { key: 'sellPrice', label: 'Sell', num: true },
+    { key: 'invested', label: 'Invested', num: true }, { key: 'saleValue', label: 'Sale Value', num: true },
+    { key: 'gain', label: 'Realized Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
+    { key: 'holdingDays', label: 'Held', num: true, title: 'Days between Buy Date and Sell Date — LT badge = 365+ days (LTCG-eligible), ST = short-term' },
+  ];
 
   function sortRows(rows, key, dir) {
     return [...rows].sort((a, b) => {
@@ -509,13 +586,13 @@
   }
 
   function setSort(table, key) {
-    const s = table === 'stocks' ? stocksSort : etfSort;
+    const s = table === 'stocks' ? stocksSort : table === 'etf' ? etfSort : soldSort;
     if (s.key === key) s.dir *= -1; else { s.key = key; s.dir = 1; }
-    render(lastStocks, lastEtfs);
+    if (table === 'sold') { renderSoldStocks(lastSoldStocks); } else { render(lastStocks, lastEtfs); }
   }
 
   function renderThead(theadId, columns, table) {
-    const s = table === 'stocks' ? stocksSort : etfSort;
+    const s = table === 'stocks' ? stocksSort : table === 'etf' ? etfSort : soldSort;
     document.getElementById(theadId).innerHTML = '<tr>' + columns.map(c => {
       const active = s.key === c.key;
       const arrow = active ? `<span class="sort-arrow">${s.dir === 1 ? '▲' : '▼'}</span>` : '';
@@ -531,6 +608,7 @@
     el.setAttribute('data-theme', effectivelyDark ? 'light' : 'dark');
     // Donut and history/daily-perf chart colors are picked at draw time, not via CSS vars — redraw so they match the new theme.
     if (lastStocks.length) renderAnalysis(lastStocks, computeAgg(lastStocks).value);
+    if (lastStocks.length || lastEtfs.length) renderAllocation(lastStocks, lastEtfs, computeAgg(lastStocks).value, computeAgg(lastEtfs).value);
     if (lastHistoryPoints.length >= 2) { renderHistoryChart(lastHistoryPoints); renderDailyPerfChart(lastHistoryPoints); }
   }
 
@@ -693,6 +771,7 @@
         syncHistory(),       // independent, optional — never fails the main sync
         syncEtfLots(),       // independent, optional — precise per-lot dates for ETF XIRR, when available
         syncPriceHistory(),  // independent, optional — daily per-symbol snapshots for the Top Movers period dropdown
+        syncSoldStocks(),    // independent, optional — closed positions for the Realized Gains panel
       ]);
     } catch (err) {
       setStatus('err', 'Sync failed');
@@ -957,6 +1036,9 @@
 
     // ---- Analysis: sector donut + movers/leaders panel (stocks only) ----
     renderAnalysis(stocks, stocksValue);
+
+    // ---- Portfolio Allocation: Stocks vs ETFs mix + combined sector donut ----
+    renderAllocation(stocks, etfs, stocksValue, etfValue);
 
     // ---- Today's Movers: biggest single-day gainer/loser across Stocks + ETFs ----
     renderTopMovers(stocks);
@@ -1362,6 +1444,66 @@
     `;
   }
 
+  // ---- Portfolio Allocation: Stocks vs ETFs mix + a sector donut spanning BOTH holdings types.
+  // ETFs have no per-symbol sector in the sheet, so they fold into one "ETFs" bucket rather than
+  // being left out of the diversification picture entirely.
+  function renderAllocation(stocks, etfs, stocksValue, etfValue) {
+    const panel = document.getElementById('allocationPanel');
+    const sv = isFinite(stocksValue) ? stocksValue : 0;
+    const ev = isFinite(etfValue) ? etfValue : 0;
+    const totalValue = sv + ev;
+    if (!totalValue) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
+
+    // ---- Asset Mix: Stocks vs ETFs as one segmented bar (a 2-slice donut reads worse for 2 categories) ----
+    const sPct = totalValue ? (sv / totalValue) * 100 : 0;
+    const ePct = totalValue ? (ev / totalValue) * 100 : 0;
+    document.getElementById('assetMix').innerHTML = `
+      <div class="asset-mix-bar">
+        ${sv > 0 ? `<div class="seg" style="width:${sPct}%;background:${palette[0]}" title="Stocks: ${sPct.toFixed(1)}%"></div>` : ''}
+        ${ev > 0 ? `<div class="seg" style="width:${ePct}%;background:${palette[1]}" title="ETFs: ${ePct.toFixed(1)}%"></div>` : ''}
+      </div>
+      <div class="asset-mix-legend">
+        <div class="am-row"><span class="dot" style="background:${palette[0]}"></span><span class="am-label">Stocks</span><span class="am-value">${fmtMoney(sv)}</span><span class="am-pct">(${sPct.toFixed(1)}%)</span></div>
+        <div class="am-row"><span class="dot" style="background:${palette[1]}"></span><span class="am-label">ETFs</span><span class="am-value">${fmtMoney(ev)}</span><span class="am-pct">(${ePct.toFixed(1)}%)</span></div>
+      </div>`;
+
+    // ---- Combined sector donut: stocks by their actual sector, ETFs folded into one "ETFs" slice ----
+    const bySector = {};
+    stocks.forEach(s => { const k = s.sector || '—'; (bySector[k] = bySector[k] || []).push(s); });
+    if (etfs.length) bySector['ETFs'] = etfs;
+    const sectorEntries = Object.entries(bySector)
+      .map(([k, list]) => [k, sumGroup(list)])
+      .sort((a, b) => b[1].value - a[1].value);
+    let donutEntries = sectorEntries.slice(0, 7);
+    const rest = sectorEntries.slice(7);
+    if (rest.length) {
+      const otherInvested = rest.reduce((s, [, agg]) => s + agg.invested, 0);
+      const otherValue = rest.reduce((s, [, agg]) => s + agg.value, 0);
+      donutEntries = donutEntries.concat([['Other', { invested: otherInvested, value: otherValue, gain: otherValue - otherInvested, gainPct: otherInvested ? ((otherValue - otherInvested) / otherInvested) * 100 : 0 }]]);
+    }
+    drawDonut('allocSectorDonut', 'allocSectorLegend', donutEntries, palette);
+
+    // ---- Combined market-cap donut: Large/Mid/Small (stocks) + ETFs as their own slice, fixed order
+    // so a slice's color always means the same category regardless of which is biggest this refresh ----
+    const byCap = {};
+    stocks.forEach(s => { const k = s.cap || '—'; (byCap[k] = byCap[k] || []).push(s); });
+    const capGroups = {};
+    Object.entries(byCap).forEach(([k, list]) => { capGroups[k] = sumGroup(list); });
+    if (etfs.length) capGroups['ETFs'] = sumGroup(etfs);
+    const CAP_ALLOC_ORDER = [...CAP_ORDER, 'ETFs'];
+    const capEntries = CAP_ALLOC_ORDER.filter(k => capGroups[k]).map(k => [k, capGroups[k]]);
+    const otherCapKeys = Object.keys(capGroups).filter(k => !CAP_ALLOC_ORDER.includes(k));
+    if (otherCapKeys.length) {
+      const otherInvested = otherCapKeys.reduce((s, k) => s + capGroups[k].invested, 0);
+      const otherValue = otherCapKeys.reduce((s, k) => s + capGroups[k].value, 0);
+      capEntries.push(['Other', { invested: otherInvested, value: otherValue, gain: otherValue - otherInvested, gainPct: otherInvested ? ((otherValue - otherInvested) / otherInvested) * 100 : 0 }]);
+    }
+    drawDonut('allocCapDonut', 'allocCapLegend', capEntries, palette);
+  }
+
   function renderGroupBars(elId, stocks, keyFn, totalInvested, totalValue, filterKind, activeValue) {
     const groups = {};
     stocks.forEach(s => {
@@ -1447,6 +1589,132 @@
     } catch (err) {
       lastPriceHistory = {};
     }
+  }
+
+  // Reads the manually-maintained "Sold Stocks" tab (closed positions) and powers the Realized Gains
+  // panel. Optional — if this tab doesn't exist yet, the panel just stays hidden, same as Top Movers
+  // and NAV vs Nifty do when their source tabs aren't set up.
+  async function syncSoldStocks() {
+    try {
+      const rows = await fetchSheet(SOLD_STOCKS_SHEET_NAME);
+      const parsed = rows.map(o => {
+        const buyDate = parseGvizDate(pick(o, 'Buy Date'));
+        const sellDate = parseGvizDate(pick(o, 'Sell Date'));
+        const qty = num(pick(o, 'Quantity'));
+        const buyPrice = num(pick(o, 'Buy Price'));
+        const sellPrice = num(pick(o, 'Sell Price'));
+        const investedRaw = num(pick(o, 'Invested Amt'));
+        const saleValueRaw = num(pick(o, 'Sale Value'));
+        const invested = isFinite(investedRaw) ? investedRaw : qty * buyPrice;
+        const saleValue = isFinite(saleValueRaw) ? saleValueRaw : qty * sellPrice;
+        const gainRaw = num(pick(o, 'Realized Gain'));
+        const gain = isFinite(gainRaw) ? gainRaw : (saleValue - invested);
+        const gainPctRaw = num(pick(o, 'Realized Gain %'));
+        const gainPct = isFinite(gainPctRaw) ? gainPctRaw * 100 : (invested ? (gain / invested) * 100 : NaN);
+        const holdingDaysRaw = num(pick(o, 'Holding Days'));
+        const holdingDays = isFinite(holdingDaysRaw) ? holdingDaysRaw
+          : (buyDate && sellDate ? Math.round((sellDate - buyDate) / 86400000) : NaN);
+        const ltStRaw = String(pick(o, 'LT/ST') || '').trim().toUpperCase();
+        const ltEligible = ltStRaw ? ltStRaw === 'LT' : (isFinite(holdingDays) ? holdingDays >= LTCG_DAYS : false);
+        return {
+          symbol: pick(o, 'Stock', 'Symbol'), sector: pick(o, 'Sector'), cap: pick(o, 'Market Cap'),
+          buyDate, sellDate, qty, buyPrice, sellPrice, invested, saleValue, gain, gainPct, holdingDays, ltEligible,
+        };
+      }).filter(r => r.symbol && String(r.symbol).trim() && isFinite(r.qty));
+      lastSoldStocks = parsed;
+      renderSoldStocks(parsed);
+    } catch (err) {
+      lastSoldStocks = [];
+      document.getElementById('realizedGainsPanel').style.display = 'none';
+      document.getElementById('fyBreakdownWrap').style.display = 'none';
+    }
+  }
+
+  function fyInfo(date) {
+    if (!date) return null;
+    const y = date.getFullYear();
+    const m = date.getMonth();
+    const startYear = m >= 3 ? y : y - 1; // April(month index 3)+ belongs to FY starting this year
+    const endYY = String((startYear + 1) % 100).padStart(2, '0');
+    return { label: `FY ${startYear}-${endYY}`, startYear };
+  }
+
+  function computeFyBreakdown(rows) {
+    const byFy = {};
+    rows.forEach(r => {
+      const info = fyInfo(r.sellDate);
+      if (!info) return;
+      const g = (byFy[info.label] = byFy[info.label] || { label: info.label, startYear: info.startYear, stcg: 0, ltcg: 0, count: 0 });
+      if (isFinite(r.gain)) { if (r.ltEligible) g.ltcg += r.gain; else g.stcg += r.gain; }
+      g.count += 1;
+    });
+    return Object.values(byFy).sort((a, b) => b.startYear - a.startYear);
+  }
+
+  function renderFyBreakdown(rows) {
+    const wrap = document.getElementById('fyBreakdownWrap');
+    const fys = computeFyBreakdown(rows);
+    if (!fys.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    document.getElementById('fyTable').innerHTML = `
+      <thead><tr><th>Financial Year</th><th class="num">STCG</th><th class="num">LTCG</th><th class="num">Total</th><th class="num">Positions</th></tr></thead>
+      <tbody>
+        ${fys.map(f => {
+          const total = f.stcg + f.ltcg;
+          return `<tr>
+            <td>${f.label}</td>
+            <td class="num ${chgClass(f.stcg)}">${f.stcg >= 0 ? '+' : ''}${fmtMoney(f.stcg)}</td>
+            <td class="num ${chgClass(f.ltcg)}">${f.ltcg >= 0 ? '+' : ''}${fmtMoney(f.ltcg)}</td>
+            <td class="num ${chgClass(total)}">${total >= 0 ? '+' : ''}${fmtMoney(total)}</td>
+            <td class="num">${f.count}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>`;
+  }
+
+  function renderSoldStocks(rows) {
+    const panel = document.getElementById('realizedGainsPanel');
+    if (!rows.length) { panel.style.display = 'none'; document.getElementById('fyBreakdownWrap').style.display = 'none'; return; }
+    panel.style.display = '';
+    renderFyBreakdown(rows);
+
+    const totalInvested = sumBy(rows, 'invested');
+    const totalSaleValue = sumBy(rows, 'saleValue');
+    const totalGain = totalSaleValue - totalInvested;
+    const totalGainPct = totalInvested ? (totalGain / totalInvested) * 100 : 0;
+    const ltGain = sumBy(rows.filter(r => r.ltEligible), 'gain');
+    const stGain = sumBy(rows.filter(r => !r.ltEligible), 'gain');
+
+    const totalEl = document.getElementById('realizedMiniTotal');
+    totalEl.textContent = (totalGain >= 0 ? '+' : '') + fmtMoney(totalGain) + ' (' + fmtPct(totalGainPct) + ')';
+    totalEl.className = 'mini-value ' + chgClass(totalGain);
+    const ltEl = document.getElementById('realizedMiniLT');
+    ltEl.textContent = (ltGain >= 0 ? '+' : '') + fmtMoney(ltGain);
+    ltEl.className = 'mini-value ' + chgClass(ltGain);
+    const stEl = document.getElementById('realizedMiniST');
+    stEl.textContent = (stGain >= 0 ? '+' : '') + fmtMoney(stGain);
+    stEl.className = 'mini-value ' + chgClass(stGain);
+
+    document.getElementById('realizedSubMeta').innerHTML =
+      `${rows.length} closed position${rows.length === 1 ? '' : 's'} · Invested ${fmtMoney(totalInvested)} → ${fmtMoney(totalSaleValue)} <span class="${chgClass(totalGainPct)}">(${fmtPct(totalGainPct)})</span>`;
+
+    renderThead('realizedThead', SOLD_COLUMNS, 'sold');
+    document.getElementById('realizedBody').innerHTML = sortRows(rows, soldSort.key, soldSort.dir).map(r => `
+      <tr>
+        <td class="sym">${escapeHtmlText(r.symbol)}</td><td class="sec">${escapeHtmlText(r.sector || '—')}</td><td class="sec">${escapeHtmlText(String(r.cap || '—').replace(' Cap', ''))}</td>
+        <td>${r.buyDate ? r.buyDate.toLocaleDateString('en-IN') : '—'}</td><td>${r.sellDate ? r.sellDate.toLocaleDateString('en-IN') : '—'}</td>
+        <td class="num">${fmtNum(r.qty, 0)}</td><td class="num">${fmtNum(r.buyPrice)}</td><td class="num">${fmtNum(r.sellPrice)}</td>
+        <td class="num">${fmtMoney(r.invested)}</td><td class="num">${fmtMoney(r.saleValue)}</td>
+        <td class="num ${chgClass(r.gain)}">${r.gain >= 0 ? '+' : ''}${fmtMoney(r.gain)}<span class="ltcg-badge ${r.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${r.ltEligible ? 'Long-term — 365+ days held' : 'Short-term — under 365 days held'}">${r.ltEligible ? 'LT' : 'ST'}</span></td>
+        <td class="num ${chgClass(r.gainPct)}">${fmtPct(r.gainPct)}</td>
+        <td class="num">${isFinite(r.holdingDays) ? fmtNum(r.holdingDays, 0) + 'd' : '—'}</td>
+      </tr>`).join('');
+
+    document.getElementById('realizedFoot').innerHTML =
+      `<tr><td>Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        <td class="num">${fmtMoney(totalInvested)}</td><td class="num">${fmtMoney(totalSaleValue)}</td>
+        <td class="num ${chgClass(totalGain)}">${totalGain >= 0 ? '+' : ''}${fmtMoney(totalGain)}</td>
+        <td class="num ${chgClass(totalGainPct)}">${fmtPct(totalGainPct)}</td><td class="num"></td></tr>`;
   }
 
   async function syncHistory() {
@@ -1862,20 +2130,33 @@
     return lastEtfs.map(e => [e.symbol, e.qty, e.buy, e.ltp, e.invested, e.value, e.gain, e.gainPct.toFixed(2) + '%', e.dayGain, e.dayPct.toFixed(2) + '%', (e.wt || 0).toFixed(2) + '%',
       isFinite(e.daysHeld) ? e.daysHeld + (e.ltEligible ? ' (LT)' : ' (ST)') : '', isFinite(e.annReturn) ? e.annReturn.toFixed(2) + '%' : '']);
   }
+  function soldRows() {
+    return lastSoldStocks.map(r => [r.symbol, r.sector || '', r.cap || '', r.buyDate ? r.buyDate.toLocaleDateString('en-IN') : '',
+      r.sellDate ? r.sellDate.toLocaleDateString('en-IN') : '', r.qty, r.buyPrice, r.sellPrice, r.invested, r.saleValue, r.gain,
+      isFinite(r.gainPct) ? r.gainPct.toFixed(2) + '%' : '', (isFinite(r.holdingDays) ? r.holdingDays : '') + (r.ltEligible ? ' (LT)' : ' (ST)')]);
+  }
   function exportCSV() {
     if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
     const stocksCsv = toCSVBlock('Stocks', ['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], stocksRows());
     const etfCsv = toCSVBlock('ETFs', ['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], etfRows());
-    download('portfolio-dashboard.csv', stocksCsv + '\n\n' + etfCsv, 'text/csv');
+    let out = stocksCsv + '\n\n' + etfCsv;
+    if (lastSoldStocks.length) {
+      out += '\n\n' + toCSVBlock('Sold Stocks (Realized Gains)', ['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows());
+    }
+    download('portfolio-dashboard.csv', out, 'text/csv');
   }
   function exportExcel() {
     if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
     const rowsHtml = (headers, rows) =>
       `<table border="1"><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>` +
       rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') + `</table>`;
+    const soldSection = lastSoldStocks.length
+      ? `<br/><h3>Sold Stocks (Realized Gains)</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows())}`
+      : '';
     const html = `<html><head><meta charset="UTF-8"></head><body>
       <h3>Stocks</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], stocksRows())}
       <br/><h3>ETFs</h3>${rowsHtml(['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], etfRows())}
+      ${soldSection}
       </body></html>`;
     download('portfolio-dashboard.xls', html, 'application/vnd.ms-excel');
   }
@@ -1922,6 +2203,24 @@
       </tr>`;
     }).join('');
   }
+  function reportSoldStocksTableRows() {
+    return lastSoldStocks.map(r => `<tr>
+        <td>${escapeHtmlText(r.symbol)}</td><td>${escapeHtmlText(r.sector || '—')}</td>
+        <td>${r.buyDate ? escapeHtmlText(r.buyDate.toLocaleDateString('en-IN')) : '—'}</td>
+        <td>${r.sellDate ? escapeHtmlText(r.sellDate.toLocaleDateString('en-IN')) : '—'}</td>
+        <td align="right">${fmtNum(r.qty, 0)}</td><td align="right">${fmtNum(r.buyPrice)}</td><td align="right">${fmtNum(r.sellPrice)}</td>
+        <td align="right">${fmtMoney(r.invested)}</td><td align="right">${fmtMoney(r.saleValue)}</td>
+        <td align="right" style="color:${reportGainColor(r.gain)}">${r.gain >= 0 ? '+' : ''}${fmtMoney(r.gain)}</td>
+        <td align="right" style="color:${reportGainColor(r.gainPct)}">${fmtPct(r.gainPct)}</td>
+        <td align="right">${isFinite(r.holdingDays) ? fmtNum(r.holdingDays, 0) + 'd' : '—'} (${r.ltEligible ? 'LT' : 'ST'})</td>
+      </tr>`).join('');
+  }
+  function reportRealizedGainsHtml() {
+    const panel = document.getElementById('realizedGainsPanel');
+    if (!panel || panel.style.display === 'none' || !lastSoldStocks.length) return '';
+    return `<h2 style="margin-top:24px">Realized Gains <span style="font-weight:normal;color:#666;font-size:13px">— booked profit/loss from stocks you've sold</span></h2>
+      ${reportTableShell(['Stock', 'Sector', 'Buy Date', 'Sell Date', 'Qty', 'Buy', 'Sell', 'Invested', 'Sale Value', 'Gain', 'Gain %', 'Held'], reportSoldStocksTableRows())}`;
+  }
   function reportMoversHtml() {
     const panel = document.getElementById('topMoversPanel');
     if (!panel || panel.style.display === 'none') return '';
@@ -1965,6 +2264,7 @@
       ${reportTableShell(['Stock', 'Sector', 'Mkt Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day ₹', 'Day %', 'Wt %', 'Held', 'Ann. %'], reportStocksTableRows())}
       <h2 style="margin-top:24px">ETF Portfolio</h2>
       ${reportTableShell(['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day ₹', 'Day %', 'Wt %', 'Held', 'Ann. %'], reportEtfTableRows())}
+      ${reportRealizedGainsHtml()}
     </body></html>`;
     download('portfolio-dashboard.doc', html, 'application/msword');
   }
