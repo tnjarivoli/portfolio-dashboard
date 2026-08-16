@@ -101,6 +101,7 @@
   .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
   .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
   .tile .value { font-size: 22px; font-weight: 700; font-variant-numeric: proportional-nums; }
+  .tile .value-sub { font-size: 15px; font-weight: 700; font-variant-numeric: proportional-nums; margin-top: 1px; }
   .tile .note { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
   .movers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -127,6 +128,7 @@
   .mini-tile .mini-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 3px; }
   .mini-tile .mini-value { font-size: 15.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
   @media (max-width: 560px) { .mini-tiles { justify-content: flex-start; } .mini-tile { text-align: left; } }
+  .fund-period { font-size: 10.5px; color: var(--text-muted); font-weight: 400; }
 
   .filter-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
   .filter-row label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
@@ -324,7 +326,7 @@
 
   <div class="tiles">
     <div class="tile"><div class="label">Total Portfolio Value</div><div class="value" id="tileTotalValue">—</div><div class="note" id="tileTotalNote">—</div></div>
-    <div class="tile"><div class="label">Overall Gain</div><div class="value" id="tileOverallGain">—</div><div class="note">Since respective buy dates</div></div>
+    <div class="tile"><div class="label">Overall Gain</div><div class="value" id="tileOverallGain">—</div><div class="value-sub" id="tileOverallGainPct">—</div><div class="note">Since respective buy dates</div></div>
     <div class="tile"><div class="label">Today</div><div class="value" id="tileToday">—</div><div class="note" id="tileTodayNote">Day move</div></div>
     <div class="tile" title="Money-weighted annualized return — the same rate a mutual fund NAV calc would give, accounting for exactly when and how much you invested"><div class="label">Portfolio XIRR</div><div class="value" id="tileXirr">—</div><div class="note" id="tileXirrNote">Annualized, money-weighted</div></div>
     <div class="tile"><div class="label">Stocks / ETF Split</div><div class="value" id="tileSplit">—</div><div class="note">By current value</div></div>
@@ -488,6 +490,27 @@
     </div>
   </div>
 
+  <div class="panel" id="fundamentalsPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Fundamentals <span class="meta">— P/E, ROCE, ROE and Sales/Profit growth trends for your holdings</span></h2>
+        <div class="sub-meta" id="fundSubMeta">Waiting for first sync…</div>
+      </div>
+      <div class="mini-tiles">
+        <div class="mini-tile" title="Average across holdings with a value"><div class="mini-label">Avg P/E</div><div class="mini-value" id="fundMiniPe">—</div></div>
+        <div class="mini-tile" title="Average Return on Capital Employed across holdings with a value"><div class="mini-label">Avg ROCE</div><div class="mini-value" id="fundMiniRoce">—</div></div>
+        <div class="mini-tile" title="Average Return on Equity across holdings with a value"><div class="mini-label">Avg ROE</div><div class="mini-value" id="fundMiniRoe">—</div></div>
+      </div>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead id="fundThead"></thead>
+      <tbody id="fundBody"></tbody>
+    </table>
+    </div>
+    <div style="margin-top:8px;color:var(--text-muted);font-size:11px">Pulled from Screener.in's public company page once a day — figures are as of the last daily refresh, not live intraday.</div>
+  </div>
+
   <div class="foot-grid">
     <div class="panel">
       <h2>Sector Allocation <span class="meta">— Stocks, by weight</span></h2>
@@ -521,6 +544,7 @@
   const HISTORY_SHEET_NAME = 'History';
   const PRICE_HISTORY_SHEET_NAME = 'Price History'; // daily per-symbol price snapshots — powers the Top Movers period dropdown
   const SOLD_STOCKS_SHEET_NAME = 'Sold Stocks'; // manually-maintained closed-positions ledger — powers the Realized Gains panel
+  const FUNDAMENTALS_SHEET_NAME = 'Fundamentals'; // auto-populated daily by the Apps Script updateFundamentals() job — powers the Fundamentals panel
 
   let autoTimer = null;
   let lastStocks = [];
@@ -529,16 +553,62 @@
   let lastHistoryPoints = [];
   let lastPriceHistory = {}; // normalized symbol -> [{date, price}, ...] sorted ascending by date
   let lastSoldStocks = []; // closed positions read from the Sold Stocks tab
+  let lastFundamentals = []; // P/E, ROCE, ROE per holding, read from the Fundamentals tab
   let moversPeriod = 'today';
   let sectorFilter = 'All';
   let capFilter = 'All';
   let stocksSort = { key: 'symbol', dir: 1 };
   let etfSort = { key: 'symbol', dir: 1 };
   let soldSort = { key: 'sellDate', dir: -1 }; // most recently sold first, by default
+  let fundSort = { key: 'symbol', dir: 1 };
 
   const CONCENTRATION_THRESHOLD = 15; // % of book — flag any single holding above this
   const LTCG_DAYS = 365; // India: listed equity held 365+ days qualifies for LTCG tax treatment
   const ANN_RETURN_MIN_DAYS = 30; // shorter holds annualize wildly — wait before showing a per-stock rate
+
+  // NSE equity-segment trading holidays (full-day market closures only — Muhurat/special sessions on an
+  // otherwise-off day are intentionally NOT listed here, since NSE is open that day). Weekends are handled
+  // separately in isNseTradingDay() and don't need an entry here.
+  //
+  // ⚠ MAINTENANCE: NSE publishes a new holiday list every year, usually in December for the year ahead —
+  // this table needs a new entry added each year, or dates for that year silently fall back to a
+  // weekends-only check (still correct, just won't catch that year's weekday holidays). Ask Claude to
+  // refresh this list from NSE's published calendar when a new year starts.
+  const NSE_HOLIDAYS_BY_YEAR = {
+    2026: [
+      '2026-01-15', // Municipal Corporation elections (Maharashtra)
+      '2026-01-26', // Republic Day
+      '2026-03-03', // Holi
+      '2026-03-26', // Shri Ram Navami
+      '2026-03-31', // Shri Mahavir Jayanti
+      '2026-04-03', // Good Friday
+      '2026-04-14', // Dr. Baba Saheb Ambedkar Jayanti
+      '2026-05-01', // Maharashtra Day
+      '2026-05-28', // Bakri Id
+      '2026-06-26', // Muharram
+      '2026-09-14', // Ganesh Chaturthi
+      '2026-10-02', // Mahatma Gandhi Jayanti
+      '2026-10-20', // Dussehra
+      '2026-11-10', // Diwali — Balipratipada
+      '2026-11-24', // Guru Nanak Jayanti (Prakash Gurpurb)
+      '2026-12-25', // Christmas
+    ],
+  };
+
+  function isoDateLocal(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  // Weekend or a listed NSE holiday for that date's year. Years with no entry in NSE_HOLIDAYS_BY_YEAR
+  // fall back to weekends-only (see the maintenance note above) rather than throwing or excluding nothing.
+  function isNseTradingDay(date) {
+    if (!date) return false;
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) return false; // Sun / Sat
+    const holidays = NSE_HOLIDAYS_BY_YEAR[date.getFullYear()];
+    if (holidays && holidays.includes(isoDateLocal(date))) return false;
+    return true;
+  }
 
   // Top Movers period dropdown — "today"/"sinceBuy" use figures already on each stock; week/month/year
   // look up a past price from the daily "Price History" snapshots (`days` = how far back to look).
@@ -575,6 +645,22 @@
     { key: 'gain', label: 'Realized Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
     { key: 'holdingDays', label: 'Held', num: true, title: 'Days between Buy Date and Sell Date — LT badge = 365+ days (LTCG-eligible), ST = short-term' },
   ];
+  const FUND_COLUMNS = [
+    { key: 'symbol', label: 'Stock' },
+    { key: 'pe', label: 'P/E', num: true, title: 'Stock Price / Earnings per share — lower can mean cheaper, but compare within the same sector' },
+    { key: 'roce', label: 'ROCE %', num: true, title: 'Return on Capital Employed — how efficiently the company turns capital into profit' },
+    { key: 'roe', label: 'ROE %', num: true, title: 'Return on Equity — profit generated per rupee of shareholder equity' },
+    { key: 'sales3yr', label: '3Y Sales', num: true, title: '3-year compounded (CAGR) Sales growth, from the Profit & Loss statement' },
+    { key: 'profit3yr', label: '3Y Net Profit', num: true, title: '3-year compounded (CAGR) Net Profit growth, from the Profit & Loss statement' },
+    { key: 'salesYoyQ2', label: 'Sales YoY', num: true, periodKey: 'salesYoyQ2Period', title: 'Year-over-year Sales growth, 2 quarters before the latest reported quarter' },
+    { key: 'salesYoyQ1', label: 'Sales YoY', num: true, periodKey: 'salesYoyQ1Period', title: 'Year-over-year Sales growth, 1 quarter before the latest reported quarter' },
+    { key: 'salesYoyLatest', label: 'Sales YoY', num: true, periodKey: 'salesYoyLatestPeriod', title: 'Year-over-year Sales growth for the most recently reported quarter' },
+    { key: 'profitYoyQ2', label: 'Profit YoY', num: true, periodKey: 'profitYoyQ2Period', title: 'Year-over-year Net Profit growth, 2 quarters before the latest reported quarter' },
+    { key: 'profitYoyQ1', label: 'Profit YoY', num: true, periodKey: 'profitYoyQ1Period', title: 'Year-over-year Net Profit growth, 1 quarter before the latest reported quarter' },
+    { key: 'profitYoyLatest', label: 'Profit YoY', num: true, periodKey: 'profitYoyLatestPeriod', title: 'Year-over-year Net Profit growth for the most recently reported quarter' },
+    { key: 'annSales', label: 'Ann. Sales', num: true, periodKey: 'annSalesPeriod', title: 'Latest full-year Sales growth vs. the year before, from the Profit & Loss statement' },
+    { key: 'annProfit', label: 'Ann. Profit', num: true, periodKey: 'annProfitPeriod', title: 'Latest full-year Net Profit growth vs. the year before, from the Profit & Loss statement' },
+  ];
 
   function sortRows(rows, key, dir) {
     return [...rows].sort((a, b) => {
@@ -586,18 +672,21 @@
   }
 
   function setSort(table, key) {
-    const s = table === 'stocks' ? stocksSort : table === 'etf' ? etfSort : soldSort;
+    const s = table === 'stocks' ? stocksSort : table === 'etf' ? etfSort : table === 'fund' ? fundSort : soldSort;
     if (s.key === key) s.dir *= -1; else { s.key = key; s.dir = 1; }
-    if (table === 'sold') { renderSoldStocks(lastSoldStocks); } else { render(lastStocks, lastEtfs); }
+    if (table === 'sold') { renderSoldStocks(lastSoldStocks); }
+    else if (table === 'fund') { renderFundamentals(lastFundamentals); }
+    else { render(lastStocks, lastEtfs); }
   }
 
-  function renderThead(theadId, columns, table) {
-    const s = table === 'stocks' ? stocksSort : table === 'etf' ? etfSort : soldSort;
+  function renderThead(theadId, columns, table, periods) {
+    const s = table === 'stocks' ? stocksSort : table === 'etf' ? etfSort : table === 'fund' ? fundSort : soldSort;
     document.getElementById(theadId).innerHTML = '<tr>' + columns.map(c => {
       const active = s.key === c.key;
       const arrow = active ? `<span class="sort-arrow">${s.dir === 1 ? '▲' : '▼'}</span>` : '';
       const title = c.title ? ` title="${escapeAttr(c.title)}"` : '';
-      return `<th class="sortable-th${c.num ? ' num' : ''}${active ? ' active-sort' : ''}" onclick="setSort('${table}','${c.key}')"${title}>${c.label}${arrow}</th>`;
+      const period = (periods && c.periodKey && periods[c.key]) ? `<br/><span class="fund-period">(${escapeHtmlText(periods[c.key])})</span>` : '';
+      return `<th class="sortable-th${c.num ? ' num' : ''}${active ? ' active-sort' : ''}" onclick="setSort('${table}','${c.key}')"${title}>${c.label}${arrow}${period}</th>`;
     }).join('') + '</tr>';
   }
 
@@ -667,6 +756,12 @@
     if (typeof v === 'number') return v;
     const n = parseFloat(String(v).replace(/,/g, ''));
     return n;
+  }
+
+  // Pulls the "(Jun 2026)"-style period label out of a Fundamentals growth cell like "+21.1% (Jun 2026)".
+  function extractPeriod(v) {
+    const m = /\(([^)]+)\)/.exec(String(v ?? ''));
+    return m ? m[1] : '';
   }
 
   function fmtMoney(n) {
@@ -772,6 +867,7 @@
         syncEtfLots(),       // independent, optional — precise per-lot dates for ETF XIRR, when available
         syncPriceHistory(),  // independent, optional — daily per-symbol snapshots for the Top Movers period dropdown
         syncSoldStocks(),    // independent, optional — closed positions for the Realized Gains panel
+        syncFundamentals(),  // independent, optional — P/E, ROCE, ROE for the Fundamentals panel, updated daily by Apps Script
       ]);
     } catch (err) {
       setStatus('err', 'Sync failed');
@@ -1023,7 +1119,9 @@
     document.getElementById('tileTotalValue').textContent = fmtMoney(totalValue);
     document.getElementById('tileTotalNote').textContent = `Invested ${fmtMoney(totalInvested)} · Gain ${totalGain >= 0 ? '+' : ''}${fmtMoney(totalGain)}`;
     const gainTile = document.getElementById('tileOverallGain');
-    gainTile.textContent = fmtPct(totalGainPct); gainTile.className = 'value ' + chgClass(totalGainPct);
+    gainTile.textContent = (totalGain >= 0 ? '+' : '') + fmtMoney(totalGain); gainTile.className = 'value ' + chgClass(totalGainPct);
+    const gainPctTile = document.getElementById('tileOverallGainPct');
+    gainPctTile.textContent = fmtPct(totalGainPct); gainPctTile.className = 'value-sub ' + chgClass(totalGainPct);
     const todayTile = document.getElementById('tileToday');
     todayTile.textContent = (totalDayGain >= 0 ? '+' : '') + fmtMoney(totalDayGain); todayTile.className = 'value ' + chgClass(totalDayGain);
     document.getElementById('tileTodayNote').textContent = fmtPct(totalDayPct) + ' day move';
@@ -1630,6 +1728,99 @@
     }
   }
 
+  // Reads the "Fundamentals" tab, auto-populated once a day by the Apps Script updateFundamentals()
+  // job (P/E, ROCE, ROE pulled from Screener.in's public company page). Optional — if this tab doesn't
+  // exist yet, or the daily job hasn't run yet, the panel just stays hidden, same as Realized Gains does.
+  async function syncFundamentals() {
+    try {
+      const rows = await fetchSheet(FUNDAMENTALS_SHEET_NAME);
+      const parsed = rows.map(o => {
+        const sq2 = pick(o, 'Sales YoY (Q-2)'), pq2 = pick(o, 'Profit YoY (Q-2)');
+        const sq1 = pick(o, 'Sales YoY (Q-1)'), pq1 = pick(o, 'Profit YoY (Q-1)');
+        const sqL = pick(o, 'Sales YoY (Latest Q)'), pqL = pick(o, 'Profit YoY (Latest Q)');
+        return {
+          symbol: pick(o, 'Stock', 'Symbol'),
+          pe: num(pick(o, 'P/E')),
+          roce: num(pick(o, 'ROCE (%)', 'ROCE')),
+          roe: num(pick(o, 'ROE (%)', 'ROE')),
+          salesYoyQ2: num(sq2), salesYoyQ2Period: extractPeriod(sq2),
+          profitYoyQ2: num(pq2), profitYoyQ2Period: extractPeriod(pq2),
+          salesYoyQ1: num(sq1), salesYoyQ1Period: extractPeriod(sq1),
+          profitYoyQ1: num(pq1), profitYoyQ1Period: extractPeriod(pq1),
+          salesYoyLatest: num(sqL), salesYoyLatestPeriod: extractPeriod(sqL),
+          profitYoyLatest: num(pqL), profitYoyLatestPeriod: extractPeriod(pqL),
+          sales3yr: num(pick(o, '3Y Sales Growth')),
+          profit3yr: num(pick(o, '3Y Profit Growth')),
+          annSales: num(pick(o, 'Ann. Sales')), annSalesPeriod: extractPeriod(pick(o, 'Ann. Sales')),
+          annProfit: num(pick(o, 'Ann. Profit')), annProfitPeriod: extractPeriod(pick(o, 'Ann. Profit')),
+          lastUpdated: parseGvizDate(pick(o, 'Last Updated')),
+        };
+      }).filter(r => r.symbol && String(r.symbol).trim());
+      lastFundamentals = parsed;
+      renderFundamentals(parsed);
+    } catch (err) {
+      lastFundamentals = [];
+      document.getElementById('fundamentalsPanel').style.display = 'none';
+    }
+  }
+
+  function renderFundamentals(rows) {
+    const panel = document.getElementById('fundamentalsPanel');
+    if (!rows.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const avgOf = key => {
+      const vals = rows.map(r => r[key]).filter(isFinite);
+      return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : NaN;
+    };
+    const setMini = (id, v, suffix) => {
+      const el = document.getElementById(id);
+      el.textContent = isFinite(v) ? fmtNum(v) + (suffix || '') : '—';
+    };
+    setMini('fundMiniPe', avgOf('pe'));
+    setMini('fundMiniRoce', avgOf('roce'), '%');
+    setMini('fundMiniRoe', avgOf('roe'), '%');
+
+    const latestUpdate = rows.reduce((max, r) => (r.lastUpdated && (!max || r.lastUpdated > max)) ? r.lastUpdated : max, null);
+    const missingCount = rows.filter(r => !isFinite(r.pe) && !isFinite(r.roce) && !isFinite(r.roe)).length;
+    document.getElementById('fundSubMeta').textContent =
+      `${rows.length} holding${rows.length === 1 ? '' : 's'}` +
+      (latestUpdate ? ` · Updated ${latestUpdate.toLocaleDateString('en-IN')}` : '') +
+      (missingCount ? ` · ${missingCount} pending next refresh` : '');
+
+    // Reported-quarter label for each growth column, shown once in the header rather than per row.
+    // Different symbols can report a few days apart, so use the most common period among holdings.
+    const modePeriod = key => {
+      const counts = {};
+      rows.forEach(r => { const p = r[key]; if (p) counts[p] = (counts[p] || 0) + 1; });
+      let best = '', bestCount = 0;
+      Object.entries(counts).forEach(([p, c]) => { if (c > bestCount) { best = p; bestCount = c; } });
+      return best;
+    };
+    const periods = {};
+    FUND_COLUMNS.forEach(c => { if (c.periodKey) periods[c.key] = modePeriod(c.periodKey); });
+    renderThead('fundThead', FUND_COLUMNS, 'fund', periods);
+
+    const growthCell = (v, d = 2) => isFinite(v) ? `<span class="${chgClass(v)}">${fmtPct(v, d)}</span>` : '—';
+    document.getElementById('fundBody').innerHTML = sortRows(rows, fundSort.key, fundSort.dir).map(r => `
+      <tr>
+        <td class="sym"><a class="sym-link" href="${screenerUrl(r.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(r.symbol)}</a></td>
+        <td class="num">${isFinite(r.pe) ? fmtNum(r.pe, 1) : '—'}</td>
+        <td class="num">${isFinite(r.roce) ? fmtNum(r.roce, 1) + '%' : '—'}</td>
+        <td class="num">${isFinite(r.roe) ? fmtNum(r.roe, 1) + '%' : '—'}</td>
+        <td class="num">${growthCell(r.sales3yr, 0)}</td>
+        <td class="num">${growthCell(r.profit3yr, 0)}</td>
+        <td class="num">${growthCell(r.salesYoyQ2, 0)}</td>
+        <td class="num">${growthCell(r.salesYoyQ1, 0)}</td>
+        <td class="num">${growthCell(r.salesYoyLatest, 0)}</td>
+        <td class="num">${growthCell(r.profitYoyQ2, 0)}</td>
+        <td class="num">${growthCell(r.profitYoyQ1, 0)}</td>
+        <td class="num">${growthCell(r.profitYoyLatest, 0)}</td>
+        <td class="num">${growthCell(r.annSales, 0)}</td>
+        <td class="num">${growthCell(r.annProfit, 0)}</td>
+      </tr>`).join('');
+  }
+
   function fyInfo(date) {
     if (!date) return null;
     const y = date.getFullYear();
@@ -1727,7 +1918,11 @@
           nifty: num(pick(o, 'NiftyBees Price', 'Nifty Price', 'Nifty')),
           invested: num(pick(o, 'Total Invested', 'Invested Amount', 'Total Invested Amount')),
         }))
-        .filter(p => p.date && isFinite(p.value));
+        .filter(p => p.date && isFinite(p.value))
+        // Drop weekend/NSE-holiday snapshots (e.g. a daily trigger that fired on a non-trading day and
+        // recorded Friday's stale closing price again) — the chart should jump straight from the last
+        // trading day to the next one, never plot a flat "no movement" stretch across days markets were shut.
+        .filter(p => isNseTradingDay(p.date));
       points.sort((a, b) => a.date - b.date);
       if (points.length < 2) { lastHistoryPoints = []; showHistoryEmpty(); computeXirrTile(); return; }
       applyNavSeries(points); // adds a .nav field to each point, cash-flow-adjusted like a mutual fund NAV
@@ -2135,6 +2330,17 @@
       r.sellDate ? r.sellDate.toLocaleDateString('en-IN') : '', r.qty, r.buyPrice, r.sellPrice, r.invested, r.saleValue, r.gain,
       isFinite(r.gainPct) ? r.gainPct.toFixed(2) + '%' : '', (isFinite(r.holdingDays) ? r.holdingDays : '') + (r.ltEligible ? ' (LT)' : ' (ST)')]);
   }
+  function fundamentalsRows() {
+    const g = (v, period) => isFinite(v) ? Math.round(v) + '%' + (period ? ' (' + period + ')' : '') : '';
+    return lastFundamentals.map(r => [r.symbol, isFinite(r.pe) ? r.pe.toFixed(1) : '', isFinite(r.roce) ? r.roce.toFixed(1) + '%' : '',
+      isFinite(r.roe) ? r.roe.toFixed(1) + '%' : '',
+      isFinite(r.sales3yr) ? Math.round(r.sales3yr) + '%' : '',
+      isFinite(r.profit3yr) ? Math.round(r.profit3yr) + '%' : '',
+      g(r.salesYoyQ2, r.salesYoyQ2Period), g(r.salesYoyQ1, r.salesYoyQ1Period), g(r.salesYoyLatest, r.salesYoyLatestPeriod),
+      g(r.profitYoyQ2, r.profitYoyQ2Period), g(r.profitYoyQ1, r.profitYoyQ1Period), g(r.profitYoyLatest, r.profitYoyLatestPeriod),
+      g(r.annSales, r.annSalesPeriod), g(r.annProfit, r.annProfitPeriod),
+      r.lastUpdated ? r.lastUpdated.toLocaleDateString('en-IN') : '']);
+  }
   function exportCSV() {
     if (!lastStocks.length && !lastEtfs.length) { alert('Sync first, then export.'); return; }
     const stocksCsv = toCSVBlock('Stocks', ['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], stocksRows());
@@ -2142,6 +2348,9 @@
     let out = stocksCsv + '\n\n' + etfCsv;
     if (lastSoldStocks.length) {
       out += '\n\n' + toCSVBlock('Sold Stocks (Realized Gains)', ['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows());
+    }
+    if (lastFundamentals.length) {
+      out += '\n\n' + toCSVBlock('Fundamentals', ['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Net Profit', 'Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Profit', 'Last Updated'], fundamentalsRows());
     }
     download('portfolio-dashboard.csv', out, 'text/csv');
   }
@@ -2153,10 +2362,14 @@
     const soldSection = lastSoldStocks.length
       ? `<br/><h3>Sold Stocks (Realized Gains)</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows())}`
       : '';
+    const fundSection = lastFundamentals.length
+      ? `<br/><h3>Fundamentals</h3>${rowsHtml(['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Net Profit', 'Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Profit', 'Last Updated'], fundamentalsRows())}`
+      : '';
     const html = `<html><head><meta charset="UTF-8"></head><body>
       <h3>Stocks</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], stocksRows())}
       <br/><h3>ETFs</h3>${rowsHtml(['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], etfRows())}
       ${soldSection}
+      ${fundSection}
       </body></html>`;
     download('portfolio-dashboard.xls', html, 'application/vnd.ms-excel');
   }
@@ -2166,7 +2379,8 @@
     const get = id => { const el = document.getElementById(id); return el ? el.textContent : '—'; };
     return {
       totalValue: get('tileTotalValue'), totalNote: get('tileTotalNote'),
-      overallGain: get('tileOverallGain'), today: get('tileToday'), todayNote: get('tileTodayNote'),
+      overallGain: get('tileOverallGain'), overallGainPct: get('tileOverallGainPct'),
+      today: get('tileToday'), todayNote: get('tileTodayNote'),
       xirr: get('tileXirr'), split: get('tileSplit'),
     };
   }
@@ -2254,7 +2468,7 @@
       <div style="color:#666;font-size:12px;margin-bottom:18px">Generated ${escapeHtmlText(now.toLocaleString('en-IN'))} · Stocks (Zerodha + mStock) and ETFs (Fyers)</div>
       <table border="0" cellpadding="8" style="width:100%;margin-bottom:8px"><tr>
         <td><b>Total Value</b><br>${t.totalValue}<br><span style="font-size:11px;color:#666">${escapeHtmlText(t.totalNote)}</span></td>
-        <td><b>Overall Gain</b><br>${t.overallGain}</td>
+        <td><b>Overall Gain</b><br>${t.overallGain}<br>${t.overallGainPct}</td>
         <td><b>Today</b><br>${t.today}<br><span style="font-size:11px;color:#666">${escapeHtmlText(t.todayNote)}</span></td>
         <td><b>Portfolio XIRR</b><br>${t.xirr}</td>
         <td><b>Stocks/ETF Split</b><br>${t.split}</td>
