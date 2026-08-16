@@ -355,22 +355,6 @@
   </div>
 
   <div class="panel">
-    <h2>Portfolio NAV vs Nifty <span class="meta">— indexed to 100, adjusted for money added or withdrawn</span></h2>
-    <div id="historyChartArea">
-      <div class="history-empty" id="historyEmpty">
-        Not set up yet — this chart plots your portfolio value over time against NiftyBees, once daily
-        snapshots start landing in a <b>History</b> tab in your sheet. Ask Claude for the one-time setup
-        script if you'd like this turned on.
-      </div>
-    </div>
-  </div>
-
-  <div class="panel" id="dailyPerfPanel" style="display:none">
-    <h2>Daily Performance <span class="meta">— Portfolio vs Nifty, day-by-day</span></h2>
-    <div id="dailyPerfChartArea"></div>
-  </div>
-
-  <div class="panel">
     <div class="panel-head">
       <div class="panel-head-left">
         <h2>Stocks Portfolio <span class="meta">— Zerodha + mStock</span></h2>
@@ -465,31 +449,6 @@
     </div>
   </div>
 
-  <div class="panel" id="realizedGainsPanel" style="display:none">
-    <div class="panel-head">
-      <div class="panel-head-left">
-        <h2>Realized Gains <span class="meta">— booked profit/loss from stocks you've sold</span></h2>
-        <div class="sub-meta" id="realizedSubMeta">Waiting for first sync…</div>
-      </div>
-      <div class="mini-tiles">
-        <div class="mini-tile"><div class="mini-label">Total Realized</div><div class="mini-value" id="realizedMiniTotal">—</div></div>
-        <div class="mini-tile" title="Held 365+ days — eligible for LTCG tax treatment"><div class="mini-label">Long-Term</div><div class="mini-value" id="realizedMiniLT">—</div></div>
-        <div class="mini-tile" title="Held under 365 days"><div class="mini-label">Short-Term</div><div class="mini-value" id="realizedMiniST">—</div></div>
-      </div>
-    </div>
-    <div id="fyBreakdownWrap" style="display:none">
-      <div class="fy-caption">By financial year <span class="meta-note">— Indian FY (Apr–Mar), grouped by Sell Date. Reference only, not tax advice — actual liability depends on applicable rates, exemptions, and any other capital gains not tracked here.</span></div>
-      <div class="fy-table-wrap"><table class="fy-table" id="fyTable"></table></div>
-    </div>
-    <div class="table-scroll">
-    <table>
-      <thead id="realizedThead"></thead>
-      <tbody id="realizedBody"></tbody>
-      <tfoot id="realizedFoot"></tfoot>
-    </table>
-    </div>
-  </div>
-
   <div class="panel" id="fundamentalsPanel" style="display:none">
     <div class="panel-head">
       <div class="panel-head-left">
@@ -519,6 +478,47 @@
     <div class="panel">
       <h2>Market Cap Allocation <span class="meta">— Stocks, by weight</span></h2>
       <div id="marketCapBars" style="margin-top:12px"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Portfolio NAV vs Nifty <span class="meta">— indexed to 100, adjusted for money added or withdrawn</span></h2>
+    <div id="historyChartArea">
+      <div class="history-empty" id="historyEmpty">
+        Not set up yet — this chart plots your portfolio value over time against NiftyBees, once daily
+        snapshots start landing in a <b>History</b> tab in your sheet. Ask Claude for the one-time setup
+        script if you'd like this turned on.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="dailyPerfPanel" style="display:none">
+    <h2>Daily Performance <span class="meta">— Portfolio vs Nifty, day-by-day</span></h2>
+    <div id="dailyPerfChartArea"></div>
+  </div>
+
+  <div class="panel" id="realizedGainsPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Realized Gains <span class="meta">— booked profit/loss from stocks you've sold</span></h2>
+        <div class="sub-meta" id="realizedSubMeta">Waiting for first sync…</div>
+      </div>
+      <div class="mini-tiles">
+        <div class="mini-tile"><div class="mini-label">Total Realized</div><div class="mini-value" id="realizedMiniTotal">—</div></div>
+        <div class="mini-tile" title="Held 365+ days — eligible for LTCG tax treatment"><div class="mini-label">Long-Term</div><div class="mini-value" id="realizedMiniLT">—</div></div>
+        <div class="mini-tile" title="Held under 365 days"><div class="mini-label">Short-Term</div><div class="mini-value" id="realizedMiniST">—</div></div>
+      </div>
+    </div>
+    <div id="fyBreakdownWrap" style="display:none">
+      <div class="fy-caption">By financial year <span class="meta-note">— Indian FY (Apr–Mar), grouped by Sell Date. Reference only, not tax advice — actual liability depends on applicable rates, exemptions, and any other capital gains not tracked here.</span></div>
+      <div class="fy-table-wrap"><table class="fy-table" id="fyTable"></table></div>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead id="realizedThead"></thead>
+      <tbody id="realizedBody"></tbody>
+      <tfoot id="realizedFoot"></tfoot>
+    </table>
     </div>
   </div>
 
@@ -554,7 +554,21 @@
   let lastPriceHistory = {}; // normalized symbol -> [{date, price}, ...] sorted ascending by date
   let lastSoldStocks = []; // closed positions read from the Sold Stocks tab
   let lastFundamentals = []; // P/E, ROCE, ROE per holding, read from the Fundamentals tab
-  let moversPeriod = 'today';
+  // Top Movers period default: "Today" during the trading day (9:15 AM – 11:59 PM IST, matching the
+  // NSE market-open time used elsewhere in this dashboard), "Since Buy Date" otherwise (before the
+  // market opens). Computed in IST explicitly since NSE hours don't depend on the viewer's timezone.
+  function defaultMoversPeriod() {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(new Date());
+    const hour = Number(parts.find(p => p.type === 'hour').value);
+    const minute = Number(parts.find(p => p.type === 'minute').value);
+    const minutesNow = hour * 60 + minute;
+    const windowStart = 9 * 60 + 15;  // 9:15 AM
+    const windowEnd = 23 * 60 + 59;   // 11:59 PM
+    return (minutesNow >= windowStart && minutesNow <= windowEnd) ? 'today' : 'sinceBuy';
+  }
+  let moversPeriod = defaultMoversPeriod();
   let sectorFilter = 'All';
   let capFilter = 'All';
   let stocksSort = { key: 'symbol', dir: 1 };
@@ -651,7 +665,7 @@
     { key: 'roce', label: 'ROCE %', num: true, title: 'Return on Capital Employed — how efficiently the company turns capital into profit' },
     { key: 'roe', label: 'ROE %', num: true, title: 'Return on Equity — profit generated per rupee of shareholder equity' },
     { key: 'sales3yr', label: '3Y Sales', num: true, title: '3-year compounded (CAGR) Sales growth, from the Profit & Loss statement' },
-    { key: 'profit3yr', label: '3Y Net Profit', num: true, title: '3-year compounded (CAGR) Net Profit growth, from the Profit & Loss statement' },
+    { key: 'profit3yr', label: '3Y Profit', num: true, title: '3-year compounded (CAGR) Net Profit growth, from the Profit & Loss statement' },
     { key: 'salesYoyQ2', label: 'Sales YoY', num: true, periodKey: 'salesYoyQ2Period', title: 'Year-over-year Sales growth, 2 quarters before the latest reported quarter' },
     { key: 'salesYoyQ1', label: 'Sales YoY', num: true, periodKey: 'salesYoyQ1Period', title: 'Year-over-year Sales growth, 1 quarter before the latest reported quarter' },
     { key: 'salesYoyLatest', label: 'Sales YoY', num: true, periodKey: 'salesYoyLatestPeriod', title: 'Year-over-year Sales growth for the most recently reported quarter' },
@@ -659,6 +673,7 @@
     { key: 'profitYoyQ1', label: 'Profit YoY', num: true, periodKey: 'profitYoyQ1Period', title: 'Year-over-year Net Profit growth, 1 quarter before the latest reported quarter' },
     { key: 'profitYoyLatest', label: 'Profit YoY', num: true, periodKey: 'profitYoyLatestPeriod', title: 'Year-over-year Net Profit growth for the most recently reported quarter' },
     { key: 'annSales', label: 'Ann. Sales', num: true, periodKey: 'annSalesPeriod', title: 'Latest full-year Sales growth vs. the year before, from the Profit & Loss statement' },
+    { key: 'annOpProfit', label: 'Ann. Op. Profit', num: true, periodKey: 'annOpProfitPeriod', title: 'Latest full-year Operating Profit growth vs. the year before, calculated from the Profit & Loss statement' },
     { key: 'annProfit', label: 'Ann. Profit', num: true, periodKey: 'annProfitPeriod', title: 'Latest full-year Net Profit growth vs. the year before, from the Profit & Loss statement' },
   ];
 
@@ -1183,6 +1198,8 @@
 
     const period = MOVER_PERIODS[moversPeriod] || MOVER_PERIODS.today;
     document.getElementById('topMoversMeta').textContent = '— ' + period.label;
+    const periodSelect = document.getElementById('moversPeriodSelect');
+    if (periodSelect.value !== moversPeriod) periodSelect.value = moversPeriod;
     const gainersEl = document.getElementById('topGainersList');
     const losersEl = document.getElementById('topLosersList');
     const noteEl = document.getElementById('moversNote');
@@ -1752,6 +1769,7 @@
           sales3yr: num(pick(o, '3Y Sales Growth')),
           profit3yr: num(pick(o, '3Y Profit Growth')),
           annSales: num(pick(o, 'Ann. Sales')), annSalesPeriod: extractPeriod(pick(o, 'Ann. Sales')),
+          annOpProfit: num(pick(o, 'Ann. Op. Profit')), annOpProfitPeriod: extractPeriod(pick(o, 'Ann. Op. Profit')),
           annProfit: num(pick(o, 'Ann. Profit')), annProfitPeriod: extractPeriod(pick(o, 'Ann. Profit')),
           lastUpdated: parseGvizDate(pick(o, 'Last Updated')),
         };
@@ -1817,6 +1835,7 @@
         <td class="num">${growthCell(r.profitYoyQ1, 0)}</td>
         <td class="num">${growthCell(r.profitYoyLatest, 0)}</td>
         <td class="num">${growthCell(r.annSales, 0)}</td>
+        <td class="num">${growthCell(r.annOpProfit, 0)}</td>
         <td class="num">${growthCell(r.annProfit, 0)}</td>
       </tr>`).join('');
   }
@@ -2338,7 +2357,7 @@
       isFinite(r.profit3yr) ? Math.round(r.profit3yr) + '%' : '',
       g(r.salesYoyQ2, r.salesYoyQ2Period), g(r.salesYoyQ1, r.salesYoyQ1Period), g(r.salesYoyLatest, r.salesYoyLatestPeriod),
       g(r.profitYoyQ2, r.profitYoyQ2Period), g(r.profitYoyQ1, r.profitYoyQ1Period), g(r.profitYoyLatest, r.profitYoyLatestPeriod),
-      g(r.annSales, r.annSalesPeriod), g(r.annProfit, r.annProfitPeriod),
+      g(r.annSales, r.annSalesPeriod), g(r.annOpProfit, r.annOpProfitPeriod), g(r.annProfit, r.annProfitPeriod),
       r.lastUpdated ? r.lastUpdated.toLocaleDateString('en-IN') : '']);
   }
   function exportCSV() {
@@ -2350,7 +2369,7 @@
       out += '\n\n' + toCSVBlock('Sold Stocks (Realized Gains)', ['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows());
     }
     if (lastFundamentals.length) {
-      out += '\n\n' + toCSVBlock('Fundamentals', ['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Net Profit', 'Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Profit', 'Last Updated'], fundamentalsRows());
+      out += '\n\n' + toCSVBlock('Fundamentals', ['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Profit','Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Op. Profit', 'Ann. Profit', 'Last Updated'], fundamentalsRows());
     }
     download('portfolio-dashboard.csv', out, 'text/csv');
   }
@@ -2363,7 +2382,7 @@
       ? `<br/><h3>Sold Stocks (Realized Gains)</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows())}`
       : '';
     const fundSection = lastFundamentals.length
-      ? `<br/><h3>Fundamentals</h3>${rowsHtml(['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Net Profit', 'Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Profit', 'Last Updated'], fundamentalsRows())}`
+      ? `<br/><h3>Fundamentals</h3>${rowsHtml(['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Profit','Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Op. Profit', 'Ann. Profit', 'Last Updated'], fundamentalsRows())}`
       : '';
     const html = `<html><head><meta charset="UTF-8"></head><body>
       <h3>Stocks</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], stocksRows())}
