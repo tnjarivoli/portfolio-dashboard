@@ -190,10 +190,14 @@
   .nav-toggle { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
   .nav-toggle input { cursor: pointer; accent-color: var(--seq-400); }
 
-  .indices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .dual-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 20px; align-items: start; }
+  .dual-row .panel { margin-bottom: 0; padding: 14px 16px; }
+  .dual-row .panel-head { margin-bottom: 8px; }
+
+  .indices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   @media (max-width: 560px) { .indices-grid { grid-template-columns: 1fr; } }
-  .index-tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
-  .index-tile .idx-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .index-tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; }
+  .index-tile .idx-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .index-tile .idx-value { font-size: 16.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .index-tile .idx-chg-row { font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
   .idx-live-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; letter-spacing: .03em; padding: 1px 6px; border-radius: 999px; vertical-align: middle; margin-left: 2px; }
@@ -201,9 +205,6 @@
   .idx-live-badge.idx-live-on::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: pulse 1.4s infinite; }
   .idx-live-badge.idx-live-off { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
   .idx-proxy-note { font-size: 9px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
-  .index-tile .idx-spark-wrap { margin-top: 8px; height: 34px; }
-  .index-tile svg.idx-spark { width: 100%; height: 34px; display: block; overflow: visible; }
-  .index-tile svg.idx-spark .idx-spark-hit { fill: transparent; cursor: crosshair; }
 
   .foot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 920px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
@@ -351,6 +352,7 @@
     <div class="tile"><div class="label">Stocks / ETF Split</div><div class="value" id="tileSplit">—</div><div class="note">By current value</div></div>
   </div>
 
+  <div class="dual-row">
   <div class="panel" id="indicesPanel" style="display:none">
     <div class="panel-head">
       <div class="panel-head-left">
@@ -380,6 +382,7 @@
       <div class="tile"><div class="label">Top 3 Losers</div><div class="mover-list" id="topLosersList"></div></div>
     </div>
     <div class="mover-note" id="moversNote" style="display:none"></div>
+  </div>
   </div>
 
   <div class="panel">
@@ -480,7 +483,7 @@
   <div class="panel" id="fundamentalsPanel" style="display:none">
     <div class="panel-head">
       <div class="panel-head-left">
-        <h2>Fundamentals (Holdings) <span class="meta">— P/E, ROCE, ROE and Sales/Profit growth trends for your holdings</span></h2>
+        <h2>Fundamentals / Technical (Holdings) <span class="meta">— P/E, ROCE, ROE, Sales/Profit growth and Stage/MA trend for your holdings</span></h2>
         <div class="sub-meta" id="fundSubMeta">Waiting for first sync…</div>
       </div>
       <div class="mini-tiles">
@@ -759,8 +762,9 @@
     { key: 'invested', label: 'Invested', num: true }, { key: 'saleValue', label: 'Sale Value', num: true },
     { key: 'gain', label: 'Realized Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
     { key: 'holdingDays', label: 'Held', num: true, title: 'Days between Buy Date and Sell Date — LT badge = 365+ days (LTCG-eligible), ST = short-term' },
+    { key: 'reason', label: 'Reason', title: 'Why you sold — from the "Reasons for sold out" column in the Sold Stocks tab' },
   ];
-  const FUND_COLUMNS = [
+  const BASE_FUND_COLUMNS = [
     { key: 'symbol', label: 'Stock' },
     { key: 'pe', label: 'P/E', num: true, title: 'Stock Price / Earnings per share — lower can mean cheaper, but compare within the same sector' },
     { key: 'roce', label: 'ROCE %', num: true, title: 'Return on Capital Employed — how efficiently the company turns capital into profit' },
@@ -777,10 +781,19 @@
     { key: 'annOpProfit', label: 'Ann. Op. Profit', num: true, periodKey: 'annOpProfitPeriod', title: 'Latest full-year Operating Profit growth vs. the year before, calculated from the Profit & Loss statement' },
     { key: 'annProfit', label: 'Ann. Profit', num: true, periodKey: 'annProfitPeriod', title: 'Latest full-year Net Profit growth vs. the year before, from the Profit & Loss statement' },
   ];
-  // Same shape as the Holdings Fundamentals table, on purpose — Watchlist is a second Fundamentals view
-  // over a different symbol list (Watchlist tab instead of your held Stocks/ETFs), so the two panels
-  // should read as twins.
-  const WATCHLIST_COLUMNS = FUND_COLUMNS;
+  // Fundamentals (Holdings) gets 2 extra columns at the end — Stage and MA Lines — pulled from your
+  // Portfolio tab (via lastStocks, matched by symbol), not from the Fundamentals sheet itself. These are
+  // your own manually-tracked technical/trend notes, so they only make sense for symbols you actually
+  // hold — Watchlist symbols have no Portfolio row to read them from, so that table stays at the base set.
+  const FUND_COLUMNS = [
+    ...BASE_FUND_COLUMNS,
+    { key: 'stage', label: 'Stage', title: 'Your technical stage classification for this holding, from the "Stage" column in the Portfolio tab' },
+    { key: 'maLines', label: 'MA Lines', title: 'Your moving-average alignment note for this holding, from the "MA Lines" column in the Portfolio tab' },
+  ];
+  // Same shape as the base Holdings Fundamentals columns, on purpose — Watchlist is a second Fundamentals
+  // view over a different symbol list (Watchlist tab instead of your held Stocks/ETFs), so the two panels
+  // should read as twins. No Stage/MA Lines here since those come from the Portfolio (holdings) tab.
+  const WATCHLIST_COLUMNS = BASE_FUND_COLUMNS;
 
   function sortRows(rows, key, dir) {
     return [...rows].sort((a, b) => {
@@ -958,6 +971,8 @@
           sector: pick(o, 'Sector') || '—',
           cap: pick(o, 'Market Cap') || '—',
           buyDate: parseGvizDate(pick(o, 'Buy Date', 'Purchase Date')),
+          stage: (pick(o, 'Stage') || '').toString().trim(),
+          maLines: (pick(o, 'MA Lines') || '').toString().trim(),
         };
       });
 
@@ -1855,9 +1870,11 @@
           : (buyDate && sellDate ? Math.round((sellDate - buyDate) / 86400000) : NaN);
         const ltStRaw = String(pick(o, 'LT/ST') || '').trim().toUpperCase();
         const ltEligible = ltStRaw ? ltStRaw === 'LT' : (isFinite(holdingDays) ? holdingDays >= LTCG_DAYS : false);
+        const reason = pick(o, 'Reasons for sold out', 'Reason for sold out', 'Reason');
         return {
           symbol: pick(o, 'Stock', 'Symbol'), sector: pick(o, 'Sector'), cap: pick(o, 'Market Cap'),
           buyDate, sellDate, qty, buyPrice, sellPrice, invested, saleValue, gain, gainPct, holdingDays, ltEligible,
+          reason: reason ? String(reason).trim() : '',
         };
       }).filter(r => r.symbol && String(r.symbol).trim() && isFinite(r.qty));
       lastSoldStocks = parsed;
@@ -1870,10 +1887,13 @@
   }
 
   // Reads the "Indices" tab — one row appended per index per day by the Apps Script updateIndices() job
-  // (Nifty 50, Nifty 500, Nifty Midcap 150 — pulled from Yahoo Finance), same append-daily shape as the
-  // Price History tab. Grouped here by index name into ascending-by-date series, which powers the tile
-  // grid's latest-value/day-change/sparkline, the Portfolio NAV vs Market Indices chart, and (for Nifty
-  // 50 specifically) the Daily Performance chart's market-comparison bars.
+  // (Nifty 50, Nifty 500, Nifty Midcap 150, Nifty Bank, Nifty Next 50, Nifty Smallcap 100 — pulled from
+  // Google/Yahoo Finance), same append-daily shape as the Price History tab. Grouped here by index name
+  // into ascending-by-date series, which powers the tile grid's latest-value/day-change, the Portfolio
+  // NAV vs Market Indices chart, and (for Nifty 50 specifically) the Daily Performance chart's
+  // market-comparison bars. Change/ChangePct are read too (present for the Yahoo-sourced indices, which
+  // have no separate live-tracking source) so the tile grid's fallback branch can show a real day's
+  // change instead of just diffing today's stored value against yesterday's.
   // Optional — if this tab doesn't exist yet, or the daily job hasn't run yet, the panel just stays
   // hidden, same as Realized Gains and Fundamentals do.
   async function syncIndices() {
@@ -1885,7 +1905,13 @@
         const date = parseGvizDate(pick(o, 'Date'));
         const value = num(pick(o, 'Value'));
         if (!name || !date || !isFinite(value)) return;
-        (byIndex[name] = byIndex[name] || []).push({ date, value });
+        const change = num(pick(o, 'Change'));
+        const changePct = num(pick(o, 'ChangePct'));
+        (byIndex[name] = byIndex[name] || []).push({
+          date, value,
+          change: isFinite(change) ? change : NaN,
+          changePct: isFinite(changePct) ? changePct : NaN,
+        });
       });
       Object.values(byIndex).forEach(arr => arr.sort((a, b) => a.date - b.date));
       lastIndices = byIndex;
@@ -1933,8 +1959,6 @@
     renderIndicesTiles(lastIndices);
   }
 
-  const INDICES_SPARK_MAX_POINTS = 30; // most recent trading days shown in each tile's mini trend line
-
   // Renders the Market Indices tiles by combining two independent sources: lastLiveIndices (always-fresh
   // GOOGLEFINANCE cells, re-read every auto-refresh) for the headline value/change whenever it's
   // available, falling back to the last row of the once-daily byIndex historical log otherwise — and
@@ -1974,8 +1998,16 @@
         usedLive = true;
       } else if (last) {
         displayValue = last.value;
-        chg = prior ? last.value - prior.value : NaN;
-        chgPct = (prior && prior.value) ? (chg / prior.value) * 100 : NaN;
+        if (isFinite(last.change) || isFinite(last.changePct)) {
+          // Stored day-over-day change from the snapshot itself (Yahoo-sourced indices with no live
+          // tracking source, e.g. Nifty Smallcap 100) — preferred over diffing consecutive stored rows
+          // below, since that diff is only valid when the sheet has a prior day's row to compare against.
+          chg = last.change;
+          chgPct = last.changePct;
+        } else {
+          chg = prior ? last.value - prior.value : NaN;
+          chgPct = (prior && prior.value) ? (chg / prior.value) * 100 : NaN;
+        }
       }
       const isLiveNow = usedLive && marketOpen;
 
@@ -1995,72 +2027,8 @@
           <div class="idx-label" title="${escapeAttr(name)}">${escapeHtmlText(name)}${proxyNote}</div>
           <div class="idx-value">${fmtNum(displayValue, 2)} ${badge}</div>
           <div class="idx-chg-row ${chgClassName}">${chgText} (${pctText})</div>
-          <div class="idx-spark-wrap" id="idxSparkWrap${idx}"></div>
         </div>`;
     }).join('');
-    names.forEach((name, idx) => renderIndexSpark(idx, name, byIndex[name] || []));
-  }
-
-  // Compact per-index trend sparkline — same line-chart building blocks as renderNavVsIndicesChart,
-  // simplified (no axes/gridlines, since these are small tiles) and with a lightweight hover tooltip.
-  function renderIndexSpark(idx, name, series) {
-    const wrap = document.getElementById(`idxSparkWrap${idx}`);
-    if (!wrap) return;
-    const recent = series.slice(-INDICES_SPARK_MAX_POINTS);
-    if (recent.length < 2) { wrap.innerHTML = ''; return; }
-    const vals = recent.map(p => p.value);
-
-    const W = 200, H = 34, pad = 3;
-    const yMin0 = Math.min(...vals), yMax0 = Math.max(...vals);
-    const yMin = yMin0 === yMax0 ? yMin0 - 1 : yMin0, yMax = yMin0 === yMax0 ? yMax0 + 1 : yMax0;
-    const xAt = i => pad + (vals.length > 1 ? (i / (vals.length - 1)) * (W - pad * 2) : (W - pad * 2) / 2);
-    const yAt = v => pad + (H - pad * 2) - ((v - yMin) / (yMax - yMin)) * (H - pad * 2);
-
-    let d = '';
-    vals.forEach((v, i) => { d += (i === 0 ? 'M ' : 'L ') + xAt(i).toFixed(1) + ' ' + yAt(v).toFixed(1) + ' '; });
-
-    const up = vals[vals.length - 1] >= vals[0];
-    const lineColor = up ? 'var(--status-good)' : 'var(--status-critical)';
-    const lastX = xAt(vals.length - 1), lastY = yAt(vals[vals.length - 1]);
-
-    wrap.innerHTML = `
-      <svg class="idx-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" id="idxSparkSvg${idx}">
-        <path d="${d.trim()}" fill="none" stroke="${lineColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
-        <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.4" fill="${lineColor}"></circle>
-        <line class="crosshair-line" id="idxSparkCrosshair${idx}" x1="0" y1="${pad}" x2="0" y2="${H - pad}" style="opacity:0"></line>
-        <rect class="idx-spark-hit" x="0" y="0" width="${W}" height="${H}"></rect>
-      </svg>`;
-
-    const svg = document.getElementById(`idxSparkSvg${idx}`);
-    const hit = svg.querySelector('.idx-spark-hit');
-    const crosshair = document.getElementById(`idxSparkCrosshair${idx}`);
-    const nearestIndex = (clientX) => {
-      const rect = svg.getBoundingClientRect();
-      const scale = rect.width / W;
-      const localX = (clientX - rect.left) / scale;
-      const frac = Math.min(1, Math.max(0, (localX - pad) / (W - pad * 2)));
-      return Math.round(frac * (vals.length - 1));
-    };
-    hit.addEventListener('pointermove', (e) => {
-      const i = nearestIndex(e.clientX);
-      const x = xAt(i);
-      crosshair.setAttribute('x1', x.toFixed(1));
-      crosshair.setAttribute('x2', x.toFixed(1));
-      crosshair.style.opacity = '1';
-      const tt = document.getElementById('vizTooltip');
-      tt.innerHTML = '';
-      const head = document.createElement('div'); head.className = 'tt-head';
-      head.textContent = `${name} — ${fmtDateShort(recent[i].date)}`;
-      tt.appendChild(head);
-      const row = document.createElement('div'); row.className = 'tt-row';
-      const l = document.createElement('span'); l.className = 'tt-label'; l.textContent = 'Close';
-      const v = document.createElement('span'); v.className = 'tt-value'; v.textContent = fmtNum(vals[i], 2);
-      row.appendChild(l); row.appendChild(v);
-      tt.appendChild(row);
-      tt.classList.add('show');
-      positionVizTooltip(e.clientX, e.clientY);
-    });
-    hit.addEventListener('pointerleave', () => { crosshair.style.opacity = '0'; hideVizTooltip(); });
   }
 
   // Reads the "Fundamentals" tab, auto-populated once a day by the Apps Script updateFundamentals()
@@ -2137,8 +2105,16 @@
     FUND_COLUMNS.forEach(c => { if (c.periodKey) periods[c.key] = modePeriod(c.periodKey); });
     renderThead('fundThead', FUND_COLUMNS, 'fund', periods);
 
+    // Stage / MA Lines aren't in the Fundamentals sheet — they're read from the Portfolio tab (lastStocks)
+    // and matched here by symbol, so this table always reflects whatever you last typed into those two
+    // Portfolio columns. Joined onto a shallow copy of each row (not the original lastFundamentals data)
+    // so sortRows() can sort by them like any other column.
+    const stageInfoBySymbol = {};
+    lastStocks.forEach(s => { stageInfoBySymbol[s.symbol] = { stage: s.stage || '', maLines: s.maLines || '' }; });
+    const enrichedRows = rows.map(r => Object.assign({}, r, stageInfoBySymbol[r.symbol] || { stage: '', maLines: '' }));
+
     const growthCell = (v, d = 2) => isFinite(v) ? `<span class="${chgClass(v)}">${fmtPct(v, d)}</span>` : '—';
-    document.getElementById('fundBody').innerHTML = sortRows(rows, fundSort.key, fundSort.dir).map(r => `
+    document.getElementById('fundBody').innerHTML = sortRows(enrichedRows, fundSort.key, fundSort.dir).map(r => `
       <tr>
         <td class="sym"><a class="sym-link" href="${screenerUrl(r.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(r.symbol)}</a></td>
         <td class="num">${isFinite(r.pe) ? fmtNum(r.pe, 1) : '—'}</td>
@@ -2155,6 +2131,8 @@
         <td class="num">${growthCell(r.annSales, 0)}</td>
         <td class="num">${growthCell(r.annOpProfit, 0)}</td>
         <td class="num">${growthCell(r.annProfit, 0)}</td>
+        <td>${r.stage ? escapeHtmlText(r.stage) : '—'}</td>
+        <td>${r.maLines ? escapeHtmlText(r.maLines) : '—'}</td>
       </tr>`).join('');
   }
 
@@ -2332,13 +2310,14 @@
         <td class="num ${chgClass(r.gain)}">${r.gain >= 0 ? '+' : ''}${fmtMoney(r.gain)}<span class="ltcg-badge ${r.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${r.ltEligible ? 'Long-term — 365+ days held' : 'Short-term — under 365 days held'}">${r.ltEligible ? 'LT' : 'ST'}</span></td>
         <td class="num ${chgClass(r.gainPct)}">${fmtPct(r.gainPct)}</td>
         <td class="num">${isFinite(r.holdingDays) ? fmtNum(r.holdingDays, 0) + 'd' : '—'}</td>
+        <td class="sec" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtmlText(r.reason || '')}">${r.reason ? escapeHtmlText(r.reason) : '—'}</td>
       </tr>`).join('');
 
     document.getElementById('realizedFoot').innerHTML =
       `<tr><td>Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
         <td class="num">${fmtMoney(totalInvested)}</td><td class="num">${fmtMoney(totalSaleValue)}</td>
         <td class="num ${chgClass(totalGain)}">${totalGain >= 0 ? '+' : ''}${fmtMoney(totalGain)}</td>
-        <td class="num ${chgClass(totalGainPct)}">${fmtPct(totalGainPct)}</td><td class="num"></td></tr>`;
+        <td class="num ${chgClass(totalGainPct)}">${fmtPct(totalGainPct)}</td><td class="num"></td><td></td></tr>`;
   }
 
   async function syncHistory() {
@@ -2531,12 +2510,19 @@
     return m;
   }
 
-  // Fixed display order/labels for the 3 index comparisons — keys must match the "Index" column values
-  // the Apps Script updateIndices() job writes into the Indices tab.
+  // Fixed display order/labels for the index tiles (Market Indices panel) and the index-comparison
+  // options for the "Portfolio NAV vs Market Indices" chart — keys must match the "Index" column values
+  // the Apps Script snapshotIndices() job writes into the Indices tab. Nifty Bank, Nifty Next 50 and
+  // Nifty Smallcap 100 render as a second row of tiles automatically (renderIndicesTiles below just
+  // grids however many names have data) but are NOT pre-checked in the NAV chart's toggle row, since
+  // that row's checkboxes are hardcoded to the original 3 indices in the HTML — see navChartVisibleIndices.
   const NAV_INDEX_DEFS = [
     { key: 'Nifty 50', label: 'Nifty 50' },
     { key: 'Nifty 500', label: 'Nifty 500' },
     { key: 'Nifty Midcap 150', label: 'Nifty Midcap 150' },
+    { key: 'Nifty Bank', label: 'Nifty Bank' },
+    { key: 'Nifty Next 50', label: 'Nifty Next 50' },
+    { key: 'Nifty Smallcap 100', label: 'Nifty Smallcap 100' },
   ];
 
   // Portfolio NAV vs Market Indices — a single chart with the Portfolio NAV line plus one line per
@@ -2567,7 +2553,8 @@
         const v = map.get(dateKeyOf(p.date));
         return isFinite(v) && isFinite(base) ? (v / base) * 100 : null;
       });
-      return { label: def.label, color: palette[(i + 1) % palette.length], values, rawMap: map };
+      const validCount = values.filter(v => v !== null).length;
+      return { label: def.label, color: palette[(i + 1) % palette.length], values, rawMap: map, validCount };
     }).filter(Boolean);
 
     const allVals = portIdx.concat(indexSeries.flatMap(s => s.values.filter(v => v !== null)));
@@ -2619,7 +2606,12 @@
       for (let i = s.values.length - 1; i >= 0; i--) { if (s.values[i] !== null) { lastPos = i; break; } }
       if (lastPos >= 0) {
         endDots += `<circle cx="${xAt(lastPos).toFixed(1)}" cy="${yAt(s.values[lastPos]).toFixed(1)}" r="4" fill="${s.color}" stroke="var(--surface-1)" stroke-width="2"></circle>`;
-        legendHtml += `<div class="lg-item"><span class="line-key" style="background:${s.color}"></span>${escapeHtmlText(s.label)} <span class="${chgClass(s.values[lastPos] - 100)}">(${(s.values[lastPos] - 100 >= 0 ? '+' : '')}${(s.values[lastPos] - 100).toFixed(1)}%)</span></div>`;
+        // With only one snapshot so far, (value / base) is trivially 100 -- showing "+0.0%" would read as
+        // "flat today" when it actually means "no second day yet to compare against". Say that instead.
+        const changeHtml = s.validCount >= 2
+          ? `<span class="${chgClass(s.values[lastPos] - 100)}">(${(s.values[lastPos] - 100 >= 0 ? '+' : '')}${(s.values[lastPos] - 100).toFixed(1)}%)</span>`
+          : `<span class="chg-flat">(1 day tracked so far)</span>`;
+        legendHtml += `<div class="lg-item"><span class="line-key" style="background:${s.color}"></span>${escapeHtmlText(s.label)} ${changeHtml}</div>`;
       } else {
         legendHtml += `<div class="lg-item"><span class="line-key" style="background:${s.color}"></span>${escapeHtmlText(s.label)} <span class="chg-flat">(no data yet)</span></div>`;
       }
@@ -2906,7 +2898,7 @@
   function soldRows() {
     return lastSoldStocks.map(r => [r.symbol, r.sector || '', r.cap || '', r.buyDate ? r.buyDate.toLocaleDateString('en-IN') : '',
       r.sellDate ? r.sellDate.toLocaleDateString('en-IN') : '', r.qty, r.buyPrice, r.sellPrice, r.invested, r.saleValue, r.gain,
-      isFinite(r.gainPct) ? r.gainPct.toFixed(2) + '%' : '', (isFinite(r.holdingDays) ? r.holdingDays : '') + (r.ltEligible ? ' (LT)' : ' (ST)')]);
+      isFinite(r.gainPct) ? r.gainPct.toFixed(2) + '%' : '', (isFinite(r.holdingDays) ? r.holdingDays : '') + (r.ltEligible ? ' (LT)' : ' (ST)'), r.reason || '']);
   }
   function fundamentalsRows() {
     const g = (v, period) => isFinite(v) ? Math.round(v) + '%' + (period ? ' (' + period + ')' : '') : '';
@@ -2925,7 +2917,7 @@
     const etfCsv = toCSVBlock('ETFs', ['ETF', 'Qty', 'Buy', 'LTP', 'Invested', 'Value', 'Gain', 'Gain %', 'Day Gain', 'Day %', 'Wt %', 'Held (days)', 'Ann. Return %'], etfRows());
     let out = stocksCsv + '\n\n' + etfCsv;
     if (lastSoldStocks.length) {
-      out += '\n\n' + toCSVBlock('Sold Stocks (Realized Gains)', ['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows());
+      out += '\n\n' + toCSVBlock('Sold Stocks (Realized Gains)', ['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)', 'Reason'], soldRows());
     }
     if (lastFundamentals.length) {
       out += '\n\n' + toCSVBlock('Fundamentals', ['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Profit','Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Op. Profit', 'Ann. Profit', 'Last Updated'], fundamentalsRows());
@@ -2938,7 +2930,7 @@
       `<table border="1"><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>` +
       rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') + `</table>`;
     const soldSection = lastSoldStocks.length
-      ? `<br/><h3>Sold Stocks (Realized Gains)</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)'], soldRows())}`
+      ? `<br/><h3>Sold Stocks (Realized Gains)</h3>${rowsHtml(['Stock', 'Sector', 'Market Cap', 'Buy Date', 'Sell Date', 'Qty', 'Buy Price', 'Sell Price', 'Invested', 'Sale Value', 'Realized Gain', 'Realized Gain %', 'Held (days)', 'Reason'], soldRows())}`
       : '';
     const fundSection = lastFundamentals.length
       ? `<br/><h3>Fundamentals</h3>${rowsHtml(['Stock', 'P/E', 'ROCE', 'ROE', '3Y Sales', '3Y Profit','Sales YoY (Q-2)', 'Sales YoY (Q-1)', 'Sales YoY (Latest Q)', 'Profit YoY (Q-2)', 'Profit YoY (Q-1)', 'Profit YoY (Latest Q)', 'Ann. Sales', 'Ann. Op. Profit', 'Ann. Profit', 'Last Updated'], fundamentalsRows())}`
@@ -3005,13 +2997,14 @@
         <td align="right" style="color:${reportGainColor(r.gain)}">${r.gain >= 0 ? '+' : ''}${fmtMoney(r.gain)}</td>
         <td align="right" style="color:${reportGainColor(r.gainPct)}">${fmtPct(r.gainPct)}</td>
         <td align="right">${isFinite(r.holdingDays) ? fmtNum(r.holdingDays, 0) + 'd' : '—'} (${r.ltEligible ? 'LT' : 'ST'})</td>
+        <td>${r.reason ? escapeHtmlText(r.reason) : '—'}</td>
       </tr>`).join('');
   }
   function reportRealizedGainsHtml() {
     const panel = document.getElementById('realizedGainsPanel');
     if (!panel || panel.style.display === 'none' || !lastSoldStocks.length) return '';
     return `<h2 style="margin-top:24px">Realized Gains <span style="font-weight:normal;color:#666;font-size:13px">— booked profit/loss from stocks you've sold</span></h2>
-      ${reportTableShell(['Stock', 'Sector', 'Buy Date', 'Sell Date', 'Qty', 'Buy', 'Sell', 'Invested', 'Sale Value', 'Gain', 'Gain %', 'Held'], reportSoldStocksTableRows())}`;
+      ${reportTableShell(['Stock', 'Sector', 'Buy Date', 'Sell Date', 'Qty', 'Buy', 'Sell', 'Invested', 'Sale Value', 'Gain', 'Gain %', 'Held', 'Reason'], reportSoldStocksTableRows())}`;
   }
   function reportMoversHtml() {
     const panel = document.getElementById('topMoversPanel');
