@@ -201,6 +201,36 @@
   .nav-toggle { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
   .nav-toggle input { cursor: pointer; accent-color: var(--seq-400); }
 
+  .col-settings { position: relative; }
+  .col-settings-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-secondary); cursor: pointer; font-size: 14px; line-height: 1;
+  }
+  .col-settings-btn:hover { color: var(--text-primary); background: var(--gridline); }
+  .col-settings-btn.has-hidden { color: var(--seq-400); border-color: var(--seq-400); }
+  .col-settings-menu {
+    display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
+    width: 232px; max-height: 320px; overflow-y: auto;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px; box-shadow: 0 10px 28px rgba(0,0,0,0.24);
+  }
+  .col-settings-menu.show { display: block; }
+  .col-settings-menu .cs-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin: 0 2px 8px; }
+  .col-settings-menu label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-secondary); padding: 4px 4px; cursor: pointer; user-select: none; border-radius: 5px; }
+  .col-settings-menu label:hover { background: var(--gridline); }
+  .col-settings-menu label input { cursor: pointer; accent-color: var(--seq-400); }
+  .col-settings-menu label.fixed-col { color: var(--text-muted); cursor: default; }
+  .col-settings-menu label.fixed-col:hover { background: none; }
+  .col-settings-menu label.fixed-col input { cursor: default; }
+  .col-settings-menu .cs-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--gridline); }
+  .col-settings-menu .cs-status { font-size: 10.5px; color: var(--text-muted); flex: 1; }
+  .col-settings-menu .cs-save {
+    font-size: 12px; font-weight: 700; color: #fff; background: var(--seq-400); border: none;
+    border-radius: 6px; padding: 5px 12px; cursor: pointer;
+  }
+  .col-settings-menu .cs-save:hover { filter: brightness(1.08); }
+
   .dual-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 20px; align-items: start; }
   .dual-row .panel { margin-bottom: 0; padding: 14px 16px; }
   .dual-row .panel-head { margin-bottom: 8px; }
@@ -428,6 +458,10 @@
         <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="stocksMiniGainAmt">—</div><div class="mini-subvalue" id="stocksMiniGainPct">—</div></div>
         <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="stocksMiniTodayAmt">—</div><div class="mini-subvalue" id="stocksMiniTodayPct">—</div></div>
       </div>
+      <div class="col-settings">
+        <button type="button" class="col-settings-btn" id="stocksColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('stocks')">⚙️</button>
+        <div class="col-settings-menu" id="stocksColSettingsMenu"></div>
+      </div>
     </div>
     <div class="filter-row">
       <label>Sector
@@ -480,6 +514,10 @@
         <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="etfMiniGainAmt">—</div><div class="mini-subvalue" id="etfMiniGainPct">—</div></div>
         <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="etfMiniTodayAmt">—</div><div class="mini-subvalue" id="etfMiniTodayPct">—</div></div>
       </div>
+      <div class="col-settings">
+        <button type="button" class="col-settings-btn" id="etfColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('etf')">⚙️</button>
+        <div class="col-settings-menu" id="etfColSettingsMenu"></div>
+      </div>
     </div>
     <div class="holding-caveat" id="etfHoldingCaveat" style="display:none">📅 <b>Held</b> and <b>Ann. %</b> are estimated from each ETF's earliest purchase lot in your "ETF" tab — if you added to a position later, the actual holding period for those later units will be shorter than shown.</div>
     <div class="table-scroll">
@@ -522,6 +560,11 @@
         <div class="mini-tile" title="Average across holdings with a value"><div class="mini-label">Avg P/E</div><div class="mini-value" id="fundMiniPe">—</div></div>
         <div class="mini-tile" title="Average Return on Capital Employed across holdings with a value"><div class="mini-label">Avg ROCE</div><div class="mini-value" id="fundMiniRoce">—</div></div>
         <div class="mini-tile" title="Average Return on Equity across holdings with a value"><div class="mini-label">Avg ROE</div><div class="mini-value" id="fundMiniRoe">—</div></div>
+        <div class="mini-tile" title="Value-weighted beta of your stock holdings vs. Nifty 50, computed from 3 years of weekly returns. Above 1 = more volatile than the index, below 1 = less."><div class="mini-label">Portfolio Beta</div><div class="mini-value" id="fundMiniBeta">—</div></div>
+      </div>
+      <div class="col-settings">
+        <button type="button" class="col-settings-btn" id="fundColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('fund')">⚙️</button>
+        <div class="col-settings-menu" id="fundColSettingsMenu"></div>
       </div>
     </div>
     <div class="table-scroll">
@@ -543,6 +586,10 @@
         <div class="mini-tile" title="Average across tracked symbols with a value"><div class="mini-label">Avg P/E</div><div class="mini-value" id="watchlistMiniPe">—</div></div>
         <div class="mini-tile" title="Average Return on Capital Employed across tracked symbols with a value"><div class="mini-label">Avg ROCE</div><div class="mini-value" id="watchlistMiniRoce">—</div></div>
         <div class="mini-tile" title="Average Return on Equity across tracked symbols with a value"><div class="mini-label">Avg ROE</div><div class="mini-value" id="watchlistMiniRoe">—</div></div>
+      </div>
+      <div class="col-settings">
+        <button type="button" class="col-settings-btn" id="watchlistColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('watchlist')">⚙️</button>
+        <div class="col-settings-menu" id="watchlistColSettingsMenu"></div>
       </div>
     </div>
     <div class="table-scroll">
@@ -574,14 +621,33 @@
         <label class="nav-toggle"><input type="checkbox" checked data-index="Nifty 50" onchange="onNavIndexToggle(this)"> Nifty 50</label>
         <label class="nav-toggle"><input type="checkbox" checked data-index="Nifty 500" onchange="onNavIndexToggle(this)"> Nifty 500</label>
         <label class="nav-toggle"><input type="checkbox" checked data-index="Nifty Midcap 150" onchange="onNavIndexToggle(this)"> Midcap 150</label>
+        <label class="nav-toggle"><input type="checkbox" checked data-index="Nifty 200" onchange="onNavIndexToggle(this)"> Nifty 200</label>
       </div>
     </div>
     <div id="historyChartArea">
       <div class="history-empty" id="historyEmpty">
         Building history — this chart plots your stock portfolio's value over time (ETFs excluded — they're
-        a cushion, not the benchmark) against Nifty 50, Nifty 500, and Nifty Midcap 150. It needs at least 2
+        a cushion, not the benchmark) against Nifty 50, Nifty 500, Nifty Midcap 150, and Nifty 200. It needs at least 2
         days of snapshots in the <b>History</b> tab; check back after tomorrow's snapshot lands, or ask
         Claude for the one-time setup script if this is a fresh sheet.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>XIRR Performance <span class="meta">— money-weighted annualized return, Total vs Stocks vs ETFs, snapshotted once a day</span></h2>
+      </div>
+    </div>
+    <div id="xirrChartArea">
+      <div class="history-empty" id="xirrHistoryEmpty">
+        Building XIRR history — this chart plots your Total, Stock, and ETF XIRR (annualized, money-weighted return)
+        over time so you can see which side of the portfolio is performing better. It needs at least 2 daily
+        snapshots with a computable XIRR in the <b>XirrHistory</b> tab (each holding must be 30+ days old before an
+        annualized rate can be computed) — check back once both conditions are met. Note: this can't be
+        backfilled — each day's figures reflect that day's holdings, so the series only starts accumulating from
+        whenever this feature was first set up.
       </div>
     </div>
   </div>
@@ -664,6 +730,7 @@
   const INDICES_SHEET_NAME = 'Indices'; // auto-populated daily by the Apps Script updateIndices() job — powers the Market Indices panel's history/sparkline
   const LIVE_INDICES_SHEET_NAME = 'LiveIndices'; // small GOOGLEFINANCE-formula block Google Sheets keeps recalculating on its own — powers the Market Indices panel's live intraday value
   const WATCHLIST_SHEET_NAME = 'Watchlist'; // Column A (Symbol) is user-maintained; the rest is auto-filled daily by the Apps Script updateWatchlist() job — powers the Fundamentals (Watchlist) panel
+  const XIRR_HISTORY_SHEET_NAME = 'XirrHistory'; // auto-populated daily by the Apps Script snapshotXirrHistory() job (runs alongside snapshotPortfolioHistory) — powers the XIRR Performance panel
 
   let autoTimer = null;
   let lastStocks = [];
@@ -673,12 +740,14 @@
   let lastPriceHistory = {}; // normalized symbol -> [{date, price}, ...] sorted ascending by date
   let lastSoldStocks = []; // closed positions read from the Sold Stocks tab
   let lastFundamentals = []; // P/E, ROCE, ROE per holding, read from the Fundamentals tab
+  let lastPortfolioBeta = NaN; // value-weighted portfolio beta vs Nifty 50, read from the "Portfolio Beta" summary row in the Fundamentals tab
   let lastIndices = {}; // index name -> [{date, value}, ...] sorted ascending by date, read from the daily-snapshot Indices tab
   let lastLiveIndices = {}; // index name -> {value, change, changePct}, read from the always-fresh LiveIndices tab
   let lastWatchlist = []; // P/E, ROCE, ROE, Sales/Profit growth per tracked (not held) symbol, read from the Watchlist tab
+  let lastXirrHistory = []; // [{date, total, stock, etf}] sorted ascending by date, read from the daily-snapshot XirrHistory tab — total/stock/etf are % or null
   // Which index lines are checked on in the "Portfolio NAV vs Market Indices" chart — Portfolio NAV itself
   // always shows and has no checkbox; at least one index must stay checked (enforced in onNavIndexToggle).
-  let navChartVisibleIndices = new Set(['Nifty 50', 'Nifty 500', 'Nifty Midcap 150']);
+  let navChartVisibleIndices = new Set(['Nifty 50', 'Nifty 500', 'Nifty Midcap 150', 'Nifty 200']);
   // Top Movers period default: "Today" during the trading day (9:15 AM – 11:59 PM IST, matching the
   // NSE market-open time used elsewhere in this dashboard), "Since Buy Date" otherwise (before the
   // market opens). Computed in IST explicitly since NSE hours don't depend on the viewer's timezone.
@@ -719,6 +788,17 @@
   let soldSort = { key: 'sellDate', dir: -1 }; // most recently sold first, by default
   let fundSort = { key: 'symbol', dir: 1 };
   let watchlistSort = { key: 'symbol', dir: 1 };
+
+  // Column-visibility settings (gear icon on the Fundamentals/Watchlist panels). "Stock" is always
+  // visible (marked fixed: true on its column def); everything else can be hidden per table. Persisted
+  // to the "DashboardSettings" tab via the DashboardSettings.gs Web App so the choice survives across
+  // devices/sessions — read once at startup by syncDashboardSettings(), written by saveColumnSettings().
+  const SETTINGS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwQN-vEwFZO-Wt5XLwstJkp2tQ6zuF9IZAjn0xtXvuEqajSYpS2luqDyJUV_H97XCqHlg/exec';
+  const SETTINGS_TOKEN = 'lDkf1bbPUy1zjTwhS5IQMpdvz6NHak-E';
+  let fundHiddenColumns = new Set();
+  let watchlistHiddenColumns = new Set();
+  let stocksHiddenColumns = new Set();
+  let etfHiddenColumns = new Set();
 
   const CONCENTRATION_THRESHOLD = 15; // % of book — flag any single holding above this
   const LTCG_DAYS = 365; // India: listed equity held 365+ days qualifies for LTCG tax treatment
@@ -779,7 +859,7 @@
   };
 
   const STOCKS_COLUMNS = [
-    { key: 'symbol', label: 'Stock' }, { key: 'sector', label: 'Sector' }, { key: 'cap', label: 'Mkt Cap' },
+    { key: 'symbol', label: 'Stock', fixed: true }, { key: 'sector', label: 'Sector' }, { key: 'cap', label: 'Mkt Cap' },
     { key: 'qty', label: 'Qty', num: true }, { key: 'buy', label: 'Buy', num: true }, { key: 'ltp', label: 'LTP', num: true },
     { key: 'invested', label: 'Invested', num: true }, { key: 'value', label: 'Value', num: true },
     { key: 'gain', label: 'Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
@@ -788,7 +868,7 @@
     { key: 'annReturn', label: 'Ann. %', num: true, title: 'Annualized return since first Buy Date (shown after 30 days held). Approximate — based on first purchase date only.' },
   ];
   const ETF_COLUMNS = [
-    { key: 'symbol', label: 'ETF' }, { key: 'qty', label: 'Qty', num: true }, { key: 'buy', label: 'Buy', num: true }, { key: 'ltp', label: 'LTP', num: true },
+    { key: 'symbol', label: 'ETF', fixed: true }, { key: 'qty', label: 'Qty', num: true }, { key: 'buy', label: 'Buy', num: true }, { key: 'ltp', label: 'LTP', num: true },
     { key: 'invested', label: 'Invested', num: true }, { key: 'value', label: 'Value', num: true },
     { key: 'gain', label: 'Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
     { key: 'dayGain', label: 'Day ₹', num: true }, { key: 'dayPct', label: 'Day %', num: true }, { key: 'wt', label: 'Wt %', num: true },
@@ -805,10 +885,11 @@
     { key: 'reason', label: 'Reason', title: 'Why you sold — from the "Reasons for sold out" column in the Sold Stocks tab' },
   ];
   const BASE_FUND_COLUMNS = [
-    { key: 'symbol', label: 'Stock' },
+    { key: 'symbol', label: 'Stock', fixed: true },
     { key: 'pe', label: 'P/E', num: true, title: 'Stock Price / Earnings per share — lower can mean cheaper, but compare within the same sector' },
     { key: 'roce', label: 'ROCE %', num: true, title: 'Return on Capital Employed — how efficiently the company turns capital into profit' },
     { key: 'roe', label: 'ROE %', num: true, title: 'Return on Equity — profit generated per rupee of shareholder equity' },
+    { key: 'beta', label: 'Beta', num: true, title: '3-year weekly beta vs. Nifty 50 — above 1 moves more than the index, below 1 moves less. Computed for holdings only; blank for Watchlist symbols.' },
     { key: 'sales3yr', label: '3Y Sales', num: true, title: '3-year compounded (CAGR) Sales growth, from the Profit & Loss statement' },
     { key: 'profit3yr', label: '3Y Profit', num: true, title: '3-year compounded (CAGR) Net Profit growth, from the Profit & Loss statement' },
     { key: 'salesYoyQ2', label: 'Sales YoY', num: true, periodKey: 'salesYoyQ2Period', title: 'Year-over-year Sales growth, 2 quarters before the latest reported quarter' },
@@ -851,6 +932,176 @@
     else if (table === 'fund') { renderFundamentals(lastFundamentals); }
     else if (table === 'watchlist') { renderWatchlist(lastWatchlist); }
     else { render(lastStocks, lastEtfs); }
+  }
+
+  // Filters a column list down to what should actually render, given a Set of hidden column keys.
+  // Columns marked fixed: true (currently just "Stock") always pass through regardless of hiddenSet.
+  function visibleColumns(allColumns, hiddenSet) {
+    return allColumns.filter(c => c.fixed || !hiddenSet.has(c.key));
+  }
+
+  function growthCell(v, d = 2) {
+    return isFinite(v) ? `<span class="${chgClass(v)}">${fmtPct(v, d)}</span>` : '—';
+  }
+
+  // A Fundamentals/Watchlist row counts as "having data" once at least one of its three headline metrics
+  // (P/E, ROCE, ROE) has a real value. Rows that don't yet — a symbol just added before its first daily
+  // refresh, or a stray/invalid entry in the sheet — are excluded from the table entirely rather than
+  // shown as a row of dashes; they still count toward "pending next refresh" in the panel sub-meta.
+  function hasFundData(r) {
+    return isFinite(r.pe) || isFinite(r.roce) || isFinite(r.roe);
+  }
+
+  // Single source of truth for one Fundamentals/Watchlist cell's inner HTML, keyed by column — shared by
+  // both renderFundamentals() and renderWatchlist() since they're the same column set (BASE_FUND_COLUMNS)
+  // over two different symbol lists. withChartLink adds the TradingView 📈 link Watchlist rows get next
+  // to the symbol that Holdings rows don't (Holdings already links out from elsewhere on the dashboard).
+  function fundCellHtml(colKey, r, withChartLink) {
+    switch (colKey) {
+      case 'symbol':
+        return `<a class="sym-link" href="${screenerUrl(r.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(r.symbol)}</a>` +
+          (withChartLink ? `<a class="sym-chart-link" href="${tradingViewUrl(r.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a>` : '');
+      case 'pe': return isFinite(r.pe) ? fmtNum(r.pe, 1) : '—';
+      case 'roce': return isFinite(r.roce) ? fmtNum(r.roce, 1) + '%' : '—';
+      case 'roe': return isFinite(r.roe) ? fmtNum(r.roe, 1) + '%' : '—';
+      case 'beta': return isFinite(r.beta) ? fmtNum(r.beta, 2) : '—';
+      case 'sales3yr': return growthCell(r.sales3yr, 0);
+      case 'profit3yr': return growthCell(r.profit3yr, 0);
+      case 'salesYoyQ2': return growthCell(r.salesYoyQ2, 0);
+      case 'salesYoyQ1': return growthCell(r.salesYoyQ1, 0);
+      case 'salesYoyLatest': return growthCell(r.salesYoyLatest, 0);
+      case 'profitYoyQ2': return growthCell(r.profitYoyQ2, 0);
+      case 'profitYoyQ1': return growthCell(r.profitYoyQ1, 0);
+      case 'profitYoyLatest': return growthCell(r.profitYoyLatest, 0);
+      case 'annSales': return growthCell(r.annSales, 0);
+      case 'annOpProfit': return growthCell(r.annOpProfit, 0);
+      case 'annProfit': return growthCell(r.annProfit, 0);
+      case 'stage': return r.stage ? escapeHtmlText(r.stage) : '—';
+      case 'maLines': return r.maLines ? escapeHtmlText(r.maLines) : '—';
+      default: return '—';
+    }
+  }
+
+  // Renders one <tr>'s worth of <td>s for a Fundamentals/Watchlist row, restricted to `columns` (the
+  // currently-visible column list from visibleColumns()) so hidden columns simply aren't emitted.
+  function fundRowTds(r, columns, withChartLink) {
+    return columns.map(c => {
+      const cls = c.key === 'symbol' ? 'sym' : (c.num ? 'num' : '');
+      return `<td${cls ? ` class="${cls}"` : ''}>${fundCellHtml(c.key, r, withChartLink)}</td>`;
+    }).join('');
+  }
+
+  // Single source of truth for one Stocks-table <td>, keyed by column — mirrors fundCellHtml's role for
+  // the Fundamentals/Watchlist tables, but returns the whole <td ...>...</td> (not just inner HTML) since
+  // several stock columns need a conditional class/title on the cell itself (wt-flag concentration
+  // warning, colored gain/loss classes) rather than just on inner content.
+  function stocksCellTd(colKey, s) {
+    const flagged = s.wt > CONCENTRATION_THRESHOLD;
+    switch (colKey) {
+      case 'symbol':
+        return `<td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(s.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a></td>`;
+      case 'sector': return `<td class="sec">${escapeHtmlText(s.sector)}</td>`;
+      case 'cap': return `<td class="sec">${escapeHtmlText(s.cap.replace(' Cap', ''))}</td>`;
+      case 'qty': return `<td class="num">${fmtNum(s.qty, 0)}</td>`;
+      case 'buy': return `<td class="num">${fmtNum(s.buy)}</td>`;
+      case 'ltp': return `<td class="num">${fmtNum(s.ltp)}</td>`;
+      case 'invested': return `<td class="num">${fmtMoney(s.invested)}</td>`;
+      case 'value': return `<td class="num">${fmtMoney(s.value)}</td>`;
+      case 'gain': return `<td class="num ${chgClass(s.gain)}">${s.gain >= 0 ? '+' : ''}${fmtMoney(s.gain)}</td>`;
+      case 'gainPct': return `<td class="num ${chgClass(s.gainPct)}">${fmtPct(s.gainPct)}</td>`;
+      case 'dayGain': return `<td class="num ${chgClass(s.dayGain)}">${s.dayGain >= 0 ? '+' : ''}${fmtMoney(s.dayGain)}</td>`;
+      case 'dayPct': return `<td class="num ${chgClass(s.dayPct)}">${fmtPct(s.dayPct)}</td>`;
+      case 'wt':
+        return `<td class="num${flagged ? ' wt-flag' : ''}"${flagged ? ` title="High concentration — over ${CONCENTRATION_THRESHOLD}% of your stocks book"` : ''}>${flagged ? '⚠ ' : ''}${fmtNum(s.wt)}%</td>`;
+      case 'daysHeld': {
+        const heldCell = s.buyDateIsFuture
+          ? `<span class="wt-flag" title="This Buy Date (${s.buyDate.toDateString()}) is in the future — almost always a day/month mix-up, e.g. 11/08 typed and stored as 8 Nov instead of 11 Aug. Fix the cell in your sheet to a date already in the past.">⚠ check date</span>`
+          : isFinite(s.daysHeld)
+          ? `${fmtNum(s.daysHeld, 0)}d<span class="ltcg-badge ${s.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${s.ltEligible ? 'Long-term — held 365+ days, eligible for LTCG tax treatment' : `Short-term — ${LTCG_DAYS - s.daysHeld} more day${LTCG_DAYS - s.daysHeld === 1 ? '' : 's'} until LTCG (365-day) eligibility`}">${s.ltEligible ? 'LT' : 'ST'}</span>`
+          : '—';
+        return `<td class="num">${heldCell}</td>`;
+      }
+      case 'annReturn': {
+        const annCell = isFinite(s.annReturn)
+          ? `<span class="${chgClass(s.annReturn)}">${fmtPct(s.annReturn)}</span>`
+          : (isFinite(s.daysHeld) ? `<span class="chg-flat" title="Available after ${ANN_RETURN_MIN_DAYS} days held — ${s.daysHeld} so far">—</span>` : '—');
+        return `<td class="num">${annCell}</td>`;
+      }
+      default: return '<td></td>';
+    }
+  }
+  function stocksRowTds(s, columns) { return columns.map(c => stocksCellTd(c.key, s)).join(''); }
+
+  function stocksFootTd(colKey, view, isFiltered, shareOfBook) {
+    switch (colKey) {
+      case 'symbol': return `<td>${isFiltered ? 'Filtered Total' : 'Stocks Total'}</td>`;
+      case 'invested': return `<td class="num">${fmtMoney(view.invested)}</td>`;
+      case 'value': return `<td class="num">${fmtMoney(view.value)}</td>`;
+      case 'gain': return `<td class="num ${chgClass(view.gain)}">${view.gain >= 0 ? '+' : ''}${fmtMoney(view.gain)}</td>`;
+      case 'gainPct': return `<td class="num ${chgClass(view.gainPct)}">${fmtPct(view.gainPct)}</td>`;
+      case 'dayGain': return `<td class="num ${chgClass(view.dayGain)}">${view.dayGain >= 0 ? '+' : ''}${fmtMoney(view.dayGain)}</td>`;
+      case 'dayPct': return `<td class="num ${chgClass(view.dayPct)}">${fmtPct(view.dayPct)}</td>`;
+      case 'wt': return `<td class="num">${fmtNum(shareOfBook, 1)}%</td>`;
+      case 'daysHeld': case 'annReturn': return `<td class="num"></td>`;
+      default: return '<td></td>'; // sector, cap, qty, buy, ltp — blank in the totals row
+    }
+  }
+  function stocksFootTds(columns, view, isFiltered, shareOfBook) {
+    return columns.map(c => stocksFootTd(c.key, view, isFiltered, shareOfBook)).join('');
+  }
+
+  // Same idea as stocksCellTd, for the ETF table — same column shape minus Sector/Mkt Cap, and the
+  // symbol cell is plain text (no Screener.in/TradingView links, since ETFs aren't individual companies).
+  function etfCellTd(colKey, e) {
+    const flagged = e.wt > CONCENTRATION_THRESHOLD;
+    switch (colKey) {
+      case 'symbol': return `<td class="sym">${escapeHtmlText(e.symbol)}</td>`;
+      case 'qty': return `<td class="num">${fmtNum(e.qty, 0)}</td>`;
+      case 'buy': return `<td class="num">${fmtNum(e.buy)}</td>`;
+      case 'ltp': return `<td class="num">${fmtNum(e.ltp)}</td>`;
+      case 'invested': return `<td class="num">${fmtMoney(e.invested)}</td>`;
+      case 'value': return `<td class="num">${fmtMoney(e.value)}</td>`;
+      case 'gain': return `<td class="num ${chgClass(e.gain)}">${e.gain >= 0 ? '+' : ''}${fmtMoney(e.gain)}</td>`;
+      case 'gainPct': return `<td class="num ${chgClass(e.gainPct)}">${fmtPct(e.gainPct)}</td>`;
+      case 'dayGain': return `<td class="num ${chgClass(e.dayGain)}">${e.dayGain >= 0 ? '+' : ''}${fmtMoney(e.dayGain)}</td>`;
+      case 'dayPct': return `<td class="num ${chgClass(e.dayPct)}">${fmtPct(e.dayPct)}</td>`;
+      case 'wt':
+        return `<td class="num${flagged ? ' wt-flag' : ''}"${flagged ? ` title="High concentration — over ${CONCENTRATION_THRESHOLD}% of your ETF book"` : ''}>${flagged ? '⚠ ' : ''}${fmtNum(e.wt)}%</td>`;
+      case 'daysHeld': {
+        const heldCell = e.buyDateIsFuture
+          ? `<span class="wt-flag" title="This lot's Buy Date (${e.buyDate.toDateString()}) is in the future — almost always a day/month mix-up. Fix it in your \"ETF\" tab to a date already in the past.">⚠ check date</span>`
+          : isFinite(e.daysHeld)
+          ? `${fmtNum(e.daysHeld, 0)}d<span class="ltcg-badge ${e.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${e.ltEligible ? 'Long-term — held 365+ days, eligible for LTCG tax treatment' : `Short-term — ${LTCG_DAYS - e.daysHeld} more day${LTCG_DAYS - e.daysHeld === 1 ? '' : 's'} until LTCG (365-day) eligibility`}">${e.ltEligible ? 'LT' : 'ST'}</span>`
+          : '—';
+        return `<td class="num">${heldCell}</td>`;
+      }
+      case 'annReturn': {
+        const annCell = isFinite(e.annReturn)
+          ? `<span class="${chgClass(e.annReturn)}">${fmtPct(e.annReturn)}</span>`
+          : (isFinite(e.daysHeld) ? `<span class="chg-flat" title="Available after ${ANN_RETURN_MIN_DAYS} days held — ${e.daysHeld} so far">—</span>` : '—');
+        return `<td class="num">${annCell}</td>`;
+      }
+      default: return '<td></td>';
+    }
+  }
+  function etfRowTds(e, columns) { return columns.map(c => etfCellTd(c.key, e)).join(''); }
+
+  function etfFootTd(colKey, etfInvested, etfValue, etfGain, etfGainPct, etfDayGain, etfDayPct) {
+    switch (colKey) {
+      case 'symbol': return `<td>ETF Total</td>`;
+      case 'invested': return `<td class="num">${fmtMoney(etfInvested)}</td>`;
+      case 'value': return `<td class="num">${fmtMoney(etfValue)}</td>`;
+      case 'gain': return `<td class="num ${chgClass(etfGain)}">${etfGain >= 0 ? '+' : ''}${fmtMoney(etfGain)}</td>`;
+      case 'gainPct': return `<td class="num ${chgClass(etfGainPct)}">${fmtPct(etfGainPct)}</td>`;
+      case 'dayGain': return `<td class="num ${chgClass(etfDayGain)}">${etfDayGain >= 0 ? '+' : ''}${fmtMoney(etfDayGain)}</td>`;
+      case 'dayPct': return `<td class="num ${chgClass(etfDayPct)}">${fmtPct(etfDayPct)}</td>`;
+      case 'wt': return `<td class="num">${etfValue ? '100.0%' : '—'}</td>`;
+      case 'daysHeld': case 'annReturn': return `<td class="num"></td>`;
+      default: return '<td></td>'; // qty, buy, ltp — blank in the totals row
+    }
+  }
+  function etfFootTds(columns, etfInvested, etfValue, etfGain, etfGainPct, etfDayGain, etfDayPct) {
+    return columns.map(c => etfFootTd(c.key, etfInvested, etfValue, etfGain, etfGainPct, etfDayGain, etfDayPct)).join('');
   }
 
   function renderThead(theadId, columns, table, periods) {
@@ -1048,6 +1299,8 @@
         syncIndices(),       // independent, optional — Nifty 50/500/Midcap 150 broader-market indices, updated daily by Apps Script
         syncLiveIndices(),   // independent, optional — always-fresh GOOGLEFINANCE live value/change for the same 3 indices
         syncWatchlist(),     // independent, optional — tracked (not held) stocks' price + fundamentals, updated daily by Apps Script
+        syncDashboardSettings(), // independent, optional — saved column-visibility choice for the Fundamentals/Watchlist panels
+        syncXirrHistory(),   // independent, optional — daily Total/Stock/ETF XIRR snapshots for the XIRR Performance panel
       ]);
     } catch (err) {
       setStatus('err', 'Sync failed');
@@ -1187,44 +1440,19 @@
     document.getElementById('stocksSubMeta').innerHTML =
       `${visibleStocks.length}${isFiltered ? ` of ${stocks.length}` : ''} holdings · Invested ${fmtMoney(view.invested)} → ${fmtMoney(view.value)} <span class="${chgClass(view.gainPct)}">(${fmtPct(view.gainPct)})</span> · Today <span class="${chgClass(view.dayPct)}">${fmtMoney(view.dayGain)} (${fmtPct(view.dayPct)})</span>${filterLabel}${concentrationLabel}`;
 
-    renderThead('stocksThead', STOCKS_COLUMNS, 'stocks');
+    const stocksVisibleCols = visibleColumns(STOCKS_COLUMNS, stocksHiddenColumns);
+    renderThead('stocksThead', stocksVisibleCols, 'stocks');
     const stocksBody = document.getElementById('stocksBody');
     if (!visibleStocks.length) {
-      stocksBody.innerHTML = `<tr><td colspan="15" class="skel">No holdings match this filter.</td></tr>`;
+      stocksBody.innerHTML = `<tr><td colspan="${stocksVisibleCols.length}" class="skel">No holdings match this filter.</td></tr>`;
     } else {
       stocksBody.innerHTML = sortRows(visibleStocks, stocksSort.key, stocksSort.dir)
-        .map(s => {
-          const flagged = s.wt > CONCENTRATION_THRESHOLD;
-          const heldCell = s.buyDateIsFuture
-            ? `<span class="wt-flag" title="This Buy Date (${s.buyDate.toDateString()}) is in the future — almost always a day/month mix-up, e.g. 11/08 typed and stored as 8 Nov instead of 11 Aug. Fix the cell in your sheet to a date already in the past.">⚠ check date</span>`
-            : isFinite(s.daysHeld)
-            ? `${fmtNum(s.daysHeld, 0)}d<span class="ltcg-badge ${s.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${s.ltEligible ? 'Long-term — held 365+ days, eligible for LTCG tax treatment' : `Short-term — ${LTCG_DAYS - s.daysHeld} more day${LTCG_DAYS - s.daysHeld === 1 ? '' : 's'} until LTCG (365-day) eligibility`}">${s.ltEligible ? 'LT' : 'ST'}</span>`
-            : '—';
-          const annCell = isFinite(s.annReturn)
-            ? `<span class="${chgClass(s.annReturn)}">${fmtPct(s.annReturn)}</span>`
-            : (isFinite(s.daysHeld) ? `<span class="chg-flat" title="Available after ${ANN_RETURN_MIN_DAYS} days held — ${s.daysHeld} so far">—</span>` : '—');
-          return `<tr>
-            <td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${s.symbol}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a></td><td class="sec">${s.sector}</td><td class="sec">${s.cap.replace(' Cap', '')}</td>
-            <td class="num">${fmtNum(s.qty, 0)}</td><td class="num">${fmtNum(s.buy)}</td><td class="num">${fmtNum(s.ltp)}</td>
-            <td class="num">${fmtMoney(s.invested)}</td><td class="num">${fmtMoney(s.value)}</td>
-            <td class="num ${chgClass(s.gain)}">${s.gain >= 0 ? '+' : ''}${fmtMoney(s.gain)}</td>
-            <td class="num ${chgClass(s.gainPct)}">${fmtPct(s.gainPct)}</td>
-            <td class="num ${chgClass(s.dayGain)}">${s.dayGain >= 0 ? '+' : ''}${fmtMoney(s.dayGain)}</td>
-            <td class="num ${chgClass(s.dayPct)}">${fmtPct(s.dayPct)}</td>
-            <td class="num${flagged ? ' wt-flag' : ''}"${flagged ? ` title="High concentration — over ${CONCENTRATION_THRESHOLD}% of your stocks book"` : ''}>${flagged ? '⚠ ' : ''}${fmtNum(s.wt)}%</td>
-            <td class="num">${heldCell}</td>
-            <td class="num">${annCell}</td>
-          </tr>`;
-        }).join('');
+        .map(s => `<tr>${stocksRowTds(s, stocksVisibleCols)}</tr>`).join('');
     }
     const shareOfBook = stocksInvested ? (view.invested / stocksInvested) * 100 : 0;
     document.getElementById('stocksFoot').innerHTML =
-      `<tr><td>${isFiltered ? 'Filtered Total' : 'Stocks Total'}</td><td></td><td></td><td></td><td></td><td></td>
-        <td class="num">${fmtMoney(view.invested)}</td><td class="num">${fmtMoney(view.value)}</td>
-        <td class="num ${chgClass(view.gain)}">${view.gain >= 0 ? '+' : ''}${fmtMoney(view.gain)}</td>
-        <td class="num ${chgClass(view.gainPct)}">${fmtPct(view.gainPct)}</td>
-        <td class="num ${chgClass(view.dayGain)}">${view.dayGain >= 0 ? '+' : ''}${fmtMoney(view.dayGain)}</td>
-        <td class="num ${chgClass(view.dayPct)}">${fmtPct(view.dayPct)}</td><td class="num">${fmtNum(shareOfBook, 1)}%</td><td class="num"></td><td class="num"></td></tr>`;
+      `<tr>${stocksFootTds(stocksVisibleCols, view, isFiltered, shareOfBook)}</tr>`;
+    renderColSettingsButtonState('stocks');
 
     // ---- ETF table ----
     const etfAgg = computeAgg(etfs);
@@ -1285,41 +1513,17 @@
     document.getElementById('etfSubMeta').innerHTML =
       `${etfs.length} holdings · Invested ${fmtMoney(etfInvested)} → ${fmtMoney(etfValue)} <span class="${chgClass(etfGainPct)}">(${fmtPct(etfGainPct)})</span> · Today <span class="${chgClass(etfDayPct)}">${fmtMoney(etfDayGain)} (${fmtPct(etfDayPct)})</span>${etfConcentrationLabel}`;
 
-    renderThead('etfThead', ETF_COLUMNS, 'etf');
+    const etfVisibleCols = visibleColumns(ETF_COLUMNS, etfHiddenColumns);
+    renderThead('etfThead', etfVisibleCols, 'etf');
     if (!etfs.length) {
-      document.getElementById('etfBody').innerHTML = `<tr><td colspan="13" class="skel">No ETF holdings found.</td></tr>`;
+      document.getElementById('etfBody').innerHTML = `<tr><td colspan="${etfVisibleCols.length}" class="skel">No ETF holdings found.</td></tr>`;
     } else {
       document.getElementById('etfBody').innerHTML = sortRows(etfs, etfSort.key, etfSort.dir)
-        .map(e => {
-          const flagged = e.wt > CONCENTRATION_THRESHOLD;
-          const heldCell = e.buyDateIsFuture
-            ? `<span class="wt-flag" title="This lot's Buy Date (${e.buyDate.toDateString()}) is in the future — almost always a day/month mix-up. Fix it in your \"ETF\" tab to a date already in the past.">⚠ check date</span>`
-            : isFinite(e.daysHeld)
-            ? `${fmtNum(e.daysHeld, 0)}d<span class="ltcg-badge ${e.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${e.ltEligible ? 'Long-term — held 365+ days, eligible for LTCG tax treatment' : `Short-term — ${LTCG_DAYS - e.daysHeld} more day${LTCG_DAYS - e.daysHeld === 1 ? '' : 's'} until LTCG (365-day) eligibility`}">${e.ltEligible ? 'LT' : 'ST'}</span>`
-            : '—';
-          const annCell = isFinite(e.annReturn)
-            ? `<span class="${chgClass(e.annReturn)}">${fmtPct(e.annReturn)}</span>`
-            : (isFinite(e.daysHeld) ? `<span class="chg-flat" title="Available after ${ANN_RETURN_MIN_DAYS} days held — ${e.daysHeld} so far">—</span>` : '—');
-          return `<tr>
-        <td class="sym">${e.symbol}</td><td class="num">${fmtNum(e.qty, 0)}</td><td class="num">${fmtNum(e.buy)}</td><td class="num">${fmtNum(e.ltp)}</td>
-        <td class="num">${fmtMoney(e.invested)}</td><td class="num">${fmtMoney(e.value)}</td>
-        <td class="num ${chgClass(e.gain)}">${e.gain >= 0 ? '+' : ''}${fmtMoney(e.gain)}</td>
-        <td class="num ${chgClass(e.gainPct)}">${fmtPct(e.gainPct)}</td>
-        <td class="num ${chgClass(e.dayGain)}">${e.dayGain >= 0 ? '+' : ''}${fmtMoney(e.dayGain)}</td>
-        <td class="num ${chgClass(e.dayPct)}">${fmtPct(e.dayPct)}</td>
-        <td class="num${flagged ? ' wt-flag' : ''}"${flagged ? ` title="High concentration — over ${CONCENTRATION_THRESHOLD}% of your ETF book"` : ''}>${flagged ? '⚠ ' : ''}${fmtNum(e.wt)}%</td>
-        <td class="num">${heldCell}</td>
-        <td class="num">${annCell}</td>
-      </tr>`;
-        }).join('');
+        .map(e => `<tr>${etfRowTds(e, etfVisibleCols)}</tr>`).join('');
     }
     document.getElementById('etfFoot').innerHTML =
-      `<tr><td>ETF Total</td><td></td><td></td><td></td>
-        <td class="num">${fmtMoney(etfInvested)}</td><td class="num">${fmtMoney(etfValue)}</td>
-        <td class="num ${chgClass(etfGain)}">${etfGain >= 0 ? '+' : ''}${fmtMoney(etfGain)}</td>
-        <td class="num ${chgClass(etfGainPct)}">${fmtPct(etfGainPct)}</td>
-        <td class="num ${chgClass(etfDayGain)}">${etfDayGain >= 0 ? '+' : ''}${fmtMoney(etfDayGain)}</td>
-        <td class="num ${chgClass(etfDayPct)}">${fmtPct(etfDayPct)}</td><td class="num">${etfValue ? '100.0%' : '—'}</td><td class="num"></td><td class="num"></td></tr>`;
+      `<tr>${etfFootTds(etfVisibleCols, etfInvested, etfValue, etfGain, etfGainPct, etfDayGain, etfDayPct)}</tr>`;
+    renderColSettingsButtonState('etf');
 
     // ---- Top tiles ----
     const totalValue = stocksValue + etfValue;
@@ -1393,7 +1597,7 @@
   }
 
   // Portfolio NAV vs Market Indices — index checkbox toggles. Portfolio NAV is fixed and always shows;
-  // the user may uncheck at most 2 of the 3 index checkboxes, since the chart needs at least one index
+  // the user may uncheck all but one of the index checkboxes, since the chart needs at least one index
   // to compare against. Unchecking the last remaining one is blocked (reverted) rather than allowed.
   function onNavIndexToggle(el) {
     const key = el.getAttribute('data-index');
@@ -1976,7 +2180,7 @@
   }
 
   // Reads the "Indices" tab — one row appended per index per day by the Apps Script updateIndices() job
-  // (Nifty 50, Nifty 500, Nifty Midcap 150, Nifty Bank, Nifty Next 50, Nifty Smallcap 100 — pulled from
+  // (Nifty 50, Nifty 500, Nifty Midcap 150, Nifty Bank, Nifty 200, Nifty Smallcap 100 — pulled from
   // Google/Yahoo Finance), same append-daily shape as the Price History tab. Grouped here by index name
   // into ascending-by-date series, which powers the tile grid's latest-value/day-change, the Portfolio
   // NAV vs Market Indices chart, and (for Nifty 50 specifically) the Daily Performance chart's
@@ -2012,6 +2216,30 @@
     } catch (err) {
       lastIndices = {};
       renderIndicesTiles({}); // let the combined live+historical check below decide whether to hide the panel
+    }
+  }
+
+  // Reads the "XirrHistory" tab — Total/Stock/ETF XIRR snapshotted once a day by the Apps Script
+  // snapshotXirrHistory() job (runs right after snapshotPortfolioHistory's own History/Indices snapshot,
+  // same daily trigger). Independent of syncHistory()/syncIndices() — resolves on its own via
+  // Promise.all in syncFromSheet, and re-renders its own chart as soon as its data lands.
+  async function syncXirrHistory() {
+    try {
+      const rows = await fetchSheet(XIRR_HISTORY_SHEET_NAME);
+      const points = rows
+        .map(o => ({
+          date: parseGvizDate(pick(o, 'Date')),
+          total: num(pick(o, 'Total XIRR')),
+          stock: num(pick(o, 'Stock XIRR')),
+          etf: num(pick(o, 'ETF XIRR')),
+        }))
+        .filter(p => p.date);
+      points.sort((a, b) => a.date - b.date);
+      lastXirrHistory = points;
+      renderXirrPerformanceChart();
+    } catch (err) {
+      lastXirrHistory = [];
+      renderXirrPerformanceChart(); // tab doesn't exist yet, or a transient fetch error — falls back to the empty state
     }
   }
 
@@ -2126,6 +2354,17 @@
   async function syncFundamentals() {
     try {
       const rows = await fetchSheet(FUNDAMENTALS_SHEET_NAME);
+      // The "Portfolio Beta (value-weighted, vs Nifty 50)" row is a summary note updateBeta() writes into
+      // this same tab (Stock column holds the label, Beta column holds the number) — pull it out separately
+      // rather than letting it fall through the per-stock filter below as a fake holding. The sheet can
+      // currently have more than one of these (a stale run left one behind with a blank Beta value before
+      // a later run added the correct one) — take the LAST one with an actual number rather than just the
+      // first match, so a leftover blank duplicate can't shadow the real value.
+      const betaRows = rows.filter(o => /^portfolio beta/i.test(String(pick(o, 'Stock', 'Symbol') || '').trim()));
+      lastPortfolioBeta = betaRows.reduce((acc, o) => {
+        const v = num(pick(o, 'Beta (3Y Wkly)', 'Beta'));
+        return isFinite(v) ? v : acc;
+      }, NaN);
       const parsed = rows.map(o => {
         const sq2 = pick(o, 'Sales YoY (Q-2)'), pq2 = pick(o, 'Profit YoY (Q-2)');
         const sq1 = pick(o, 'Sales YoY (Q-1)'), pq1 = pick(o, 'Profit YoY (Q-1)');
@@ -2135,6 +2374,7 @@
           pe: num(pick(o, 'P/E')),
           roce: num(pick(o, 'ROCE (%)', 'ROCE')),
           roe: num(pick(o, 'ROE (%)', 'ROE')),
+          beta: num(pick(o, 'Beta (3Y Wkly)', 'Beta')),
           salesYoyQ2: num(sq2), salesYoyQ2Period: extractPeriod(sq2),
           profitYoyQ2: num(pq2), profitYoyQ2Period: extractPeriod(pq2),
           salesYoyQ1: num(sq1), salesYoyQ1Period: extractPeriod(sq1),
@@ -2148,11 +2388,12 @@
           annProfit: num(pick(o, 'Ann. Profit')), annProfitPeriod: extractPeriod(pick(o, 'Ann. Profit')),
           lastUpdated: parseGvizDate(pick(o, 'Last Updated')),
         };
-      }).filter(r => r.symbol && String(r.symbol).trim());
+      }).filter(r => r.symbol && String(r.symbol).trim() && !/^portfolio beta/i.test(String(r.symbol).trim()));
       lastFundamentals = parsed;
       renderFundamentals(parsed);
     } catch (err) {
       lastFundamentals = [];
+      lastPortfolioBeta = NaN;
       document.getElementById('fundamentalsPanel').style.display = 'none';
     }
   }
@@ -2173,13 +2414,16 @@
     setMini('fundMiniPe', avgOf('pe'));
     setMini('fundMiniRoce', avgOf('roce'), '%');
     setMini('fundMiniRoe', avgOf('roe'), '%');
+    // Portfolio beta is value-weighted (bigger holdings count more), not a plain average of the per-stock
+    // betas below — it comes from its own summary row in the sheet, parsed separately in syncFundamentals().
+    setMini('fundMiniBeta', lastPortfolioBeta);
 
     const latestUpdate = rows.reduce((max, r) => (r.lastUpdated && (!max || r.lastUpdated > max)) ? r.lastUpdated : max, null);
     const missingCount = rows.filter(r => !isFinite(r.pe) && !isFinite(r.roce) && !isFinite(r.roe)).length;
     document.getElementById('fundSubMeta').textContent =
       `${rows.length} holding${rows.length === 1 ? '' : 's'}` +
       (latestUpdate ? ` · Updated ${latestUpdate.toLocaleDateString('en-IN')}` : '') +
-      (missingCount ? ` · ${missingCount} pending next refresh` : '');
+      (missingCount ? ` · ${missingCount} hidden, pending next refresh` : '');
 
     // Reported-quarter label for each growth column, shown once in the header rather than per row.
     // Different symbols can report a few days apart, so use the most common period among holdings.
@@ -2192,7 +2436,8 @@
     };
     const periods = {};
     FUND_COLUMNS.forEach(c => { if (c.periodKey) periods[c.key] = modePeriod(c.periodKey); });
-    renderThead('fundThead', FUND_COLUMNS, 'fund', periods);
+    const fundVisibleCols = visibleColumns(FUND_COLUMNS, fundHiddenColumns);
+    renderThead('fundThead', fundVisibleCols, 'fund', periods);
 
     // Stage / MA Lines aren't in the Fundamentals sheet — they're read from the Portfolio tab (lastStocks)
     // and matched here by symbol, so this table always reflects whatever you last typed into those two
@@ -2202,27 +2447,9 @@
     lastStocks.forEach(s => { stageInfoBySymbol[s.symbol] = { stage: s.stage || '', maLines: s.maLines || '' }; });
     const enrichedRows = rows.map(r => Object.assign({}, r, stageInfoBySymbol[r.symbol] || { stage: '', maLines: '' }));
 
-    const growthCell = (v, d = 2) => isFinite(v) ? `<span class="${chgClass(v)}">${fmtPct(v, d)}</span>` : '—';
-    document.getElementById('fundBody').innerHTML = sortRows(enrichedRows, fundSort.key, fundSort.dir).map(r => `
-      <tr>
-        <td class="sym"><a class="sym-link" href="${screenerUrl(r.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(r.symbol)}</a></td>
-        <td class="num">${isFinite(r.pe) ? fmtNum(r.pe, 1) : '—'}</td>
-        <td class="num">${isFinite(r.roce) ? fmtNum(r.roce, 1) + '%' : '—'}</td>
-        <td class="num">${isFinite(r.roe) ? fmtNum(r.roe, 1) + '%' : '—'}</td>
-        <td class="num">${growthCell(r.sales3yr, 0)}</td>
-        <td class="num">${growthCell(r.profit3yr, 0)}</td>
-        <td class="num">${growthCell(r.salesYoyQ2, 0)}</td>
-        <td class="num">${growthCell(r.salesYoyQ1, 0)}</td>
-        <td class="num">${growthCell(r.salesYoyLatest, 0)}</td>
-        <td class="num">${growthCell(r.profitYoyQ2, 0)}</td>
-        <td class="num">${growthCell(r.profitYoyQ1, 0)}</td>
-        <td class="num">${growthCell(r.profitYoyLatest, 0)}</td>
-        <td class="num">${growthCell(r.annSales, 0)}</td>
-        <td class="num">${growthCell(r.annOpProfit, 0)}</td>
-        <td class="num">${growthCell(r.annProfit, 0)}</td>
-        <td>${r.stage ? escapeHtmlText(r.stage) : '—'}</td>
-        <td>${r.maLines ? escapeHtmlText(r.maLines) : '—'}</td>
-      </tr>`).join('');
+    document.getElementById('fundBody').innerHTML = sortRows(enrichedRows.filter(hasFundData), fundSort.key, fundSort.dir)
+      .map(r => `<tr>${fundRowTds(r, fundVisibleCols, false)}</tr>`).join('');
+    renderColSettingsButtonState('fund');
   }
 
   // Reads the "Watchlist" tab — Column A (Symbol) is maintained by hand, the rest auto-filled once a day
@@ -2241,6 +2468,9 @@
           pe: num(pick(o, 'P/E')),
           roce: num(pick(o, 'ROCE (%)', 'ROCE')),
           roe: num(pick(o, 'ROE (%)', 'ROE')),
+          // Watchlist symbols aren't held, so updateBeta() (Apps Script) doesn't compute beta for them —
+          // this stays NaN/'—' unless that job is extended to cover the Watchlist tab too.
+          beta: num(pick(o, 'Beta (3Y Wkly)', 'Beta')),
           salesYoyQ2: num(sq2), salesYoyQ2Period: extractPeriod(sq2),
           profitYoyQ2: num(pq2), profitYoyQ2Period: extractPeriod(pq2),
           salesYoyQ1: num(sq1), salesYoyQ1Period: extractPeriod(sq1),
@@ -2285,7 +2515,7 @@
     document.getElementById('watchlistSubMeta').textContent =
       `${rows.length} symbol${rows.length === 1 ? '' : 's'} tracked` +
       (latestUpdate ? ` · Updated ${latestUpdate.toLocaleDateString('en-IN')}` : '') +
-      (missingCount ? ` · ${missingCount} pending next refresh` : '');
+      (missingCount ? ` · ${missingCount} hidden, pending next refresh` : '');
 
     // Reported-quarter label for each growth column, shown once in the header rather than per row —
     // same "most common period among rows" approach as the Fundamentals (Holdings) panel.
@@ -2298,27 +2528,12 @@
     };
     const periods = {};
     WATCHLIST_COLUMNS.forEach(c => { if (c.periodKey) periods[c.key] = modePeriod(c.periodKey); });
-    renderThead('watchlistThead', WATCHLIST_COLUMNS, 'watchlist', periods);
+    const watchlistVisibleCols = visibleColumns(WATCHLIST_COLUMNS, watchlistHiddenColumns);
+    renderThead('watchlistThead', watchlistVisibleCols, 'watchlist', periods);
 
-    const growthCell = (v, d = 2) => isFinite(v) ? `<span class="${chgClass(v)}">${fmtPct(v, d)}</span>` : '—';
-    document.getElementById('watchlistBody').innerHTML = sortRows(rows, watchlistSort.key, watchlistSort.dir).map(r => `
-      <tr>
-        <td class="sym"><a class="sym-link" href="${screenerUrl(r.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(r.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(r.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a></td>
-        <td class="num">${isFinite(r.pe) ? fmtNum(r.pe, 1) : '—'}</td>
-        <td class="num">${isFinite(r.roce) ? fmtNum(r.roce, 1) + '%' : '—'}</td>
-        <td class="num">${isFinite(r.roe) ? fmtNum(r.roe, 1) + '%' : '—'}</td>
-        <td class="num">${growthCell(r.sales3yr, 0)}</td>
-        <td class="num">${growthCell(r.profit3yr, 0)}</td>
-        <td class="num">${growthCell(r.salesYoyQ2, 0)}</td>
-        <td class="num">${growthCell(r.salesYoyQ1, 0)}</td>
-        <td class="num">${growthCell(r.salesYoyLatest, 0)}</td>
-        <td class="num">${growthCell(r.profitYoyQ2, 0)}</td>
-        <td class="num">${growthCell(r.profitYoyQ1, 0)}</td>
-        <td class="num">${growthCell(r.profitYoyLatest, 0)}</td>
-        <td class="num">${growthCell(r.annSales, 0)}</td>
-        <td class="num">${growthCell(r.annOpProfit, 0)}</td>
-        <td class="num">${growthCell(r.annProfit, 0)}</td>
-      </tr>`).join('');
+    document.getElementById('watchlistBody').innerHTML = sortRows(rows.filter(hasFundData), watchlistSort.key, watchlistSort.dir)
+      .map(r => `<tr>${fundRowTds(r, watchlistVisibleCols, true)}</tr>`).join('');
+    renderColSettingsButtonState('watchlist');
   }
 
   function fyInfo(date) {
@@ -2549,7 +2764,7 @@
     document.getElementById('historyChartArea').innerHTML = `
       <div class="history-empty" id="historyEmpty">
         Building history — this chart plots your stock portfolio's value over time (ETFs excluded — they're
-        a cushion, not the benchmark) against Nifty 50, Nifty 500, and Nifty Midcap 150. It needs at least 2
+        a cushion, not the benchmark) against Nifty 50, Nifty 500, Nifty Midcap 150, and Nifty 200. It needs at least 2
         days of snapshots in the <b>History</b> tab; check back after tomorrow's snapshot lands, or ask
         Claude for the one-time setup script if this is a fresh sheet.
       </div>`;
@@ -2608,21 +2823,24 @@
 
   // Fixed display order/labels for the index tiles (Market Indices panel) and the index-comparison
   // options for the "Portfolio NAV vs Market Indices" chart — keys must match the "Index" column values
-  // the Apps Script snapshotIndices() job writes into the Indices tab. Nifty Bank, Nifty Next 50 and
-  // Nifty Smallcap 100 render as a second row of tiles automatically (renderIndicesTiles below just
-  // grids however many names have data) but are NOT pre-checked in the NAV chart's toggle row, since
-  // that row's checkboxes are hardcoded to the original 3 indices in the HTML — see navChartVisibleIndices.
+  // the Apps Script snapshotIndices() job writes into the Indices tab. Nifty Bank and Nifty Smallcap 100
+  // render as a second row of tiles automatically (renderIndicesTiles below just grids however many names
+  // have data) but are NOT pre-checked in the NAV chart's toggle row, since that row's checkboxes are
+  // hardcoded to 4 indices in the HTML (Nifty 50, Nifty 500, Nifty Midcap 150, Nifty 200) — see
+  // navChartVisibleIndices. Nifty 200 replaced Nifty Next 50 here (direct Google Finance ticker, no
+  // proxy needed — see fetchIndexQuote_ / INDEX_TICKERS in PortfolioHistory.gs) since the portfolio is
+  // compared against it directly in the NAV chart, unlike Bank/Smallcap which are tile-only.
   const NAV_INDEX_DEFS = [
     { key: 'Nifty 50', label: 'Nifty 50' },
     { key: 'Nifty 500', label: 'Nifty 500' },
     { key: 'Nifty Midcap 150', label: 'Nifty Midcap 150' },
     { key: 'Nifty Bank', label: 'Nifty Bank' },
-    { key: 'Nifty Next 50', label: 'Nifty Next 50' },
+    { key: 'Nifty 200', label: 'Nifty 200' },
     { key: 'Nifty Smallcap 100', label: 'Nifty Smallcap 100' },
   ];
 
   // Portfolio NAV vs Market Indices — a single chart with the Portfolio NAV line plus one line per
-  // configured index (Nifty 50 / Nifty 500 / Nifty Midcap 150), each indexed to 100 at the first date
+  // configured index (Nifty 50 / Nifty 500 / Nifty Midcap 150 / Nifty 200), each indexed to 100 at the first date
   // it has data for. Reads directly from the lastHistoryPoints/lastIndices globals rather than taking
   // params, since syncHistory() and syncIndices() resolve independently (Promise.all) and each needs to
   // trigger a re-render as soon as its own data lands, without waiting on the other.
@@ -2790,6 +3008,160 @@
       const raw = s.rawMap.get(dateKeyOf(point.date));
       const rawText = isFinite(raw) ? fmtNum(raw, 2) + ' ' : '';
       addRow(s.label, rawText + '(' + (v - 100 >= 0 ? '+' : '') + (v - 100).toFixed(1) + '%)', s.color);
+    });
+    tt.classList.add('show');
+    positionVizTooltip(x, y);
+  }
+
+  // ---- XIRR Performance chart (Total/Stock/ETF annualized money-weighted return over time) ----
+  // Deliberately mirrors renderNavVsIndicesChart's visual design (legend, gridlines, crosshair + tooltip)
+  // so it reads as a sibling panel, but plots raw XIRR % directly rather than an indexed-to-100 series —
+  // there's no "base date" to index against here, each series is just its own % value per day.
+  const XIRR_SERIES_DEFS = [
+    { key: 'total', label: 'Total XIRR' },
+    { key: 'stock', label: 'Stock XIRR' },
+    { key: 'etf', label: 'ETF XIRR' },
+  ];
+
+  function showXirrHistoryEmpty() {
+    document.getElementById('xirrChartArea').innerHTML = `
+      <div class="history-empty" id="xirrHistoryEmpty">
+        Building XIRR history — this chart plots your Total, Stock, and ETF XIRR (annualized, money-weighted return)
+        over time so you can see which side of the portfolio is performing better. It needs at least 2 daily
+        snapshots with a computable XIRR in the <b>XirrHistory</b> tab (each holding must be 30+ days old before an
+        annualized rate can be computed) — check back once both conditions are met. Note: this can't be
+        backfilled — each day's figures reflect that day's holdings, so the series only starts accumulating from
+        whenever this feature was first set up.
+      </div>`;
+  }
+
+  function renderXirrPerformanceChart() {
+    const points = lastXirrHistory;
+    if (points.length < 2) { showXirrHistoryEmpty(); return; }
+
+    const W = 760, H = 220, padL = 46, padR = 14, padT = 14, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
+
+    const series = XIRR_SERIES_DEFS.map((def, i) => {
+      const values = points.map(p => isFinite(p[def.key]) ? p[def.key] : null);
+      const validCount = values.filter(v => v !== null).length;
+      return { key: def.key, label: def.label, color: palette[i % palette.length], values, validCount };
+    });
+
+    const allVals = series.flatMap(s => s.values.filter(v => v !== null));
+    if (!allVals.length) { showXirrHistoryEmpty(); return; }
+
+    let yMin = Math.min(...allVals), yMax = Math.max(...allVals);
+    if (yMin === yMax) { yMin -= 5; yMax += 5; }
+    const pad = (yMax - yMin) * 0.12 || 5;
+    yMin -= pad; yMax += pad;
+
+    const xAt = i => padL + (points.length > 1 ? (i / (points.length - 1)) * plotW : plotW / 2);
+    const yAt = v => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+
+    const pathFor = (arr) => {
+      let d = '', open = false;
+      arr.forEach((v, i) => {
+        if (v === null || !isFinite(v)) { open = false; return; }
+        d += (open ? ' L ' : ' M ') + xAt(i).toFixed(1) + ' ' + yAt(v).toFixed(1);
+        open = true;
+      });
+      return d.trim();
+    };
+
+    // 4 horizontal gridlines, labeled with the raw XIRR % (no indexing/base-date needed here).
+    const GRID_STEPS = 4;
+    let gridSvg = '', gridLabels = '';
+    for (let i = 0; i <= GRID_STEPS; i++) {
+      const v = yMin + ((yMax - yMin) / GRID_STEPS) * i;
+      const y = yAt(v);
+      gridSvg += `<line class="grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"></line>`;
+      gridLabels += `<text class="axis-label" x="${padL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${v.toFixed(0)}%</text>`;
+    }
+
+    const TICK_COUNT = Math.min(6, points.length);
+    let xLabels = '';
+    for (let t = 0; t < TICK_COUNT; t++) {
+      const i = TICK_COUNT === 1 ? 0 : Math.round((t / (TICK_COUNT - 1)) * (points.length - 1));
+      xLabels += `<text class="axis-label" x="${xAt(i).toFixed(1)}" y="${H - 6}" text-anchor="middle">${escapeHtmlText(fmtDateShort(points[i].date))}</text>`;
+    }
+
+    let pathsSvg = '', endDots = '', legendHtml = '';
+    series.forEach(s => {
+      pathsSvg += `<path d="${pathFor(s.values)}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
+      let lastPos = -1;
+      for (let i = s.values.length - 1; i >= 0; i--) { if (s.values[i] !== null) { lastPos = i; break; } }
+      if (lastPos >= 0) {
+        endDots += `<circle cx="${xAt(lastPos).toFixed(1)}" cy="${yAt(s.values[lastPos]).toFixed(1)}" r="4" fill="${s.color}" stroke="var(--surface-1)" stroke-width="2"></circle>`;
+        legendHtml += `<div class="lg-item"><span class="line-key" style="background:${s.color}"></span>${escapeHtmlText(s.label)} <span class="${chgClass(s.values[lastPos])}">${fmtPct(s.values[lastPos], 1)}</span></div>`;
+      } else {
+        legendHtml += `<div class="lg-item"><span class="line-key" style="background:${s.color}"></span>${escapeHtmlText(s.label)} <span class="chg-flat">(no data yet)</span></div>`;
+      }
+    });
+
+    document.getElementById('xirrChartArea').innerHTML = `
+      <div class="history-legend">${legendHtml}</div>
+      <div class="history-chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" id="xirrSvg">
+          ${gridSvg}${gridLabels}${xLabels}
+          ${pathsSvg}
+          ${endDots}
+          <line class="crosshair-line" id="xirrCrosshair" x1="0" y1="${padT}" x2="0" y2="${padT + plotH}"></line>
+          <rect class="hit-layer" x="${padL}" y="${padT}" width="${plotW}" height="${plotH}"></rect>
+        </svg>
+      </div>`;
+
+    setupXirrCrosshair(points, series, xAt, padL, plotW);
+  }
+
+  function setupXirrCrosshair(points, series, xAt, padL, plotW) {
+    const svg = document.getElementById('xirrSvg');
+    const hit = svg.querySelector('.hit-layer');
+    const crosshair = document.getElementById('xirrCrosshair');
+
+    const nearestIndex = (clientX) => {
+      const rect = svg.getBoundingClientRect();
+      const scale = rect.width / 760; // matches the SVG's viewBox width
+      const localX = (clientX - rect.left) / scale;
+      const frac = Math.min(1, Math.max(0, (localX - padL) / plotW));
+      return Math.round(frac * (points.length - 1));
+    };
+
+    const onMove = (e) => {
+      const i = nearestIndex(e.clientX);
+      const x = xAt(i);
+      crosshair.setAttribute('x1', x.toFixed(1));
+      crosshair.setAttribute('x2', x.toFixed(1));
+      crosshair.style.opacity = '1';
+      showXirrTooltip(e.clientX, e.clientY, points[i], series, i);
+    };
+    const onLeave = () => { crosshair.style.opacity = '0'; hideVizTooltip(); };
+
+    hit.addEventListener('pointermove', onMove);
+    hit.addEventListener('pointerleave', onLeave);
+  }
+
+  function showXirrTooltip(x, y, point, series, i) {
+    const tt = document.getElementById('vizTooltip');
+    tt.innerHTML = '';
+    const head = document.createElement('div'); head.className = 'tt-head';
+    head.textContent = fmtDateShort(point.date);
+    tt.appendChild(head);
+    const addRow = (label, value, color) => {
+      const row = document.createElement('div'); row.className = 'tt-row';
+      const l = document.createElement('span'); l.className = 'tt-label';
+      const dot = document.createElement('span'); dot.style.cssText = 'display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:' + color;
+      l.appendChild(dot);
+      l.appendChild(document.createTextNode(label));
+      row.appendChild(l);
+      const v = document.createElement('span'); v.className = 'tt-value'; v.textContent = value;
+      row.appendChild(v);
+      tt.appendChild(row);
+    };
+    series.forEach(s => {
+      const v = s.values[i];
+      addRow(s.label, v === null ? 'no data' : fmtPct(v, 1), s.color);
     });
     tt.classList.add('show');
     positionVizTooltip(x, y);
@@ -3282,6 +3654,113 @@
 
   // ---- Print ----
   function printDashboard() { window.print(); }
+
+  // ---- Column-visibility settings (Fundamentals/Watchlist gear icon) ----
+  // One config entry per table drives every settings-menu function below generically — adding a table
+  // to this feature means adding an entry here (its column list, backing hidden-columns Set, matching
+  // Apps Script sheet name, and how to re-render it) rather than growing a pile of table === 'x' branches.
+  // Returns a fresh object each call so it always reflects the *current* value of each hidden-columns
+  // variable — important because syncDashboardSettings() reassigns those variables outright (new Set),
+  // not just mutates them.
+  function colSettingsTables() {
+    return {
+      stocks:    { columns: STOCKS_COLUMNS,    hidden: stocksHiddenColumns,    sheetName: 'Stocks',       rerender: () => render(lastStocks, lastEtfs) },
+      etf:       { columns: ETF_COLUMNS,       hidden: etfHiddenColumns,       sheetName: 'ETF',          rerender: () => render(lastStocks, lastEtfs) },
+      fund:      { columns: FUND_COLUMNS,      hidden: fundHiddenColumns,      sheetName: 'Fundamentals', rerender: () => renderFundamentals(lastFundamentals) },
+      watchlist: { columns: WATCHLIST_COLUMNS, hidden: watchlistHiddenColumns, sheetName: 'Watchlist',    rerender: () => renderWatchlist(lastWatchlist) },
+    };
+  }
+
+  function renderColSettingsButtonState(table) {
+    const btn = document.getElementById(table + 'ColSettingsBtn');
+    if (!btn) return;
+    const hidden = colSettingsTables()[table].hidden;
+    btn.classList.toggle('has-hidden', hidden.size > 0);
+    btn.title = hidden.size ? `${hidden.size} column${hidden.size === 1 ? '' : 's'} hidden — click to change` : 'Choose visible columns';
+  }
+
+  function toggleColSettingsMenu(table) {
+    const menu = document.getElementById(table + 'ColSettingsMenu');
+    const wasOpen = menu.classList.contains('show');
+    document.querySelectorAll('.col-settings-menu.show').forEach(m => m.classList.remove('show'));
+    if (!wasOpen) { buildColSettingsMenu(table); menu.classList.add('show'); }
+  }
+
+  function buildColSettingsMenu(table) {
+    const menu = document.getElementById(table + 'ColSettingsMenu');
+    const cfg = colSettingsTables()[table];
+    const rows = cfg.columns.map(c => {
+      if (c.fixed) {
+        return `<label class="fixed-col" title="Always visible"><input type="checkbox" checked disabled> ${escapeHtmlText(c.label)}</label>`;
+      }
+      const checked = cfg.hidden.has(c.key) ? '' : ' checked';
+      return `<label><input type="checkbox"${checked} onchange="onColToggle('${table}','${c.key}',this.checked)"> ${escapeHtmlText(c.label)}</label>`;
+    }).join('');
+    menu.innerHTML = `
+      <div class="cs-title">Show / hide columns</div>
+      ${rows}
+      <div class="cs-actions">
+        <span class="cs-status" id="${table}ColSettingsStatus"></span>
+        <button type="button" class="cs-save" onclick="saveColumnSettings('${table}')">Save</button>
+      </div>`;
+  }
+
+  // Toggling a checkbox applies immediately (so you see the table change right away) but only writes to
+  // the Google Sheet — and so only persists past this session — once you click Save.
+  function onColToggle(table, key, checked) {
+    const cfg = colSettingsTables()[table];
+    if (checked) cfg.hidden.delete(key); else cfg.hidden.add(key);
+    cfg.rerender();
+    const status = document.getElementById(table + 'ColSettingsStatus');
+    if (status) status.textContent = 'Not saved yet';
+  }
+
+  async function saveColumnSettings(table) {
+    const status = document.getElementById(table + 'ColSettingsStatus');
+    const cfg = colSettingsTables()[table];
+    if (status) status.textContent = 'Saving…';
+    try {
+      const resp = await fetch(SETTINGS_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight — Apps Script Web Apps don't support OPTIONS
+        body: JSON.stringify({ token: SETTINGS_TOKEN, table: cfg.sheetName, hiddenColumns: Array.from(cfg.hidden) })
+      });
+      const data = await resp.json();
+      if (data.status !== 'ok') throw new Error(data.message || 'save failed');
+      if (status) status.textContent = 'Saved ✓';
+    } catch (err) {
+      if (status) status.textContent = 'Save failed — try again';
+    }
+  }
+
+  // Reads the saved hidden-columns choice from the DashboardSettings Web App at startup, so the column
+  // layout you last saved shows immediately rather than defaulting to "everything visible". Runs inside
+  // the same Promise.all as syncFundamentals()/syncWatchlist()/etc. (see syncFromSheet()) — safe regardless
+  // of resolution order since it re-renders with whatever rows are already loaded (a no-op if none yet).
+  async function syncDashboardSettings() {
+    try {
+      const resp = await fetch(SETTINGS_WEBAPP_URL + '?action=read');
+      const data = await resp.json();
+      if (data.status !== 'ok' || !data.settings) return;
+      if (Array.isArray(data.settings.Stocks)) stocksHiddenColumns = new Set(data.settings.Stocks);
+      if (Array.isArray(data.settings.ETF)) etfHiddenColumns = new Set(data.settings.ETF);
+      if (Array.isArray(data.settings.Fundamentals)) fundHiddenColumns = new Set(data.settings.Fundamentals);
+      if (Array.isArray(data.settings.Watchlist)) watchlistHiddenColumns = new Set(data.settings.Watchlist);
+      render(lastStocks, lastEtfs);
+      if (lastFundamentals.length) renderFundamentals(lastFundamentals);
+      if (lastWatchlist.length) renderWatchlist(lastWatchlist);
+    } catch (err) {
+      // Web App unreachable (offline, not yet deployed, etc.) — dashboard just falls back to showing
+      // every column, same as before this feature existed.
+    }
+  }
+
+  // Close any open column-settings popover on an outside click (but not a click inside the popover
+  // itself, or on the gear button that opens it — that has its own toggle handler).
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.col-settings')) return;
+    document.querySelectorAll('.col-settings-menu.show').forEach(m => m.classList.remove('show'));
+  });
 
   // ---- Boot ----
   onIntervalChange();
