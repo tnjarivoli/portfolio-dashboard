@@ -861,6 +861,8 @@
   const STOCKS_COLUMNS = [
     { key: 'symbol', label: 'Stock', fixed: true }, { key: 'sector', label: 'Sector' }, { key: 'cap', label: 'Mkt Cap' },
     { key: 'qty', label: 'Qty', num: true }, { key: 'buy', label: 'Buy', num: true }, { key: 'ltp', label: 'LTP', num: true },
+    { key: 'sl', label: 'SL', num: true, title: 'Your stop-loss for this stock, from the "SL" column in the Portfolio tab — blank until you set one there' },
+    { key: 'slPnl', label: 'SL P&L', num: true, title: 'What you\'d actually walk away with if your stop-loss triggers today — (SL − Buy Price) × Qty. Negative means still at-risk (your trailing stop hasn\'t cleared your buy price yet); positive means locked-in profit. Blank until SL is set.' },
     { key: 'invested', label: 'Invested', num: true }, { key: 'value', label: 'Value', num: true },
     { key: 'gain', label: 'Gain', num: true }, { key: 'gainPct', label: 'Gain %', num: true },
     { key: 'dayGain', label: 'Day ₹', num: true }, { key: 'dayPct', label: 'Day %', num: true }, { key: 'wt', label: 'Wt %', num: true },
@@ -1005,6 +1007,11 @@
       case 'qty': return `<td class="num">${fmtNum(s.qty, 0)}</td>`;
       case 'buy': return `<td class="num">${fmtNum(s.buy)}</td>`;
       case 'ltp': return `<td class="num">${fmtNum(s.ltp)}</td>`;
+      case 'sl': return `<td class="num">${isFinite(s.sl) ? fmtNum(s.sl) : '—'}</td>`;
+      case 'slPnl':
+        return isFinite(s.slPnl)
+          ? `<td class="num ${chgClass(s.slPnl)}" title="${s.slPnl >= 0 ? 'Locked-in profit' : 'Still at-risk'} if SL triggers today">${s.slPnl >= 0 ? '+' : ''}${fmtMoney(s.slPnl)}</td>`
+          : `<td class="num" title="Set an SL for this stock in the Portfolio tab">—</td>`;
       case 'invested': return `<td class="num">${fmtMoney(s.invested)}</td>`;
       case 'value': return `<td class="num">${fmtMoney(s.value)}</td>`;
       case 'gain': return `<td class="num ${chgClass(s.gain)}">${s.gain >= 0 ? '+' : ''}${fmtMoney(s.gain)}</td>`;
@@ -1043,7 +1050,7 @@
       case 'dayPct': return `<td class="num ${chgClass(view.dayPct)}">${fmtPct(view.dayPct)}</td>`;
       case 'wt': return `<td class="num">${fmtNum(shareOfBook, 1)}%</td>`;
       case 'daysHeld': case 'annReturn': return `<td class="num"></td>`;
-      default: return '<td></td>'; // sector, cap, qty, buy, ltp — blank in the totals row
+      default: return '<td></td>'; // sector, cap, qty, buy, ltp, sl, slPnl — blank in the totals row (SL P&L is per-stock; summing it would silently mix in stocks with no SL set yet)
     }
   }
   function stocksFootTds(columns, view, isFiltered, shareOfBook) {
@@ -1264,6 +1271,8 @@
           buyDate: parseGvizDate(pick(o, 'Buy Date', 'Purchase Date')),
           stage: (pick(o, 'Stage') || '').toString().trim(),
           maLines: (pick(o, 'MA Lines') || '').toString().trim(),
+          sl: num(pick(o, 'SL')),
+          slPnl: num(pick(o, 'SL P&L')),
         };
       });
 
