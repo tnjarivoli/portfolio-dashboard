@@ -104,6 +104,16 @@
   .tile .value-sub { font-size: 15px; font-weight: 700; font-variant-numeric: proportional-nums; margin-top: 1px; }
   .tile .note { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
+  .book-split-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+  .book-split { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .book-split-title { font-size: 12.5px; font-weight: 700; margin-bottom: 10px; }
+  .book-split .tiles { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 0; }
+  .book-split .tile { background: var(--page-plane); padding: 10px 12px; }
+  .book-split .tile .value { font-size: 18px; }
+  .book-split .tile .value-sub { font-size: 13px; }
+  @media (max-width: 920px) { .book-split-row { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .book-split .tiles { grid-template-columns: repeat(2, 1fr); } }
+
   .movers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   @media (max-width: 560px) { .movers-grid { grid-template-columns: 1fr; } }
   .mover-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
@@ -127,6 +137,7 @@
   .mini-tile { text-align: right; }
   .mini-tile .mini-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 3px; }
   .mini-tile .mini-value { font-size: 15.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mini-tile .mini-subvalue { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
   @media (max-width: 560px) { .mini-tiles { justify-content: flex-start; } .mini-tile { text-align: left; } }
   .fund-period { font-size: 10.5px; color: var(--text-muted); font-weight: 400; }
 
@@ -352,6 +363,27 @@
     <div class="tile"><div class="label">Stocks / ETF Split</div><div class="value" id="tileSplit">—</div><div class="note">By current value</div></div>
   </div>
 
+  <div class="book-split-row">
+    <div class="book-split" id="stockBookSplit" style="display:none">
+      <div class="book-split-title">Stock Portfolio</div>
+      <div class="tiles">
+        <div class="tile"><div class="label">Value</div><div class="value" id="stockBookValue">—</div><div class="note" id="stockBookNote">—</div></div>
+        <div class="tile"><div class="label">Overall Gain</div><div class="value" id="stockBookGain">—</div><div class="value-sub" id="stockBookGainPct">—</div></div>
+        <div class="tile"><div class="label">Today</div><div class="value" id="stockBookToday">—</div><div class="note" id="stockBookTodayNote">Day move</div></div>
+        <div class="tile" title="Money-weighted annualized return for your stock holdings only"><div class="label">Stock XIRR</div><div class="value" id="stockBookXirr">—</div><div class="note" id="stockBookXirrNote">Annualized, money-weighted</div></div>
+      </div>
+    </div>
+    <div class="book-split" id="etfBookSplit" style="display:none">
+      <div class="book-split-title">ETF Portfolio</div>
+      <div class="tiles">
+        <div class="tile"><div class="label">Value</div><div class="value" id="etfBookValue">—</div><div class="note" id="etfBookNote">—</div></div>
+        <div class="tile"><div class="label">Overall Gain</div><div class="value" id="etfBookGain">—</div><div class="value-sub" id="etfBookGainPct">—</div></div>
+        <div class="tile"><div class="label">Today</div><div class="value" id="etfBookToday">—</div><div class="note" id="etfBookTodayNote">Day move</div></div>
+        <div class="tile" title="Money-weighted annualized return for your ETF holdings only"><div class="label">ETF XIRR</div><div class="value" id="etfBookXirr">—</div><div class="note" id="etfBookXirrNote">Annualized, money-weighted</div></div>
+      </div>
+    </div>
+  </div>
+
   <div class="dual-row">
   <div class="panel" id="indicesPanel" style="display:none">
     <div class="panel-head">
@@ -392,9 +424,9 @@
         <div class="sub-meta" id="stocksSubMeta">Waiting for first sync…</div>
       </div>
       <div class="mini-tiles">
-        <div class="mini-tile"><div class="mini-label">Value</div><div class="mini-value" id="stocksMiniValue">—</div></div>
-        <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="stocksMiniGain">—</div></div>
-        <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="stocksMiniToday">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Invested</div><div class="mini-value" id="stocksMiniValue">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="stocksMiniGainAmt">—</div><div class="mini-subvalue" id="stocksMiniGainPct">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="stocksMiniTodayAmt">—</div><div class="mini-subvalue" id="stocksMiniTodayPct">—</div></div>
       </div>
     </div>
     <div class="filter-row">
@@ -444,9 +476,9 @@
         <div class="sub-meta" id="etfSubMeta">Waiting for first sync…</div>
       </div>
       <div class="mini-tiles">
-        <div class="mini-tile"><div class="mini-label">Value</div><div class="mini-value" id="etfMiniValue">—</div></div>
-        <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="etfMiniGain">—</div></div>
-        <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="etfMiniToday">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Invested</div><div class="mini-value" id="etfMiniValue">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="etfMiniGainAmt">—</div><div class="mini-subvalue" id="etfMiniGainPct">—</div></div>
+        <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="etfMiniTodayAmt">—</div><div class="mini-subvalue" id="etfMiniTodayPct">—</div></div>
       </div>
     </div>
     <div class="holding-caveat" id="etfHoldingCaveat" style="display:none">📅 <b>Held</b> and <b>Ann. %</b> are estimated from each ETF's earliest purchase lot in your "ETF" tab — if you added to a position later, the actual holding period for those later units will be shorter than shown.</div>
@@ -536,9 +568,9 @@
   <div class="panel">
     <div class="panel-head">
       <div class="panel-head-left">
-        <h2>Portfolio NAV vs Market Indices <span class="meta">— indexed to 100, adjusted for money added or withdrawn</span></h2>
+        <h2>Stock Portfolio NAV vs Market Indices <span class="meta">— indexed to 100, adjusted for money added or withdrawn; stocks only, ETFs excluded</span></h2>
       </div>
-      <div class="nav-index-toggles" id="navIndexToggles" title="Portfolio NAV always shows — pick which indices to compare it against (at least one must stay checked)">
+      <div class="nav-index-toggles" id="navIndexToggles" title="Stock Portfolio NAV always shows — pick which indices to compare it against (at least one must stay checked)">
         <label class="nav-toggle"><input type="checkbox" checked data-index="Nifty 50" onchange="onNavIndexToggle(this)"> Nifty 50</label>
         <label class="nav-toggle"><input type="checkbox" checked data-index="Nifty 500" onchange="onNavIndexToggle(this)"> Nifty 500</label>
         <label class="nav-toggle"><input type="checkbox" checked data-index="Nifty Midcap 150" onchange="onNavIndexToggle(this)"> Midcap 150</label>
@@ -546,9 +578,10 @@
     </div>
     <div id="historyChartArea">
       <div class="history-empty" id="historyEmpty">
-        Not set up yet — this chart plots your portfolio value over time against Nifty 50, Nifty 500, and
-        Nifty Midcap 150, once daily snapshots start landing in <b>History</b> and <b>Indices</b> tabs in
-        your sheet. Ask Claude for the one-time setup script if you'd like this turned on.
+        Building history — this chart plots your stock portfolio's value over time (ETFs excluded — they're
+        a cushion, not the benchmark) against Nifty 50, Nifty 500, and Nifty Midcap 150. It needs at least 2
+        days of snapshots in the <b>History</b> tab; check back after tomorrow's snapshot lands, or ask
+        Claude for the one-time setup script if this is a fresh sheet.
       </div>
     </div>
   </div>
@@ -556,7 +589,7 @@
   <div class="panel" id="riskStatsPanel" style="display:none">
     <div class="panel-head">
       <div class="panel-head-left">
-        <h2>Portfolio Risk Stats <span class="meta">— computed from your NAV history</span></h2>
+        <h2>Stock Portfolio Risk Stats <span class="meta">— computed from your stock-only NAV history</span></h2>
         <div class="sub-meta" id="riskStatsSubMeta"></div>
       </div>
       <div class="mini-tiles">
@@ -569,7 +602,7 @@
   </div>
 
   <div class="panel" id="dailyPerfPanel" style="display:none">
-    <h2>Daily Performance <span class="meta">— Portfolio vs Nifty 50, day-by-day</span></h2>
+    <h2>Daily Performance <span class="meta">— Stock Portfolio vs Nifty 50, day-by-day</span></h2>
     <div id="dailyPerfChartArea"></div>
   </div>
 
@@ -618,6 +651,13 @@
   const ETF_SHEET_NAME = 'ETF Summary';
   const ETF_LOTS_SHEET_NAME = 'ETF'; // per-purchase-lot ledger (Buy Date per tranche) that ETF Summary is aggregated from
   const HISTORY_SHEET_NAME = 'History';
+  // A bug in the Apps Script snapshotPortfolioHistory()/sumColumn() function (fixed 20 Aug 2026) summed
+  // sheet-level "Stocks"/"ETF"/"Total" subtotal rows into the daily Total Value/Total Invested figures,
+  // inflating every History row written before the fix by roughly 3x. Those old rows can't be reliably
+  // corrected after the fact (the true stock/ETF split isn't recoverable from the inflated total alone),
+  // so the NAV chart, XIRR-history fallback, and risk stats all ignore anything before this date rather
+  // than showing a false trend or a fake overnight "crash" once the fixed, correct rows start landing.
+  const HISTORY_DATA_START = new Date(2026, 7, 20); // 20 Aug 2026 (month is 0-indexed)
   const PRICE_HISTORY_SHEET_NAME = 'Price History'; // daily per-symbol price snapshots — powers the Top Movers period dropdown
   const SOLD_STOCKS_SHEET_NAME = 'Sold Stocks'; // manually-maintained closed-positions ledger — powers the Realized Gains panel
   const FUNDAMENTALS_SHEET_NAME = 'Fundamentals'; // auto-populated daily by the Apps Script updateFundamentals() job — powers the Fundamentals (Holdings) panel
@@ -1030,6 +1070,28 @@
     return { invested, value, gain, gainPct, dayGain, dayPct };
   }
 
+  // Populates one side of the Stock Portfolio / ETF Portfolio split-tiles row (Value/Overall Gain/Today
+  // — XIRR is filled in separately by computeXirrTile, since it needs its own cash-flow solve). Hides
+  // that side entirely when the book has no holdings, same as the panels elsewhere on this dashboard.
+  function renderBookSplitTile(prefix, count, invested, value, gain, gainPct, dayGain, dayPct) {
+    const panel = document.getElementById(prefix + 'Split');
+    if (!panel) return;
+    if (!count) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    document.getElementById(prefix + 'Value').textContent = fmtMoney(value);
+    document.getElementById(prefix + 'Note').textContent = `Invested ${fmtMoney(invested)}`;
+    const gainEl = document.getElementById(prefix + 'Gain');
+    gainEl.textContent = (gain >= 0 ? '+' : '') + fmtMoney(gain);
+    gainEl.className = 'value ' + chgClass(gainPct);
+    const gainPctEl = document.getElementById(prefix + 'GainPct');
+    gainPctEl.textContent = fmtPct(gainPct);
+    gainPctEl.className = 'value-sub ' + chgClass(gainPct);
+    const todayEl = document.getElementById(prefix + 'Today');
+    todayEl.textContent = (dayGain >= 0 ? '+' : '') + fmtMoney(dayGain);
+    todayEl.className = 'value ' + chgClass(dayGain);
+    document.getElementById(prefix + 'TodayNote').textContent = fmtPct(dayPct) + ' day move';
+  }
+
   function populateFilterOptions(stocks) {
     const sectorSel = document.getElementById('sectorFilterSelect');
     const capSel = document.getElementById('capFilterSelect');
@@ -1099,13 +1161,19 @@
       caveatEl.innerHTML = `📅 <b>Held</b> and <b>Ann. %</b> are estimated from each stock's first Buy Date in your sheet — if you added to a position later, the actual holding period for those later shares will be shorter than shown.`;
     }
 
-    document.getElementById('stocksMiniValue').textContent = fmtMoney(stocksValue);
-    const stocksMiniGainEl = document.getElementById('stocksMiniGain');
-    stocksMiniGainEl.textContent = (stocksAgg.gain >= 0 ? '+' : '') + fmtMoney(stocksAgg.gain) + ' (' + fmtPct(stocksAgg.gainPct) + ')';
-    stocksMiniGainEl.className = 'mini-value ' + chgClass(stocksAgg.gainPct);
-    const stocksMiniTodayEl = document.getElementById('stocksMiniToday');
-    stocksMiniTodayEl.textContent = (stocksDayGain >= 0 ? '+' : '') + fmtMoney(stocksDayGain);
-    stocksMiniTodayEl.className = 'mini-value ' + chgClass(stocksDayGain);
+    document.getElementById('stocksMiniValue').textContent = fmtMoney(stocksInvested);
+    const stocksMiniGainAmtEl = document.getElementById('stocksMiniGainAmt');
+    stocksMiniGainAmtEl.textContent = (stocksAgg.gain >= 0 ? '+' : '') + fmtMoney(stocksAgg.gain);
+    stocksMiniGainAmtEl.className = 'mini-value ' + chgClass(stocksAgg.gainPct);
+    const stocksMiniGainPctEl = document.getElementById('stocksMiniGainPct');
+    stocksMiniGainPctEl.textContent = '(' + fmtPct(stocksAgg.gainPct) + ')';
+    stocksMiniGainPctEl.className = 'mini-subvalue ' + chgClass(stocksAgg.gainPct);
+    const stocksMiniTodayAmtEl = document.getElementById('stocksMiniTodayAmt');
+    stocksMiniTodayAmtEl.textContent = (stocksDayGain >= 0 ? '+' : '') + fmtMoney(stocksDayGain);
+    stocksMiniTodayAmtEl.className = 'mini-value ' + chgClass(stocksDayGain);
+    const stocksMiniTodayPctEl = document.getElementById('stocksMiniTodayPct');
+    stocksMiniTodayPctEl.textContent = '(' + fmtPct(stocksAgg.dayPct) + ')';
+    stocksMiniTodayPctEl.className = 'mini-subvalue ' + chgClass(stocksAgg.dayPct);
 
     const view = computeAgg(visibleStocks);          // filtered slice — drives the table
     const isFiltered = sectorFilter !== 'All' || capFilter !== 'All';
@@ -1200,13 +1268,19 @@
       etfCaveatEl.innerHTML = `📅 <b>Held</b> and <b>Ann. %</b> are estimated from each ETF's earliest purchase lot in your "ETF" tab — if you added to a position later, the actual holding period for those later units will be shorter than shown.`;
     }
 
-    document.getElementById('etfMiniValue').textContent = fmtMoney(etfValue);
-    const etfMiniGainEl = document.getElementById('etfMiniGain');
-    etfMiniGainEl.textContent = (etfGain >= 0 ? '+' : '') + fmtMoney(etfGain) + ' (' + fmtPct(etfGainPct) + ')';
-    etfMiniGainEl.className = 'mini-value ' + chgClass(etfGainPct);
-    const etfMiniTodayEl = document.getElementById('etfMiniToday');
-    etfMiniTodayEl.textContent = (etfDayGain >= 0 ? '+' : '') + fmtMoney(etfDayGain);
-    etfMiniTodayEl.className = 'mini-value ' + chgClass(etfDayGain);
+    document.getElementById('etfMiniValue').textContent = fmtMoney(etfInvested);
+    const etfMiniGainAmtEl = document.getElementById('etfMiniGainAmt');
+    etfMiniGainAmtEl.textContent = (etfGain >= 0 ? '+' : '') + fmtMoney(etfGain);
+    etfMiniGainAmtEl.className = 'mini-value ' + chgClass(etfGainPct);
+    const etfMiniGainPctEl = document.getElementById('etfMiniGainPct');
+    etfMiniGainPctEl.textContent = '(' + fmtPct(etfGainPct) + ')';
+    etfMiniGainPctEl.className = 'mini-subvalue ' + chgClass(etfGainPct);
+    const etfMiniTodayAmtEl = document.getElementById('etfMiniTodayAmt');
+    etfMiniTodayAmtEl.textContent = (etfDayGain >= 0 ? '+' : '') + fmtMoney(etfDayGain);
+    etfMiniTodayAmtEl.className = 'mini-value ' + chgClass(etfDayGain);
+    const etfMiniTodayPctEl = document.getElementById('etfMiniTodayPct');
+    etfMiniTodayPctEl.textContent = '(' + fmtPct(etfDayPct) + ')';
+    etfMiniTodayPctEl.className = 'mini-subvalue ' + chgClass(etfDayPct);
 
     document.getElementById('etfSubMeta').innerHTML =
       `${etfs.length} holdings · Invested ${fmtMoney(etfInvested)} → ${fmtMoney(etfValue)} <span class="${chgClass(etfGainPct)}">(${fmtPct(etfGainPct)})</span> · Today <span class="${chgClass(etfDayPct)}">${fmtMoney(etfDayGain)} (${fmtPct(etfDayPct)})</span>${etfConcentrationLabel}`;
@@ -1267,6 +1341,12 @@
     document.getElementById('tileTodayNote').textContent = fmtPct(totalDayPct) + ' day move';
     document.getElementById('tileSplit').textContent =
       totalValue ? `${((stocksValue / totalValue) * 100).toFixed(1)}% / ${((etfValue / totalValue) * 100).toFixed(1)}%` : '—';
+
+    // ---- Stock Portfolio / ETF Portfolio split tiles — same Value/Gain/Today shape as the top tiles
+    // bar, scoped to just one book, side by side, so each book's numbers (and XIRR, below) don't require
+    // mentally subtracting the other book out of the combined totals above. ----
+    renderBookSplitTile('stockBook', stocks.length, stocksInvested, stocksValue, stocksAgg.gain, stocksAgg.gainPct, stocksDayGain, stocksAgg.dayPct);
+    renderBookSplitTile('etfBook', etfs.length, etfInvested, etfValue, etfGain, etfGainPct, etfDayGain, etfDayPct);
 
     // ---- Sector / Market cap bars (stocks only, click a bar to filter the table above) ----
     renderGroupBars('sectorBars', stocks, s => s.sector, stocksInvested, stocksValue, 'sector', sectorFilter);
@@ -1422,15 +1502,16 @@
     return ((lo + hi) / 2) * 100;
   }
 
-  // Builds the cash-flow series from Buy Dates and updates the Portfolio XIRR tile. Stocks without a
+  // Builds the cash-flow series from Buy Dates and updates a Portfolio XIRR tile. Stocks without a
   // Buy Date, and ETFs (no Buy Date column yet), fall back to the earliest date we know about anything
   // (earliest stock Buy Date, or the first History snapshot) rather than being silently dropped — but
   // only if their value is also included in the terminal cash flow, so the books stay consistent.
-  function computeXirrTile() {
-    const tileEl = document.getElementById('tileXirr');
-    const noteEl = document.getElementById('tileXirrNote');
+  // Parameterized over which holdings feed it (stocks, etfs) and which tile/note elements it writes to,
+  // so the same logic drives the combined Portfolio XIRR tile and the per-book Stock/ETF XIRR tiles.
+  function computeXirrForBook(stocks, etfs, tileId, noteId) {
+    const tileEl = document.getElementById(tileId);
+    const noteEl = document.getElementById(noteId);
     if (!tileEl || !noteEl) return;
-    const stocks = lastStocks, etfs = lastEtfs;
     if (!stocks.length && !etfs.length) { tileEl.textContent = '—'; tileEl.className = 'value'; return; }
 
     const now = new Date();
@@ -1526,6 +1607,14 @@
     noteEl.textContent = (hasApprox
       ? 'Annualized, money-weighted — approximates entry date for ETFs/stocks without a Buy Date'
       : 'Annualized, money-weighted, from each buy date') + excludedNote;
+  }
+
+  // Drives the combined Portfolio XIRR tile plus the per-book Stock Portfolio / ETF Portfolio XIRR
+  // tiles (same solver, three different holding sets) from a single call in render().
+  function computeXirrTile() {
+    computeXirrForBook(lastStocks, lastEtfs, 'tileXirr', 'tileXirrNote');
+    computeXirrForBook(lastStocks, [], 'stockBookXirr', 'stockBookXirrNote');
+    computeXirrForBook([], lastEtfs, 'etfBookXirr', 'etfBookXirrNote');
   }
 
   const SECTOR_PALETTE_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
@@ -2326,15 +2415,21 @@
       const points = rows
         .map(o => ({
           date: parseGvizDate(pick(o, 'Date')),
-          value: num(pick(o, 'Total Value', 'Portfolio Value')),
+          // Stock-only value/invested drive the NAV chart, CAGR, and risk stats — ETFs are a deliberate
+          // cushion against drawdowns, not a market-beating bet, so mixing them in would understate how
+          // the actual stock picks are doing against Nifty. Falls back to the combined Total columns for
+          // rows written before the split existed, though HISTORY_DATA_START already excludes those.
+          value: num(pick(o, 'Stocks Value', 'Total Value', 'Portfolio Value')),
           nifty: num(pick(o, 'NiftyBees Price', 'Nifty Price', 'Nifty')),
-          invested: num(pick(o, 'Total Invested', 'Invested Amount', 'Total Invested Amount')),
+          invested: num(pick(o, 'Stocks Invested', 'Total Invested', 'Invested Amount', 'Total Invested Amount')),
         }))
         .filter(p => p.date && isFinite(p.value))
         // Drop weekend/NSE-holiday snapshots (e.g. a daily trigger that fired on a non-trading day and
         // recorded Friday's stale closing price again) — the chart should jump straight from the last
         // trading day to the next one, never plot a flat "no movement" stretch across days markets were shut.
-        .filter(p => isNseTradingDay(p.date));
+        .filter(p => isNseTradingDay(p.date))
+        // Drop rows written before the sumColumn() fix — see HISTORY_DATA_START above.
+        .filter(p => p.date >= HISTORY_DATA_START);
       points.sort((a, b) => a.date - b.date);
       if (points.length < 2) {
         lastHistoryPoints = []; showHistoryEmpty(); computeXirrTile();
@@ -2453,9 +2548,10 @@
   function showHistoryEmpty() {
     document.getElementById('historyChartArea').innerHTML = `
       <div class="history-empty" id="historyEmpty">
-        Not set up yet — this chart plots your portfolio value over time against Nifty 50, Nifty 500, and
-        Nifty Midcap 150, once daily snapshots start landing in <b>History</b> and <b>Indices</b> tabs in
-        your sheet. Ask Claude for the one-time setup script if you'd like this turned on.
+        Building history — this chart plots your stock portfolio's value over time (ETFs excluded — they're
+        a cushion, not the benchmark) against Nifty 50, Nifty 500, and Nifty Midcap 150. It needs at least 2
+        days of snapshots in the <b>History</b> tab; check back after tomorrow's snapshot lands, or ask
+        Claude for the one-time setup script if this is a fresh sheet.
       </div>`;
     document.getElementById('dailyPerfPanel').style.display = 'none';
   }
@@ -2497,7 +2593,7 @@
       const cagrIdx = (Math.pow(s.values[lastI] / s.values[firstI], 365 / spanDays) - 1) * 100;
       extra += ` · ${escapeHtmlText(s.label)} <span class="${chgClass(cagrIdx)}">${fmtPct(cagrIdx)}</span>`;
     });
-    return `<div class="history-cagr-note">Annualized (CAGR over ${Math.round(days)} days): Portfolio NAV <span class="${chgClass(cagrPort)}">${fmtPct(cagrPort)}</span>${extra}</div>`;
+    return `<div class="history-cagr-note">Annualized (CAGR over ${Math.round(days)} days): Stock Portfolio NAV <span class="${chgClass(cagrPort)}">${fmtPct(cagrPort)}</span>${extra}</div>`;
   }
 
   // Turns a Date into a plain numeric key (ignoring time-of-day) so portfolio-history rows and
@@ -2598,7 +2694,7 @@
     const lastPort = portIdx[portIdx.length - 1];
     let pathsSvg = `<path d="${pathFor(portIdx)}" fill="none" stroke="${portColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
     let endDots = `<circle cx="${xAt(points.length - 1).toFixed(1)}" cy="${yAt(lastPort).toFixed(1)}" r="4" fill="${portColor}" stroke="var(--surface-1)" stroke-width="2"></circle>`;
-    let legendHtml = `<div class="lg-item"><span class="line-key" style="background:${portColor}"></span>Portfolio NAV <span class="${chgClass(lastPort - 100)}">(${(lastPort - 100 >= 0 ? '+' : '')}${(lastPort - 100).toFixed(1)}%)</span></div>`;
+    let legendHtml = `<div class="lg-item"><span class="line-key" style="background:${portColor}"></span>Stock Portfolio NAV <span class="${chgClass(lastPort - 100)}">(${(lastPort - 100 >= 0 ? '+' : '')}${(lastPort - 100).toFixed(1)}%)</span></div>`;
 
     indexSeries.forEach(s => {
       pathsSvg += `<path d="${pathFor(s.values)}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>`;
@@ -2687,7 +2783,7 @@
       row.appendChild(v);
       tt.appendChild(row);
     };
-    addRow('Portfolio NAV', fmtMoney(point.value) + ' (' + (portIdxVal - 100 >= 0 ? '+' : '') + (portIdxVal - 100).toFixed(1) + '%)', portColor);
+    addRow('Stock Portfolio NAV', fmtMoney(point.value) + ' (' + (portIdxVal - 100 >= 0 ? '+' : '') + (portIdxVal - 100).toFixed(1) + '%)', portColor);
     indexSeries.forEach(s => {
       const v = s.values[i];
       if (v === null || !isFinite(v)) return;
@@ -2788,7 +2884,7 @@
 
     document.getElementById('dailyPerfChartArea').innerHTML = `
       <div class="history-legend">
-        <div class="lg-item"><span class="swatch-key" style="background:${portColor}"></span>Portfolio NAV</div>
+        <div class="lg-item"><span class="swatch-key" style="background:${portColor}"></span>Stock Portfolio NAV</div>
         <div class="lg-item"><span class="swatch-key" style="background:${niftyColor}"></span>Nifty 50${nifty50Map ? '' : ' <span class="chg-flat">(no data yet)</span>'}</div>
         ${truncated ? `<div class="lg-item chg-flat">Showing last ${DAILY_PERF_MAX_SESSIONS} sessions</div>` : ''}
       </div>
@@ -2846,7 +2942,7 @@
       row.appendChild(v);
       tt.appendChild(row);
     };
-    addRow('Portfolio NAV', d.portPct !== null ? (d.portPct >= 0 ? '+' : '') + d.portPct.toFixed(2) + '%' : '—', palette[0]);
+    addRow('Stock Portfolio NAV', d.portPct !== null ? (d.portPct >= 0 ? '+' : '') + d.portPct.toFixed(2) + '%' : '—', palette[0]);
     addRow('Nifty 50', d.niftyPct !== null ? (d.niftyPct >= 0 ? '+' : '') + d.niftyPct.toFixed(2) + '%' : '—', palette[1]);
     if (d.portPct !== null && d.niftyPct !== null) {
       const diff = d.portPct - d.niftyPct;
