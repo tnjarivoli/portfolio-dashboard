@@ -166,6 +166,26 @@
   .news-row .news-title:hover { text-decoration: underline; }
   .news-row .news-meta { margin-top: 3px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .news-tag-earnings { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--seq-400); background: color-mix(in srgb, var(--seq-400) 14%, transparent); border-radius: 4px; padding: 1px 6px; }
+  .news-tag-guidance { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 14%, transparent); border-radius: 4px; padding: 1px 6px; }
+
+  .insights-symbol-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .insights-symbol-btn { font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: var(--page-plane); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+  .insights-symbol-btn:hover:not(.active) { color: var(--text-primary); border-color: var(--text-muted); }
+  .insights-symbol-btn.active { background: var(--seq-400); border-color: var(--seq-400); color: #fff; }
+  .insights-keypoints-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
+  .insights-keypoints { font-size: 13px; line-height: 1.65; color: var(--text-primary); margin-bottom: 18px; }
+  .insights-proscons { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 18px; }
+  .insights-pros, .insights-cons { flex: 1; min-width: 220px; }
+  .insights-pc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; }
+  .insights-pros .insights-pc-title { color: var(--status-good); }
+  .insights-cons .insights-pc-title { color: var(--status-critical); }
+  .insights-pros ul, .insights-cons ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.65; color: var(--text-secondary); }
+  .insights-pros li::marker { color: var(--status-good); }
+  .insights-cons li::marker { color: var(--status-critical); }
+  .insights-links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .insights-links a { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-secondary); text-decoration: none; white-space: nowrap; }
+  .insights-links a:hover { color: var(--seq-400); border-color: var(--seq-400); }
+  .insights-empty { font-size: 12.5px; color: var(--text-muted); }
 
   .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: var(--card-shadow); }
   .panel h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
@@ -680,6 +700,44 @@
     </div>
   </div>
 
+  <div class="panel" id="realizedGainsPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Realized Gains <span class="meta">— booked profit/loss from stocks you've sold</span></h2>
+        <div class="sub-meta" id="realizedSubMeta">Waiting for first sync…</div>
+      </div>
+      <div class="mini-tiles">
+        <div class="mini-tile"><div class="mini-label">Total Realized</div><div class="mini-value" id="realizedMiniTotal">—</div></div>
+        <div class="mini-tile" title="Held 365+ days — eligible for LTCG tax treatment"><div class="mini-label">Long-Term</div><div class="mini-value" id="realizedMiniLT">—</div></div>
+        <div class="mini-tile" title="Held under 365 days"><div class="mini-label">Short-Term</div><div class="mini-value" id="realizedMiniST">—</div></div>
+        <div class="mini-tile" title="From the 'Dividends' sheet tab — log Date, Stock, Amount there and it'll total up here"><div class="mini-label">Dividends Received</div><div class="mini-value" id="dividendsMiniTotal">—</div></div>
+      </div>
+    </div>
+    <div id="fyBreakdownWrap" style="display:none">
+      <div class="fy-caption">By financial year <span class="meta-note">— Indian FY (Apr–Mar), grouped by Sell Date. Reference only, not tax advice — actual liability depends on applicable rates, exemptions, and any other capital gains not tracked here.</span></div>
+      <div class="fy-table-wrap"><table class="fy-table" id="fyTable"></table></div>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead id="realizedThead"></thead>
+      <tbody id="realizedBody"></tbody>
+      <tfoot id="realizedFoot"></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="panel" id="insightsPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Company Insights <span class="meta">— business overview, pros/cons, and latest filings per holding, from Screener.in</span></h2>
+        <div class="sub-meta" id="insightsSubMeta">Waiting for first sync…</div>
+      </div>
+    </div>
+    <div class="insights-symbol-row" id="insightsSymbolRow"></div>
+    <div id="insightsBody"></div>
+    <div style="margin-top:14px;color:var(--text-muted);font-size:11px">Sourced from each company's public Screener.in page, refreshed weekly by Apps Script. This is Screener's own analysis, not independently verified — treat Key Points/Pros/Cons as a starting point. Concall "AI Summary" isn't pulled here since it needs a logged-in Screener account; the raw Transcript link (and PPT, when Screener has one on file) is the source instead.</div>
+  </div>
+
   <div class="panel">
     <div class="panel-head">
       <div class="panel-head-left">
@@ -740,32 +798,6 @@
     <div id="dailyPerfChartArea"></div>
   </div>
 
-  <div class="panel" id="realizedGainsPanel" style="display:none">
-    <div class="panel-head">
-      <div class="panel-head-left">
-        <h2>Realized Gains <span class="meta">— booked profit/loss from stocks you've sold</span></h2>
-        <div class="sub-meta" id="realizedSubMeta">Waiting for first sync…</div>
-      </div>
-      <div class="mini-tiles">
-        <div class="mini-tile"><div class="mini-label">Total Realized</div><div class="mini-value" id="realizedMiniTotal">—</div></div>
-        <div class="mini-tile" title="Held 365+ days — eligible for LTCG tax treatment"><div class="mini-label">Long-Term</div><div class="mini-value" id="realizedMiniLT">—</div></div>
-        <div class="mini-tile" title="Held under 365 days"><div class="mini-label">Short-Term</div><div class="mini-value" id="realizedMiniST">—</div></div>
-        <div class="mini-tile" title="From the 'Dividends' sheet tab — log Date, Stock, Amount there and it'll total up here"><div class="mini-label">Dividends Received</div><div class="mini-value" id="dividendsMiniTotal">—</div></div>
-      </div>
-    </div>
-    <div id="fyBreakdownWrap" style="display:none">
-      <div class="fy-caption">By financial year <span class="meta-note">— Indian FY (Apr–Mar), grouped by Sell Date. Reference only, not tax advice — actual liability depends on applicable rates, exemptions, and any other capital gains not tracked here.</span></div>
-      <div class="fy-table-wrap"><table class="fy-table" id="fyTable"></table></div>
-    </div>
-    <div class="table-scroll">
-    <table>
-      <thead id="realizedThead"></thead>
-      <tbody id="realizedBody"></tbody>
-      <tfoot id="realizedFoot"></tfoot>
-    </table>
-    </div>
-  </div>
-
   <div class="panel" id="taxPlanningPanel" style="display:none">
     <div class="panel-head">
       <div class="panel-head-left">
@@ -805,7 +837,7 @@
       </div>
     </div>
     <div class="news-list" id="newsList"></div>
-    <div style="margin-top:8px;color:var(--text-muted);font-size:11px">Pulled from Google News once a day per holding — a general news search, not finance-curated, so treat headlines as a starting point rather than vetted analysis.</div>
+    <div style="margin-top:8px;color:var(--text-muted);font-size:11px">Pulled from Google News once a day per holding — a general news search, not finance-curated, so treat headlines as a starting point rather than vetted analysis. The "Guidance" tag flags headlines whose wording looks forward-looking (outlook, capex, expansion, order book) — a scanning aid, not a verified figure.</div>
   </div>
 
   <div class="panel" id="analystPanel" style="display:none">
@@ -865,6 +897,7 @@
   const WATCHLIST_SHEET_NAME = 'Watchlist'; // Column A (Symbol) is user-maintained; the rest is auto-filled daily by the Apps Script updateWatchlist() job — powers the Fundamentals (Watchlist) panel
   const NEWS_SHEET_NAME = 'News'; // auto-populated daily by the Apps Script updateNewsFeed() job — powers the Company News panel
   const ANALYST_SHEET_NAME = 'Analyst Ratings'; // auto-populated weekly by the Apps Script updateAnalystRatings() job — powers the Analyst Consensus panel
+  const INSIGHTS_SHEET_NAME = 'Insights'; // auto-populated weekly by the Apps Script updateInsights() job — powers the Company Insights panel
   const XIRR_HISTORY_SHEET_NAME = 'XirrHistory'; // auto-populated daily by the Apps Script snapshotXirrHistory() job (runs alongside snapshotPortfolioHistory) — powers the XIRR Performance panel
 
   let autoTimer = null;
@@ -884,6 +917,8 @@
   let lastWatchlist = []; // P/E, ROCE, ROE, Sales/Profit growth per tracked (not held) symbol, read from the Watchlist tab
   let lastNews = []; // recent headlines per holding, read from the News tab
   let lastAnalystRatings = []; // target price + forward growth forecasts per holding, read from the Analyst Ratings tab
+  let lastInsights = []; // Key Points/Pros/Cons/concall & annual-report links per holding, read from the Insights tab
+  let selectedInsightSymbol = null; // which holding's insights are currently shown in the Company Insights panel
   let lastXirrHistory = []; // [{date, total, stock, etf}] sorted ascending by date, read from the daily-snapshot XirrHistory tab — total/stock/etf are % or null
   // Which index lines are checked on in the "Portfolio NAV vs Market Indices" chart — Portfolio NAV itself
   // always shows and has no checkbox; at least one index must stay checked (enforced in onNavIndexToggle).
@@ -1524,6 +1559,7 @@
         syncWatchlist(),     // independent, optional — tracked (not held) stocks' price + fundamentals, updated daily by Apps Script
         syncNews(),          // independent, optional — recent headlines per holding, updated daily by Apps Script
         syncAnalystRatings(), // independent, optional — target price + forward growth forecasts, updated weekly by Apps Script
+        syncInsights(),      // independent, optional — Key Points/Pros/Cons/concall & annual-report links, updated weekly by Apps Script
         syncDashboardSettings(), // independent, optional — saved column-visibility choice for the Fundamentals/Watchlist panels
         syncXirrHistory(),   // independent, optional — daily Total/Stock/ETF XIRR snapshots for the XIRR Performance panel
         syncDividends(),     // independent, optional — manually-logged dividend entries for the Dividends Received mini-tile
@@ -2908,6 +2944,14 @@
     return EARNINGS_HEADLINE_RE.test(String(title || ''));
   }
 
+  // Same idea as the earnings flag above, but for headlines that look like forward-looking
+  // management commentary — guidance/outlook revisions, capex or expansion announcements, order
+  // book updates, etc. Also just a keyword scan, not a structured signal.
+  const GUIDANCE_HEADLINE_RE = /\b(guidance|outlook|forecasts?|raises?\s+(?:its\s+)?(?:guidance|outlook|target)|cuts?\s+(?:its\s+)?(?:guidance|outlook|target)|revis(?:es|ed)\s+(?:guidance|outlook)|capex|capacity expansion|expansion plan|order book|order wins?|management (?:said|expects|sees|remains)|to (?:expand|invest|set up)|new plant|new facility)\b/i;
+  function isGuidanceHeadline(title) {
+    return GUIDANCE_HEADLINE_RE.test(String(title || ''));
+  }
+
   async function syncNews() {
     try {
       const rows = await fetchSheet(NEWS_SHEET_NAME);
@@ -2943,17 +2987,104 @@
 
     document.getElementById('newsList').innerHTML = sorted.slice(0, 40).map(r => {
       const earnings = isEarningsHeadline(r.title);
+      const guidance = isGuidanceHeadline(r.title);
       const metaParts = [escapeHtmlText(r.source || ''), r.published ? timeAgo(r.published) : ''].filter(Boolean).join(' · ');
       return `
       <div class="news-row">
         <span class="news-sym">${escapeHtmlText(r.symbol)}</span>
         <div class="news-body">
           <a class="news-title" href="${escapeHtmlText(r.link)}" target="_blank" rel="noopener noreferrer">${escapeHtmlText(r.title)}</a>
-          <div class="news-meta">${earnings ? '<span class="news-tag-earnings" title="Headline wording suggests this is about quarterly results — not a verified earnings figure">Results</span>' : ''}<span>${metaParts}</span></div>
+          <div class="news-meta">${earnings ? '<span class="news-tag-earnings" title="Headline wording suggests this is about quarterly results — not a verified earnings figure">Results</span>' : ''}${guidance ? '<span class="news-tag-guidance" title="Headline wording suggests forward-looking guidance/outlook commentary — not a verified figure">Guidance</span>' : ''}<span>${metaParts}</span></div>
         </div>
       </div>
     `;
     }).join('');
+  }
+
+  async function syncInsights() {
+    try {
+      const rows = await fetchSheet(INSIGHTS_SHEET_NAME);
+      const parsed = rows.map(o => ({
+        symbol: pick(o, 'Symbol'),
+        keyPoints: pick(o, 'KeyPoints'),
+        pros: String(pick(o, 'Pros') || '').split('|').map(s => s.trim()).filter(Boolean),
+        cons: String(pick(o, 'Cons') || '').split('|').map(s => s.trim()).filter(Boolean),
+        concallPeriod: pick(o, 'ConcallPeriod'),
+        concallTranscriptUrl: pick(o, 'ConcallTranscriptUrl'),
+        concallPptUrl: pick(o, 'ConcallPptUrl'),
+        annualReportLabel: pick(o, 'AnnualReportLabel'),
+        annualReportUrl: pick(o, 'AnnualReportUrl'),
+        fetchedAt: parseNewsDate(pick(o, 'FetchedAt')),
+      })).filter(r => r.symbol);
+      lastInsights = parsed;
+      renderInsights(parsed);
+    } catch (err) {
+      lastInsights = [];
+      document.getElementById('insightsPanel').style.display = 'none';
+    }
+  }
+
+  function renderInsights(rows) {
+    const panel = document.getElementById('insightsPanel');
+    if (!rows.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const sorted = rows.slice().sort((a, b) => a.symbol.localeCompare(b.symbol));
+    if (!selectedInsightSymbol || !sorted.some(r => r.symbol === selectedInsightSymbol)) {
+      selectedInsightSymbol = sorted[0].symbol;
+    }
+    const latestFetch = rows.reduce((max, r) => (r.fetchedAt && (!max || r.fetchedAt > max)) ? r.fetchedAt : max, null);
+    document.getElementById('insightsSubMeta').textContent =
+      `${rows.length} holding${rows.length === 1 ? '' : 's'} covered` +
+      (latestFetch ? ` · Updated ${latestFetch.toLocaleDateString('en-IN')}, ${latestFetch.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : '');
+
+    document.getElementById('insightsSymbolRow').innerHTML = sorted.map(r =>
+      `<button class="insights-symbol-btn${r.symbol === selectedInsightSymbol ? ' active' : ''}" data-symbol="${escapeHtmlText(r.symbol)}">${escapeHtmlText(r.symbol)}</button>`
+    ).join('');
+    document.querySelectorAll('#insightsSymbolRow .insights-symbol-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectInsightSymbol(btn.dataset.symbol));
+    });
+
+    renderInsightsBody();
+  }
+
+  function selectInsightSymbol(symbol) {
+    selectedInsightSymbol = symbol;
+    document.querySelectorAll('#insightsSymbolRow .insights-symbol-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.symbol === symbol);
+    });
+    renderInsightsBody();
+  }
+
+  function renderInsightsBody() {
+    const r = lastInsights.find(x => x.symbol === selectedInsightSymbol);
+    const body = document.getElementById('insightsBody');
+    if (!r) { body.innerHTML = '<div class="insights-empty">No insights available for this holding yet.</div>'; return; }
+
+    const keyPointsHtml = r.keyPoints
+      ? escapeHtmlText(r.keyPoints).replace(/\n/g, '<br>')
+      : '<span class="insights-empty">No business-overview summary available.</span>';
+    const prosHtml = r.pros.length
+      ? r.pros.map(p => `<li>${escapeHtmlText(p)}</li>`).join('')
+      : '<li style="color:var(--text-muted)">None listed</li>';
+    const consHtml = r.cons.length
+      ? r.cons.map(c => `<li>${escapeHtmlText(c)}</li>`).join('')
+      : '<li style="color:var(--text-muted)">None listed</li>';
+
+    const links = [];
+    if (r.concallTranscriptUrl) links.push(`<a href="${escapeHtmlText(r.concallTranscriptUrl)}" target="_blank" rel="noopener noreferrer">📄 ${escapeHtmlText(r.concallPeriod || 'Latest')} Concall Transcript</a>`);
+    if (r.concallPptUrl) links.push(`<a href="${escapeHtmlText(r.concallPptUrl)}" target="_blank" rel="noopener noreferrer">🖥️ ${escapeHtmlText(r.concallPeriod || 'Latest')} Concall PPT</a>`);
+    if (r.annualReportUrl) links.push(`<a href="${escapeHtmlText(r.annualReportUrl)}" target="_blank" rel="noopener noreferrer">📘 ${escapeHtmlText(r.annualReportLabel || 'Annual Report')}</a>`);
+
+    body.innerHTML = `
+      <div class="insights-keypoints-label">Business Overview</div>
+      <div class="insights-keypoints">${keyPointsHtml}</div>
+      <div class="insights-proscons">
+        <div class="insights-pros"><div class="insights-pc-title">Pros</div><ul>${prosHtml}</ul></div>
+        <div class="insights-cons"><div class="insights-pc-title">Cons</div><ul>${consHtml}</ul></div>
+      </div>
+      ${links.length ? `<div class="insights-links">${links.join('')}</div>` : '<div class="insights-empty">No concall/annual-report links found for this holding.</div>'}
+    `;
   }
 
   async function syncAnalystRatings() {
