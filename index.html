@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portfolio Dashboard — Stocks &amp; ETFs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: light;
@@ -31,6 +34,7 @@
       --gridline:       #2c2c2a;
       --baseline:       #383835;
       --border:         rgba(255,255,255,0.10);
+      --seq-400:          #3987e5;
       --status-good:      #0ca30c;
       --status-critical:  #e66767;
       --status-warning:   #eab244;
@@ -46,6 +50,7 @@
     --gridline:       #2c2c2a;
     --baseline:       #383835;
     --border:         rgba(255,255,255,0.10);
+    --seq-400:          #3987e5;
     --status-good:      #0ca30c;
     --status-critical:  #e66767;
     --status-warning:   #eab244;
@@ -53,12 +58,14 @@
 
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page-plane); color: var(--text-primary); }
+  body { font-family: 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page-plane); color: var(--text-primary); }
   .viz-root { padding: 28px 20px 60px; max-width: 1160px; margin: 0 auto; }
 
   .header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
   .header h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
-  .header .sub { color: var(--text-secondary); font-size: 13px; }
+  .header .sub { color: var(--text-secondary); font-size: 11px; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .header-right .status-pill { margin-bottom: 0; }
   .theme-toggle { font-size: 12px; color: var(--text-secondary); background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
 
   .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; }
@@ -122,6 +129,16 @@
   .mover-row .mover-rank { color: var(--text-muted); font-size: 11px; width: 14px; flex: none; }
   .mover-row .mover-sym { font-weight: 600; font-size: 13px; flex: 1; }
   .mover-row .mover-chg { font-size: 12px; font-variant-numeric: proportional-nums; text-align: right; white-space: nowrap; }
+
+  .news-list { display: flex; flex-direction: column; }
+  .news-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
+  .news-row:first-child { border-top: none; padding-top: 2px; }
+  .news-row .news-sym { flex: none; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--page-plane); border: 1px solid var(--border); color: var(--text-secondary); white-space: nowrap; margin-top: 1px; }
+  .news-row .news-body { flex: 1; min-width: 0; }
+  .news-row .news-title { font-size: 13px; line-height: 1.4; color: var(--text-primary); text-decoration: none; }
+  .news-row .news-title:hover { text-decoration: underline; }
+  .news-row .news-meta { margin-top: 3px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .news-tag-earnings { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--seq-400); background: color-mix(in srgb, var(--seq-400) 14%, transparent); border-radius: 4px; padding: 1px 6px; }
 
   .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
   .panel h2 { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
@@ -340,15 +357,29 @@
 </style>
 </head>
 <body>
+<script>
+  // Apply the saved theme choice before first paint, to avoid a flash of the wrong theme.
+  // Defaults to 'light' when nothing is saved yet.
+  (function() {
+    try {
+      var stored = localStorage.getItem('portfolioTheme');
+      document.documentElement.setAttribute('data-theme', stored === 'dark' ? 'dark' : 'light');
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 <div class="viz-root">
 
   <div class="header">
     <div>
-      <div class="status-pill ok" id="statusPill"><span id="statusText">Not synced yet</span></div>
       <h1>Portfolio Dashboard</h1>
       <div class="sub">Stocks (Zerodha + mStock) and ETFs (Fyers) — live from "Portfolio-Stocks and ETF"</div>
     </div>
-    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+    <div class="header-right">
+      <div class="status-pill ok" id="statusPill"><span id="statusText">Not synced yet</span></div>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle theme">Theme: Light</button>
+    </div>
   </div>
 
   <div class="toolbar">
@@ -360,21 +391,21 @@
       <span style="color:var(--text-secondary)">Auto-refresh every</span>
       <select id="intervalSelect" onchange="onIntervalChange()">
         <option value="0">Off</option>
-        <option value="2">2 Minutes</option>
-        <option value="3">3 Minutes</option>
-        <option value="5" selected>5 Minutes</option>
-        <option value="10">10 Minutes</option>
-        <option value="15">15 Minutes</option>
-        <option value="30">30 Minutes</option>
-        <option value="60">60 Minutes</option>
+        <option value="2">2 Mins</option>
+        <option value="3">3 Mins</option>
+        <option value="5" selected>5 Mins</option>
+        <option value="10">10 Mins</option>
+        <option value="15">15 Mins</option>
+        <option value="30">30 Mins</option>
+        <option value="60">60 Mins</option>
       </select>
     </div>
     <div class="divider"></div>
     <div class="grp">
-      <button class="quiet" onclick="exportCSV()">⭳ Export CSV</button>
-      <button class="quiet" onclick="exportExcel()">⭳ Export Excel</button>
-      <button class="quiet" onclick="exportWord()">⭳ Export Word</button>
-      <button class="quiet" onclick="exportPDF()" id="exportPdfBtn">⭳ Export PDF</button>
+      <button class="quiet" onclick="exportCSV()">⭳ CSV</button>
+      <button class="quiet" onclick="exportExcel()">⭳ Excel</button>
+      <button class="quiet" onclick="exportWord()">⭳ Word</button>
+      <button class="quiet" onclick="exportPDF()" id="exportPdfBtn">⭳ PDF</button>
     </div>
     <div class="divider"></div>
     <div class="grp">
@@ -387,7 +418,7 @@
 
   <div class="tiles">
     <div class="tile"><div class="label">Total Portfolio Value</div><div class="value" id="tileTotalValue">—</div><div class="note" id="tileTotalNote">—</div></div>
-    <div class="tile"><div class="label">Overall Gain</div><div class="value" id="tileOverallGain">—</div><div class="value-sub" id="tileOverallGainPct">—</div><div class="note">Since respective buy dates</div></div>
+    <div class="tile"><div class="label">Overall Gain</div><div class="value" id="tileOverallGain">—</div><div class="value-sub" id="tileOverallGainPct">—</div></div>
     <div class="tile"><div class="label">Today</div><div class="value" id="tileToday">—</div><div class="note" id="tileTodayNote">Day move</div></div>
     <div class="tile" title="Money-weighted annualized return — the same rate a mutual fund NAV calc would give, accounting for exactly when and how much you invested"><div class="label">Portfolio XIRR</div><div class="value" id="tileXirr">—</div><div class="note" id="tileXirrNote">Annualized, money-weighted</div></div>
     <div class="tile"><div class="label">Stocks / ETF Split</div><div class="value" id="tileSplit">—</div><div class="note">By current value</div></div>
@@ -697,6 +728,38 @@
     </div>
   </div>
 
+  <div class="panel" id="newsPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Company News <span class="meta">— recent headlines for your holdings, newest first</span></h2>
+        <div class="sub-meta" id="newsSubMeta">Waiting for first sync…</div>
+      </div>
+    </div>
+    <div class="news-list" id="newsList"></div>
+    <div style="margin-top:8px;color:var(--text-muted);font-size:11px">Pulled from Google News once a day per holding — a general news search, not finance-curated, so treat headlines as a starting point rather than vetted analysis.</div>
+  </div>
+
+  <div class="panel" id="analystPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Analyst Consensus <span class="meta">— broker target price and forward growth forecasts for your holdings</span></h2>
+        <div class="sub-meta" id="analystSubMeta">Waiting for first sync…</div>
+      </div>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th><th class="num">LTP</th><th class="num">Target Price</th><th class="num">Upside/Downside</th>
+          <th class="num">Analysts</th><th class="num">Fwd Revenue Gr.</th><th class="num">Fwd Profit Gr.</th><th>For FY</th>
+        </tr>
+      </thead>
+      <tbody id="analystBody"></tbody>
+    </table>
+    </div>
+    <div style="margin-top:8px;color:var(--text-muted);font-size:11px">Pulled from Trendlyne's public consensus-estimates page once a week per holding (this moves slowly, unlike price). Target price and growth forecasts only — Trendlyne's detailed buy/hold/sell analyst breakdown sits behind their paid plan and isn't included here. Trendlyne occasionally rate-limits automated requests, so some or all holdings may be missing in a given week — that's expected, not a bug, and it fills back in on the next weekly refresh.</div>
+  </div>
+
   <div class="panel">
     <h2>How this stays live</h2>
     <ol>
@@ -730,6 +793,8 @@
   const INDICES_SHEET_NAME = 'Indices'; // auto-populated daily by the Apps Script updateIndices() job — powers the Market Indices panel's history/sparkline
   const LIVE_INDICES_SHEET_NAME = 'LiveIndices'; // small GOOGLEFINANCE-formula block Google Sheets keeps recalculating on its own — powers the Market Indices panel's live intraday value
   const WATCHLIST_SHEET_NAME = 'Watchlist'; // Column A (Symbol) is user-maintained; the rest is auto-filled daily by the Apps Script updateWatchlist() job — powers the Fundamentals (Watchlist) panel
+  const NEWS_SHEET_NAME = 'News'; // auto-populated daily by the Apps Script updateNewsFeed() job — powers the Company News panel
+  const ANALYST_SHEET_NAME = 'Analyst Ratings'; // auto-populated weekly by the Apps Script updateAnalystRatings() job — powers the Analyst Consensus panel
   const XIRR_HISTORY_SHEET_NAME = 'XirrHistory'; // auto-populated daily by the Apps Script snapshotXirrHistory() job (runs alongside snapshotPortfolioHistory) — powers the XIRR Performance panel
 
   let autoTimer = null;
@@ -744,6 +809,8 @@
   let lastIndices = {}; // index name -> [{date, value}, ...] sorted ascending by date, read from the daily-snapshot Indices tab
   let lastLiveIndices = {}; // index name -> {value, change, changePct}, read from the always-fresh LiveIndices tab
   let lastWatchlist = []; // P/E, ROCE, ROE, Sales/Profit growth per tracked (not held) symbol, read from the Watchlist tab
+  let lastNews = []; // recent headlines per holding, read from the News tab
+  let lastAnalystRatings = []; // target price + forward growth forecasts per holding, read from the Analyst Ratings tab
   let lastXirrHistory = []; // [{date, total, stock, etf}] sorted ascending by date, read from the daily-snapshot XirrHistory tab — total/stock/etf are % or null
   // Which index lines are checked on in the "Portfolio NAV vs Market Indices" chart — Portfolio NAV itself
   // always shows and has no checkbox; at least one index must stay checked (enforced in onNavIndexToggle).
@@ -894,6 +961,8 @@
     { key: 'beta', label: 'Beta', num: true, title: '3-year weekly beta vs. Nifty 50 — above 1 moves more than the index, below 1 moves less. Computed for holdings only; blank for Watchlist symbols.' },
     { key: 'sales3yr', label: '3Y Sales', num: true, title: '3-year compounded (CAGR) Sales growth, from the Profit & Loss statement' },
     { key: 'profit3yr', label: '3Y Profit', num: true, title: '3-year compounded (CAGR) Net Profit growth, from the Profit & Loss statement' },
+    { key: 'eps3yr', label: '3Y EPS', num: true, title: '3-year compounded (CAGR) EPS growth, from the Profit & Loss statement — can lag Profit growth if the share count has grown (dilution)' },
+    { key: 'peg', label: 'PEG', num: true, title: 'PEG Ratio = P/E ÷ 3-Year EPS Growth (%) — conventionally, under 1 is considered attractively priced relative to growth, over 1 relatively expensive. Blank when EPS growth is zero or negative.' },
     { key: 'salesYoyQ2', label: 'Sales YoY', num: true, periodKey: 'salesYoyQ2Period', title: 'Year-over-year Sales growth, 2 quarters before the latest reported quarter' },
     { key: 'salesYoyQ1', label: 'Sales YoY', num: true, periodKey: 'salesYoyQ1Period', title: 'Year-over-year Sales growth, 1 quarter before the latest reported quarter' },
     { key: 'salesYoyLatest', label: 'Sales YoY', num: true, periodKey: 'salesYoyLatestPeriod', title: 'Year-over-year Sales growth for the most recently reported quarter' },
@@ -969,6 +1038,11 @@
       case 'beta': return isFinite(r.beta) ? fmtNum(r.beta, 2) : '—';
       case 'sales3yr': return growthCell(r.sales3yr, 0);
       case 'profit3yr': return growthCell(r.profit3yr, 0);
+      case 'eps3yr': return growthCell(r.eps3yr, 0);
+      case 'peg': {
+        const peg = (isFinite(r.pe) && isFinite(r.eps3yr) && r.eps3yr > 0) ? r.pe / r.eps3yr : NaN;
+        return isFinite(peg) ? fmtNum(peg, 2) : '—';
+      }
       case 'salesYoyQ2': return growthCell(r.salesYoyQ2, 0);
       case 'salesYoyQ1': return growthCell(r.salesYoyQ1, 0);
       case 'salesYoyLatest': return growthCell(r.salesYoyLatest, 0);
@@ -1122,11 +1196,25 @@
     }).join('') + '</tr>';
   }
 
+  const THEME_STORAGE_KEY = 'portfolioTheme';
+  const THEME_CYCLE = ['light', 'dark'];
+  const THEME_LABELS = { light: 'Theme: Light', dark: 'Theme: Dark' };
+
+  function currentThemeMode() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function applyTheme(mode) {
+    mode = (mode === 'dark') ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', mode);
+    try { localStorage.setItem(THEME_STORAGE_KEY, mode); } catch (e) {}
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = THEME_LABELS[mode];
+  }
+
   function toggleTheme() {
-    const el = document.documentElement;
-    const current = el.getAttribute('data-theme');
-    const effectivelyDark = current ? current === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    el.setAttribute('data-theme', effectivelyDark ? 'light' : 'dark');
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(currentThemeMode()) + 1) % THEME_CYCLE.length];
+    applyTheme(next);
     // Donut and history/daily-perf chart colors are picked at draw time, not via CSS vars — redraw so they match the new theme.
     if (lastStocks.length) renderAnalysis(lastStocks, computeAgg(lastStocks).value);
     if (lastStocks.length || lastEtfs.length) renderAllocation(lastStocks, lastEtfs, computeAgg(lastStocks).value, computeAgg(lastEtfs).value);
@@ -1308,6 +1396,8 @@
         syncIndices(),       // independent, optional — Nifty 50/500/Midcap 150 broader-market indices, updated daily by Apps Script
         syncLiveIndices(),   // independent, optional — always-fresh GOOGLEFINANCE live value/change for the same 3 indices
         syncWatchlist(),     // independent, optional — tracked (not held) stocks' price + fundamentals, updated daily by Apps Script
+        syncNews(),          // independent, optional — recent headlines per holding, updated daily by Apps Script
+        syncAnalystRatings(), // independent, optional — target price + forward growth forecasts, updated weekly by Apps Script
         syncDashboardSettings(), // independent, optional — saved column-visibility choice for the Fundamentals/Watchlist panels
         syncXirrHistory(),   // independent, optional — daily Total/Stock/ETF XIRR snapshots for the XIRR Performance panel
       ]);
@@ -1544,7 +1634,7 @@
     const totalDayPct = totalPrevValue ? (totalDayGain / totalPrevValue) * 100 : 0;
 
     document.getElementById('tileTotalValue').textContent = fmtMoney(totalValue);
-    document.getElementById('tileTotalNote').textContent = `Invested ${fmtMoney(totalInvested)} · Gain ${totalGain >= 0 ? '+' : ''}${fmtMoney(totalGain)}`;
+    document.getElementById('tileTotalNote').textContent = `Invested ${fmtMoney(totalInvested)}`;
     const gainTile = document.getElementById('tileOverallGain');
     gainTile.textContent = (totalGain >= 0 ? '+' : '') + fmtMoney(totalGain); gainTile.className = 'value ' + chgClass(totalGainPct);
     const gainPctTile = document.getElementById('tileOverallGainPct');
@@ -1819,7 +1909,7 @@
     const excludedNote = (excludedValue > 0 ? ' · some holdings without any date data excluded' : '') + futureNote;
     noteEl.textContent = (hasApprox
       ? 'Annualized, money-weighted — approximates entry date for ETFs/stocks without a Buy Date'
-      : 'Annualized, money-weighted, from each buy date') + excludedNote;
+      : 'Annualized, money-weighted') + excludedNote;
   }
 
   // Drives the combined Portfolio XIRR tile plus the per-book Stock Portfolio / ETF Portfolio XIRR
@@ -2392,6 +2482,7 @@
           profitYoyLatest: num(pqL), profitYoyLatestPeriod: extractPeriod(pqL),
           sales3yr: num(pick(o, '3Y Sales Growth')),
           profit3yr: num(pick(o, '3Y Profit Growth')),
+          eps3yr: num(pick(o, '3Y EPS Growth')),
           annSales: num(pick(o, 'Ann. Sales')), annSalesPeriod: extractPeriod(pick(o, 'Ann. Sales')),
           annOpProfit: num(pick(o, 'Ann. Op. Profit')), annOpProfitPeriod: extractPeriod(pick(o, 'Ann. Op. Profit')),
           annProfit: num(pick(o, 'Ann. Profit')), annProfitPeriod: extractPeriod(pick(o, 'Ann. Profit')),
@@ -2488,6 +2579,7 @@
           profitYoyLatest: num(pqL), profitYoyLatestPeriod: extractPeriod(pqL),
           sales3yr: num(pick(o, '3Y Sales Growth')),
           profit3yr: num(pick(o, '3Y Profit Growth')),
+          eps3yr: num(pick(o, '3Y EPS Growth')),
           annSales: num(pick(o, 'Ann. Sales')), annSalesPeriod: extractPeriod(pick(o, 'Ann. Sales')),
           annOpProfit: num(pick(o, 'Ann. Op. Profit')), annOpProfitPeriod: extractPeriod(pick(o, 'Ann. Op. Profit')),
           annProfit: num(pick(o, 'Ann. Profit')), annProfitPeriod: extractPeriod(pick(o, 'Ann. Profit')),
@@ -2543,6 +2635,141 @@
     document.getElementById('watchlistBody').innerHTML = sortRows(rows.filter(hasFundData), watchlistSort.key, watchlistSort.dir)
       .map(r => `<tr>${fundRowTds(r, watchlistVisibleCols, true)}</tr>`).join('');
     renderColSettingsButtonState('watchlist');
+  }
+
+  // News.gs writes Published/FetchedAt as "yyyy-MM-dd'T'HH:mm:ss" text, but Sheets auto-detects
+  // that as a real datetime and stores it as one anyway — so gviz hands it back as a full
+  // Date(y,m,d,h,mi,s) (unlike parseGvizDate()'s date-only regex, this keeps every component,
+  // since that's what "Xh ago" needs). The plain-text branch is a defensive fallback only.
+  function parseNewsDate(v) {
+    if (!v) return null;
+    const s = String(v);
+    const dm = s.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/);
+    if (dm) return new Date(+dm[1], +dm[2], +dm[3], +(dm[4] || 0), +(dm[5] || 0), +(dm[6] || 0));
+    const tm = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+    if (tm) return new Date(+tm[1], +tm[2] - 1, +tm[3], +tm[4], +tm[5], +tm[6]);
+    return null;
+  }
+
+  function timeAgo(date) {
+    if (!date) return '';
+    const mins = Math.round((Date.now() - date.getTime()) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.round(hrs / 24);
+    if (days < 7) return days + 'd ago';
+    return date.toLocaleDateString('en-IN');
+  }
+
+  // Plain keyword match, not a real earnings feed — Google News search results carry no
+  // structured "this is a results article" flag, so this just flags headlines whose wording
+  // suggests they're about a quarterly results announcement (beat/miss estimates, PAT, board
+  // meeting for results, etc.) so they stand out while scanning. False positives/negatives both
+  // happen; it's a scanning aid, not a reliable earnings-surprise number.
+  const EARNINGS_HEADLINE_RE = /\b(q[1-4]\s?fy\s?\d{2,4}|quarterly results|results preview|results today|results out|beats?\s+estimates?|miss(?:es)?\s+estimates?|net profit|net loss|profit after tax|\bpat\b|\beps\b|board meeting|(?:revenue|profit)\s+(?:rises?|falls?|jumps?|drops?|grows?|surges?|plunges?|soars?)|dividend|quarterly earnings)\b/i;
+  function isEarningsHeadline(title) {
+    return EARNINGS_HEADLINE_RE.test(String(title || ''));
+  }
+
+  async function syncNews() {
+    try {
+      const rows = await fetchSheet(NEWS_SHEET_NAME);
+      const parsed = rows.map(o => ({
+        symbol: pick(o, 'Symbol'),
+        title: pick(o, 'Title'),
+        link: pick(o, 'Link'),
+        source: pick(o, 'Source'),
+        published: parseNewsDate(pick(o, 'Published')),
+        fetchedAt: parseNewsDate(pick(o, 'FetchedAt')),
+      })).filter(r => r.symbol && r.title && r.link);
+      lastNews = parsed;
+      renderNews(parsed);
+    } catch (err) {
+      lastNews = [];
+      document.getElementById('newsPanel').style.display = 'none';
+    }
+  }
+
+  function renderNews(rows) {
+    const panel = document.getElementById('newsPanel');
+    if (!rows.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const sorted = rows.slice().sort((a, b) => (b.published ? b.published.getTime() : 0) - (a.published ? a.published.getTime() : 0));
+    const symbols = new Set(rows.map(r => r.symbol));
+    const latestFetch = rows.reduce((max, r) => (r.fetchedAt && (!max || r.fetchedAt > max)) ? r.fetchedAt : max, null);
+    const earningsCount = rows.filter(r => isEarningsHeadline(r.title)).length;
+    document.getElementById('newsSubMeta').textContent =
+      `${rows.length} headline${rows.length === 1 ? '' : 's'} across ${symbols.size} holding${symbols.size === 1 ? '' : 's'}` +
+      (earningsCount ? ` · ${earningsCount} look results-related` : '') +
+      (latestFetch ? ` · Updated ${latestFetch.toLocaleDateString('en-IN')}, ${latestFetch.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : '');
+
+    document.getElementById('newsList').innerHTML = sorted.slice(0, 40).map(r => {
+      const earnings = isEarningsHeadline(r.title);
+      const metaParts = [escapeHtmlText(r.source || ''), r.published ? timeAgo(r.published) : ''].filter(Boolean).join(' · ');
+      return `
+      <div class="news-row">
+        <span class="news-sym">${escapeHtmlText(r.symbol)}</span>
+        <div class="news-body">
+          <a class="news-title" href="${escapeHtmlText(r.link)}" target="_blank" rel="noopener noreferrer">${escapeHtmlText(r.title)}</a>
+          <div class="news-meta">${earnings ? '<span class="news-tag-earnings" title="Headline wording suggests this is about quarterly results — not a verified earnings figure">Results</span>' : ''}<span>${metaParts}</span></div>
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+
+  async function syncAnalystRatings() {
+    try {
+      const rows = await fetchSheet(ANALYST_SHEET_NAME);
+      const parsed = rows.map(o => ({
+        symbol: pick(o, 'Symbol'),
+        target: num(pick(o, 'Target Price')),
+        revGrowth: num(pick(o, 'Revenue Growth % (fwd)')),
+        profitGrowth: num(pick(o, 'Profit Growth % (fwd)')),
+        forecastFy: pick(o, 'Forecast FY'),
+        analystCount: num(pick(o, 'Analyst Count')),
+      })).filter(r => r.symbol && isFinite(r.target));
+      lastAnalystRatings = parsed;
+      renderAnalystRatings(parsed);
+    } catch (err) {
+      lastAnalystRatings = [];
+      document.getElementById('analystPanel').style.display = 'none';
+    }
+  }
+
+  function renderAnalystRatings(rows) {
+    const panel = document.getElementById('analystPanel');
+    if (!rows.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    // Current price comes from the live Holdings sync (lastStocks), not scraped again here —
+    // Trendlyne's page has its own last-traded price, but reusing what's already on-screen keeps
+    // the upside/downside figure consistent with the rest of the dashboard.
+    const ltpBySymbol = new Map(lastStocks.map(s => [normSym(s.symbol), s.ltp]));
+
+    document.getElementById('analystSubMeta').textContent =
+      `${rows.length} holding${rows.length === 1 ? '' : 's'} with consensus data`;
+
+    const sorted = rows.slice().sort((a, b) => a.symbol.localeCompare(b.symbol));
+    document.getElementById('analystBody').innerHTML = sorted.map(r => {
+      const ltp = ltpBySymbol.get(normSym(r.symbol));
+      const upsidePct = isFinite(ltp) && ltp > 0 ? ((r.target - ltp) / ltp) * 100 : NaN;
+      return `
+      <tr>
+        <td class="sym"><a class="sym-link" href="${screenerUrl(r.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(r.symbol)}</a></td>
+        <td class="num">${fmtNum(ltp)}</td>
+        <td class="num">${fmtNum(r.target)}</td>
+        <td class="num ${chgClass(upsidePct)}">${fmtPct(upsidePct)}</td>
+        <td class="num">${isFinite(r.analystCount) ? r.analystCount : '—'}</td>
+        <td class="num">${fmtPct(r.revGrowth)}</td>
+        <td class="num">${fmtPct(r.profitGrowth)}</td>
+        <td>${escapeHtmlText(r.forecastFy || '—')}</td>
+      </tr>
+    `;
+    }).join('');
   }
 
   function fyInfo(date) {
@@ -3772,6 +3999,7 @@
   });
 
   // ---- Boot ----
+  applyTheme(currentThemeMode()); // sync button label to whatever the pre-paint script set (or 'system' default)
   onIntervalChange();
   syncFromSheet();
 </script>
