@@ -187,6 +187,122 @@
   .insights-links a:hover { color: var(--seq-400); border-color: var(--seq-400); }
   .insights-empty { font-size: 12.5px; color: var(--text-muted); }
 
+  .scorecard-symbol-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .scorecard-symbol-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 4px 8px 4px 11px; border-radius: 999px; background: var(--page-plane); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+  .scorecard-symbol-btn:hover:not(.active) { color: var(--text-primary); border-color: var(--text-muted); }
+  .scorecard-symbol-btn.active { background: var(--surface-2); border-color: var(--text-muted); color: var(--text-primary); }
+  .scorecard-wl-tag { font-size: 9px; font-weight: 700; color: var(--text-muted); }
+  .scorecard-pill-score { font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, currentColor 16%, transparent); }
+  .scorecard-symbol-btn.grade-strong { color: var(--status-good); }
+  .scorecard-symbol-btn.grade-good { color: var(--seq-400); }
+  .scorecard-symbol-btn.grade-moderate { color: var(--status-warning); }
+  .scorecard-symbol-btn.grade-weak { color: var(--status-critical); }
+  .scorecard-symbol-btn.grade-na { color: var(--text-muted); }
+  .scorecard-headline { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+  .scorecard-gauge { flex: none; font-size: 26px; font-weight: 800; width: 74px; height: 74px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid currentColor; }
+  .scorecard-gauge span { font-size: 11px; font-weight: 600; margin-left: 2px; opacity: .7; }
+  .scorecard-gauge.grade-strong, .scorecard-grade.grade-strong { color: var(--status-good); }
+  .scorecard-gauge.grade-good, .scorecard-grade.grade-good { color: var(--seq-400); }
+  .scorecard-gauge.grade-moderate, .scorecard-grade.grade-moderate { color: var(--status-warning); }
+  .scorecard-gauge.grade-weak, .scorecard-grade.grade-weak { color: var(--status-critical); }
+  .scorecard-gauge.grade-na, .scorecard-grade.grade-na { color: var(--text-muted); }
+  .scorecard-grade { font-size: 15px; font-weight: 700; }
+  .scorecard-coverage { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .scorecard-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .scorecard-table th { text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); padding: 0 8px 6px; border-bottom: 1px solid var(--border); }
+  .scorecard-table th.num, .scorecard-table td.num { text-align: right; }
+  .scorecard-table td { padding: 8px; border-top: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
+  .scorecard-table tr:first-child td { border-top: none; }
+  .scorecard-table td:first-child { width: 24px; padding-right: 0; }
+  .sc-note { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+  .sc-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 800; }
+  .sc-icon.sc-pass { background: color-mix(in srgb, var(--status-good) 18%, transparent); color: var(--status-good); }
+  .sc-icon.sc-partial { background: color-mix(in srgb, var(--status-warning) 18%, transparent); color: var(--status-warning); }
+  .sc-icon.sc-fail { background: color-mix(in srgb, var(--status-critical) 18%, transparent); color: var(--status-critical); }
+  .sc-icon.sc-na { background: var(--page-plane); color: var(--text-muted); }
+  .scorecard-table tr.sc-excluded td { color: var(--text-muted); }
+  .scorecard-empty { font-size: 12.5px; color: var(--text-muted); }
+  .scorecard-lookup-box {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: var(--page-plane); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 16px;
+  }
+  .scorecard-lookup-box label { font-size: 11.5px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+  .scorecard-lookup-box input[type="text"] {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; letter-spacing: .02em;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 9px; color: var(--text-primary); width: 180px; text-transform: uppercase;
+  }
+  .scorecard-lookup-box input[type="text"]:focus { outline: none; border-color: var(--seq-400); }
+  .scorecard-lookup-box button {
+    font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+    background: var(--seq-400); color: #fff; border: none; border-radius: 6px; padding: 7px 13px;
+  }
+  .scorecard-lookup-box button:disabled { opacity: .6; cursor: default; }
+  .scorecard-lookup-status { font-size: 11.5px; color: var(--text-muted); }
+  .scorecard-lookup-status.err { color: var(--status-critical); font-weight: 600; }
+  .scorecard-lookup-result {
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px;
+    background: var(--surface-1);
+  }
+  .scorecard-lookup-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .scorecard-lookup-symbol { font-size: 14px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
+  .scorecard-lookup-clear {
+    font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-muted);
+    background: transparent; border: none; cursor: pointer; padding: 3px 6px;
+  }
+  .scorecard-lookup-clear:hover { color: var(--text-primary); }
+
+  .stock-add-btn {
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--seq-400);
+    background: var(--seq-400); color: #fff; cursor: pointer; font-size: 12.5px; font-weight: 700; line-height: 1;
+  }
+  .stock-add-btn:hover { opacity: .88; }
+
+  .row-edit-btn {
+    display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+    width: 18px; height: 18px; margin-left: 4px; border: none; background: transparent; color: var(--text-muted);
+    cursor: pointer; font-size: 11.5px; border-radius: 4px; padding: 0;
+  }
+  .row-edit-btn:hover { color: var(--seq-400); background: var(--gridline); }
+
+  .stock-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .stock-modal-overlay.show { display: flex; }
+  .stock-modal {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; padding: 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .stock-modal h3 { font-size: 15px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
+  .stock-modal .stock-modal-sub { font-size: 11.5px; color: var(--text-muted); margin-bottom: 16px; }
+  .stock-field { margin-bottom: 14px; }
+  .stock-field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+  .stock-field label .req { color: var(--status-critical); }
+  .stock-field input[type="text"], .stock-field input[type="number"], .stock-field input[type="date"], .stock-field select {
+    width: 100%; font-family: inherit; font-size: 13px; font-weight: 600; background: var(--page-plane);
+    border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; color: var(--text-primary); box-sizing: border-box;
+  }
+  .stock-field input:disabled, .stock-field select:disabled { opacity: .55; cursor: not-allowed; }
+  .stock-field-row { display: flex; gap: 8px; align-items: center; }
+  .stock-field-row input[type="date"] { flex: 1; }
+  .stock-field-row button.cal-btn {
+    flex: none; width: 34px; height: 34px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface-1); cursor: pointer; font-size: 14px; color: var(--text-secondary);
+  }
+  .stock-field-note { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
+  .stock-modal-status { font-size: 12px; margin: 2px 0 12px; min-height: 16px; }
+  .stock-modal-status.err { color: var(--status-critical); font-weight: 600; }
+  .stock-modal-status.ok { color: var(--status-good); font-weight: 600; }
+  .stock-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+  .stock-modal-actions button { font-family: inherit; font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+  .stock-modal-actions .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+  .stock-modal-actions .btn-save { background: var(--seq-400); border: 1px solid var(--seq-400); color: #fff; }
+  .stock-modal-actions .btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
   .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: var(--card-shadow); }
   .panel h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
   .panel h2 .meta { font-weight: 400; color: var(--text-muted); font-size: 12px; }
@@ -546,6 +662,7 @@
         <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="stocksMiniGainAmt">—</div><div class="mini-subvalue" id="stocksMiniGainPct">—</div></div>
         <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="stocksMiniTodayAmt">—</div><div class="mini-subvalue" id="stocksMiniTodayPct">—</div></div>
       </div>
+      <button type="button" class="stock-add-btn" onclick="openAddStockModal()" title="Add a new stock holding to your Portfolio sheet">+ Add Stock</button>
       <div class="col-settings">
         <button type="button" class="col-settings-btn" id="stocksColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('stocks')">⚙️</button>
         <div class="col-settings-menu" id="stocksColSettingsMenu"></div>
@@ -738,6 +855,26 @@
     <div style="margin-top:14px;color:var(--text-muted);font-size:11px">Sourced from each company's public Screener.in page, refreshed weekly by Apps Script. This is Screener's own analysis, not independently verified — treat Key Points/Pros/Cons as a starting point. Concall "AI Summary" isn't pulled here since it needs a logged-in Screener account; the raw Transcript link (and PPT, when Screener has one on file) is the source instead.</div>
   </div>
 
+  <div class="panel" id="scorecardPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Growth Scorecard <span class="meta">— 10 equal-weighted growth/momentum criteria, computed from your Fundamentals &amp; Watchlist data</span></h2>
+        <div class="sub-meta" id="scorecardSubMeta">Waiting for first sync…</div>
+      </div>
+    </div>
+    <div class="scorecard-lookup-box">
+      <label for="scorecardLookupInput">Look up any stock (not in Holdings/Watchlist)</label>
+      <input type="text" id="scorecardLookupInput" placeholder="e.g. DMART" maxlength="20"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();runScorecardLookup();}">
+      <button id="scorecardLookupBtn" onclick="runScorecardLookup()">Look up</button>
+      <span id="scorecardLookupStatus" class="scorecard-lookup-status"></span>
+    </div>
+    <div id="scorecardLookupResult" class="scorecard-lookup-result" style="display:none"></div>
+    <div class="scorecard-symbol-row" id="scorecardSymbolRow"></div>
+    <div id="scorecardBody"></div>
+    <div style="margin-top:14px;color:var(--text-muted);font-size:11px">Score = criteria passed (1 pt) + partial (½ pt), out of the criteria with available data for that symbol — a symbol with data gaps is scored out of a smaller total rather than penalized for the gap. 3 criteria from the original screening checklist (Earnings Surprise History, New Product/Catalyst, Sector/Industry Strength) aren't automatable from available data and are excluded from the score entirely — shown below for reference. Thresholds are editable in the dashboard source (SCORECARD_THRESHOLDS). The "Look up any stock" box above calls Screener.in live for a one-off symbol — it's a quick fundamentals sanity-check before you move to technicals, not something the dashboard tracks or refreshes automatically.</div>
+  </div>
+
   <div class="panel">
     <div class="panel-head">
       <div class="panel-head-left">
@@ -875,6 +1012,52 @@
   <div class="footer-line">Reads two tabs directly from your Sheet — "Portfolio" (stocks) and "ETF Summary" (ETFs). Export buttons download exactly what's currently on screen.</div>
 </div>
 
+<div class="stock-modal-overlay" id="stockModalOverlay" onclick="if(event.target===this) closeStockFormModal()">
+  <div class="stock-modal">
+    <h3 id="stockModalTitle">Add Stock</h3>
+    <div class="stock-modal-sub" id="stockModalSub">Inserted into the "Portfolio" tab in alphabetical order.</div>
+    <div class="stock-field">
+      <label for="stockFormSymbol">Symbol <span class="req">*</span></label>
+      <input type="text" id="stockFormSymbol" placeholder="e.g. DMART" maxlength="20" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="stock-field">
+      <label for="stockFormBuyDate">Buy Date <span class="req">*</span></label>
+      <div class="stock-field-row">
+        <input type="date" id="stockFormBuyDate">
+        <button type="button" class="cal-btn" title="Pick a custom date" onclick="const el=document.getElementById('stockFormBuyDate'); if(el.showPicker) el.showPicker(); else el.focus();">📅</button>
+      </div>
+      <div class="stock-field-note">Defaults to today — click 📅 for a custom date.</div>
+    </div>
+    <div class="stock-field">
+      <label for="stockFormQty">Quantity <span class="req">*</span></label>
+      <input type="number" id="stockFormQty" min="0" step="any" placeholder="e.g. 10">
+    </div>
+    <div class="stock-field">
+      <label for="stockFormBuyPrice">Buy Price <span class="req">*</span></label>
+      <input type="number" id="stockFormBuyPrice" min="0" step="0.01" placeholder="e.g. 1250.50">
+    </div>
+    <div class="stock-field">
+      <label for="stockFormMarketCap">Market Cap <span class="req">*</span></label>
+      <select id="stockFormMarketCap">
+        <option value="">Select…</option>
+        <option value="Large Cap">Large Cap</option>
+        <option value="Mid Cap">Mid Cap</option>
+        <option value="Small Cap">Small Cap</option>
+      </select>
+    </div>
+    <div class="stock-field">
+      <label for="stockFormSector">Sector <span id="stockFormSectorOptLabel">(optional)</span></label>
+      <input type="text" id="stockFormSector" placeholder="e.g. Auto Ancillary" maxlength="60">
+    </div>
+    <div class="stock-field-note" id="stockFormEditNote" style="display:none;margin:-6px 0 14px">🔒 Symbol, Buy Date, Market Cap and Sector can't be changed here — only Quantity and Buy Price. To change the others, edit the sheet directly.</div>
+    <div class="stock-modal-status" id="stockModalStatus"></div>
+    <div class="stock-modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeStockFormModal()">Cancel</button>
+      <button type="button" class="btn-save" id="stockFormSaveBtn" onclick="submitStockForm()">Add Stock</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const SHEET_ID = '19JTwr2EmfZO-ng3x-ydM7gpn5SSAyBaJ3iQIp4KEBaw';
   const STOCKS_SHEET_NAME = 'Portfolio';
@@ -918,7 +1101,9 @@
   let lastNews = []; // recent headlines per holding, read from the News tab
   let lastAnalystRatings = []; // target price + forward growth forecasts per holding, read from the Analyst Ratings tab
   let lastInsights = []; // Key Points/Pros/Cons/concall & annual-report links per holding, read from the Insights tab
+  let lastScorecardRows = []; // Growth Scorecard's computed rows (Fundamentals ∪ Watchlist), cached for click re-renders
   let selectedInsightSymbol = null; // which holding's insights are currently shown in the Company Insights panel
+  let selectedScoreSymbol = null; // which symbol's breakdown is currently shown in the Growth Scorecard panel
   let lastXirrHistory = []; // [{date, total, stock, etf}] sorted ascending by date, read from the daily-snapshot XirrHistory tab — total/stock/etf are % or null
   // Which index lines are checked on in the "Portfolio NAV vs Market Indices" chart — Portfolio NAV itself
   // always shows and has no checkbox; at least one index must stay checked (enforced in onNavIndexToggle).
@@ -1184,7 +1369,7 @@
     const flagged = s.wt > CONCENTRATION_THRESHOLD;
     switch (colKey) {
       case 'symbol':
-        return `<td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(s.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a></td>`;
+        return `<td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(s.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a><button type="button" class="row-edit-btn" onclick="openEditStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Edit Qty / Buy Price">✎</button></td>`;
       case 'sector': return `<td class="sec">${escapeHtmlText(s.sector)}</td>`;
       case 'cap': return `<td class="sec">${escapeHtmlText(s.cap.replace(' Cap', ''))}</td>`;
       case 'qty': return `<td class="num">${fmtNum(s.qty, 0)}</td>`;
@@ -2718,6 +2903,310 @@
     }).join('');
   }
 
+  // ================= Growth Scorecard =================
+  // A 13-criterion growth/momentum screening checklist you provided reduces to 10 automatable
+  // criteria here — Earnings Surprise History, New Product/Catalyst, and Sector/Industry Strength
+  // aren't computable from any data this dashboard tracks, so by your call they're excluded from the
+  // score entirely (SCORECARD_EXCLUDED, shown for reference only) rather than scored as a guess. The
+  // remaining 10 are equal-weighted (also your call). Runs entirely client-side over Fundamentals/
+  // Watchlist data already in memory — no extra sheet or network round-trip.
+  //
+  // Thresholds are named constants here, deliberately separate from the scoring logic, so they're
+  // easy to retune later. Two of the original checklist's rows didn't specify an exact number
+  // ("Annual Sales Growth — steady or accelerating", "Debt-to-Equity — low and/or declining") — sensible
+  // explicit defaults are used below (12%/6% CAGR and 0.3×/1.0× respectively); adjust freely.
+  const SCORECARD_THRESHOLDS = {
+    qtrEpsGrowth: { full: 20, half: 10 },       // % YoY (Net Profit YoY used as an EPS-growth proxy — see note below)
+    qtrSalesGrowth: { full: 15, half: 8 },      // % YoY
+    annEpsGrowth: { full: 15, half: 8 },        // % 3Y CAGR
+    annSalesGrowth: { full: 12, half: 6 },      // % 3Y CAGR
+    marginExpansion: { full: 1, half: -0.5 },   // percentage-point change in OPM, latest Q vs. same Q last year
+    roe: { full: 15, half: 10 },                // %
+    debtToEquity: { full: 0.3, half: 1.0 },     // ratio — LOWER is better, so this direction is inverted below
+    institutional: { full: 1, half: -1 },       // percentage-point change in FII%+DII%, latest Q vs. 4 quarters back
+  };
+
+  // Each entry's score(r) returns { score: 0 | 0.5 | 1, text } for a Fundamentals/Watchlist row, or
+  // null when the row has no data for that criterion (computeScorecard() below excludes it from that
+  // symbol's own denominator rather than counting it as a fail).
+  const SCORECARD_CRITERIA = [
+    {
+      key: 'qtrEpsGrowth', label: 'Quarterly EPS Growth',
+      note: 'Proxy: latest-quarter Net Profit YoY growth — EPS itself isn’t scraped separately, but tracks profit growth closely unless share count changed materially',
+      score(r) {
+        const v = r.profitYoyLatest;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.qtrEpsGrowth;
+        return { score: v >= t.full ? 1 : v >= t.half ? 0.5 : 0, text: fmtPct(v, 1) + ' YoY' };
+      },
+    },
+    {
+      key: 'qtrSalesGrowth', label: 'Quarterly Sales Growth',
+      score(r) {
+        const v = r.salesYoyLatest;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.qtrSalesGrowth;
+        return { score: v >= t.full ? 1 : v >= t.half ? 0.5 : 0, text: fmtPct(v, 1) + ' YoY' };
+      },
+    },
+    {
+      key: 'annEpsGrowth', label: 'Annual EPS Growth', note: '3-year compounded (CAGR) EPS growth',
+      score(r) {
+        const v = r.eps3yr;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.annEpsGrowth;
+        return { score: v >= t.full ? 1 : v >= t.half ? 0.5 : 0, text: fmtPct(v, 1) + ' 3Y CAGR' };
+      },
+    },
+    {
+      key: 'annSalesGrowth', label: 'Annual Sales Growth', note: '3-year compounded (CAGR) Sales growth',
+      score(r) {
+        const v = r.sales3yr;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.annSalesGrowth;
+        return { score: v >= t.full ? 1 : v >= t.half ? 0.5 : 0, text: fmtPct(v, 1) + ' 3Y CAGR' };
+      },
+    },
+    {
+      key: 'epsGrowthAccel', label: 'EPS Growth Acceleration',
+      note: 'Is quarterly Net Profit YoY growth speeding up across the last 3 reported quarters?',
+      score(r) {
+        const a = r.profitYoyQ2, b = r.profitYoyQ1, c = r.profitYoyLatest;
+        if (!isFinite(a) || !isFinite(b) || !isFinite(c)) return null;
+        const score = (c > b && b > a) ? 1 : (c > a) ? 0.5 : 0;
+        return { score, text: `${fmtPct(a, 0)} → ${fmtPct(b, 0)} → ${fmtPct(c, 0)}` };
+      },
+    },
+    {
+      key: 'salesGrowthAccel', label: 'Sales Growth Acceleration',
+      note: 'Is quarterly Sales YoY growth speeding up across the last 3 reported quarters?',
+      score(r) {
+        const a = r.salesYoyQ2, b = r.salesYoyQ1, c = r.salesYoyLatest;
+        if (!isFinite(a) || !isFinite(b) || !isFinite(c)) return null;
+        const score = (c > b && b > a) ? 1 : (c > a) ? 0.5 : 0;
+        return { score, text: `${fmtPct(a, 0)} → ${fmtPct(b, 0)} → ${fmtPct(c, 0)}` };
+      },
+    },
+    {
+      key: 'marginExpansion', label: 'Margin Expansion (OPM)',
+      note: 'Latest-quarter Operating Profit Margin vs. the same quarter a year ago',
+      score(r) {
+        const v = r.opmYoyChg;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.marginExpansion;
+        const latest = isFinite(r.opmLatest) ? fmtNum(r.opmLatest, 1) + '%' : '—';
+        return { score: v >= t.full ? 1 : v >= t.half ? 0.5 : 0, text: `${latest} (${v >= 0 ? '+' : ''}${fmtNum(v, 1)}pp YoY)` };
+      },
+    },
+    {
+      key: 'roe', label: 'Return on Equity',
+      score(r) {
+        const v = r.roe;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.roe;
+        return { score: v >= t.full ? 1 : v >= t.half ? 0.5 : 0, text: fmtNum(v, 1) + '%' };
+      },
+    },
+    {
+      key: 'debtToEquity', label: 'Debt-to-Equity',
+      note: 'Lower is better — computed from Balance Sheet Borrowings ÷ (Equity Capital + Reserves), since Screener doesn’t publish this ratio directly',
+      score(r) {
+        const v = r.debtToEquity;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.debtToEquity;
+        return { score: v <= t.full ? 1 : v <= t.half ? 0.5 : 0, text: fmtNum(v, 2) + '×' };
+      },
+    },
+    {
+      key: 'institutional', label: 'Institutional Sponsorship',
+      note: 'FII% + DII% shareholding, latest reported quarter vs. 4 quarters earlier',
+      score(r) {
+        const v = r.institutionalYoyChg;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.institutional;
+        const latest = isFinite(r.institutionalPct) ? fmtNum(r.institutionalPct, 1) + '%' : '—';
+        return { score: v >= t.full ? 1 : v >= t.half ? 0.5 : 0, text: `${latest} (${v >= 0 ? '+' : ''}${fmtNum(v, 1)}pp YoY)` };
+      },
+    },
+  ];
+
+  // Excluded from the score by design — see the comment above SCORECARD_CRITERIA. Shown for reference
+  // only in the breakdown table so the checklist's full 13 rows are still visible in one place.
+  const SCORECARD_EXCLUDED = [
+    { label: 'Earnings Surprise History', reason: 'No analyst estimate / beat-miss history is available from Screener.in' },
+    { label: 'New Product / Catalyst', reason: 'Qualitative — check the Company Insights panel’s Key Points and latest concall for this' },
+    { label: 'Sector / Industry Strength', reason: 'No sector-index benchmark is tracked in this dashboard' },
+  ];
+
+  function computeScorecard(r) {
+    const results = SCORECARD_CRITERIA.map(c => {
+      const res = c.score(r);
+      return { key: c.key, label: c.label, note: c.note, available: !!res, score: res ? res.score : 0, text: res ? res.text : 'No data' };
+    });
+    const available = results.filter(x => x.available);
+    const total = available.reduce((s, x) => s + x.score, 0);
+    const max = available.length; // criteria with no data shrink the denominator rather than count as a fail
+    return { criteria: results, total, max, pct: max ? Math.round((total / max) * 100) : NaN, coverage: available.length };
+  }
+
+  function scoreGrade(pct) {
+    if (!isFinite(pct)) return { label: 'No data', cls: 'grade-na' };
+    if (pct >= 80) return { label: 'Strong', cls: 'grade-strong' };
+    if (pct >= 60) return { label: 'Good', cls: 'grade-good' };
+    if (pct >= 40) return { label: 'Moderate', cls: 'grade-moderate' };
+    return { label: 'Weak', cls: 'grade-weak' };
+  }
+
+  // Holdings (Fundamentals) first, then any Watchlist symbol not already a holding — a symbol shouldn't
+  // be in both, but if it ever is, the holding's own data wins.
+  function allScorecardCandidates() {
+    const seen = new Set();
+    const out = [];
+    lastFundamentals.forEach(r => { if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(Object.assign({ isHolding: true }, r)); } });
+    lastWatchlist.forEach(r => { if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(Object.assign({ isHolding: false }, r)); } });
+    return out;
+  }
+
+  // Called from the end of both renderFundamentals() and renderWatchlist(), since the Scorecard draws
+  // on both — idempotent, cheap (no network), so re-running it on either sync is harmless.
+  function renderScorecard() {
+    const panel = document.getElementById('scorecardPanel');
+    const rows = allScorecardCandidates();
+    if (!rows.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const scored = rows.map(r => Object.assign({}, r, { _score: computeScorecard(r) }))
+      .sort((a, b) => (isFinite(b._score.pct) ? b._score.pct : -1) - (isFinite(a._score.pct) ? a._score.pct : -1) || a.symbol.localeCompare(b.symbol));
+
+    if (!selectedScoreSymbol || !scored.some(r => r.symbol === selectedScoreSymbol)) {
+      selectedScoreSymbol = scored[0].symbol;
+    }
+
+    document.getElementById('scorecardSubMeta').textContent =
+      `${rows.length} symbol${rows.length === 1 ? '' : 's'} scored, sorted highest first`;
+
+    document.getElementById('scorecardSymbolRow').innerHTML = scored.map(r => {
+      const g = scoreGrade(r._score.pct);
+      return `<button class="scorecard-symbol-btn ${g.cls}${r.symbol === selectedScoreSymbol ? ' active' : ''}" data-symbol="${escapeHtmlText(r.symbol)}">` +
+        `${escapeHtmlText(r.symbol)}${r.isHolding ? '' : ' <span class="scorecard-wl-tag">WL</span>'} <span class="scorecard-pill-score">${isFinite(r._score.pct) ? r._score.pct : '—'}</span></button>`;
+    }).join('');
+    document.querySelectorAll('#scorecardSymbolRow .scorecard-symbol-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectScoreSymbol(btn.dataset.symbol));
+    });
+
+    lastScorecardRows = scored;
+    renderScorecardBody();
+  }
+
+  function selectScoreSymbol(symbol) {
+    selectedScoreSymbol = symbol;
+    document.querySelectorAll('#scorecardSymbolRow .scorecard-symbol-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.symbol === symbol);
+    });
+    renderScorecardBody();
+  }
+
+  // Shared by the tracked-symbol view (renderScorecardBody) and the ad-hoc "look up any stock" result
+  // (runScorecardLookup) — takes a computeScorecard() result and returns the gauge+table markup, so both
+  // paths render identically.
+  function buildScorecardBodyHtml(score) {
+    const g = scoreGrade(score.pct);
+    const criteriaRows = score.criteria.map(c => {
+      const icon = !c.available ? '<span class="sc-icon sc-na" title="No data available for this criterion">–</span>'
+        : c.score === 1 ? '<span class="sc-icon sc-pass" title="Pass">✓</span>'
+        : c.score === 0.5 ? '<span class="sc-icon sc-partial" title="Partial">½</span>'
+        : '<span class="sc-icon sc-fail" title="Fail">✕</span>';
+      return `<tr><td>${icon}</td><td>${escapeHtmlText(c.label)}${c.note ? `<div class="sc-note">${escapeHtmlText(c.note)}</div>` : ''}</td><td class="num">${escapeHtmlText(c.text)}</td></tr>`;
+    }).join('');
+
+    const excludedRows = SCORECARD_EXCLUDED.map(x =>
+      `<tr class="sc-excluded"><td><span class="sc-icon sc-na" title="Excluded from score">–</span></td><td>${escapeHtmlText(x.label)}<div class="sc-note">${escapeHtmlText(x.reason)}</div></td><td class="num">Excluded</td></tr>`
+    ).join('');
+
+    return `
+      <div class="scorecard-headline">
+        <div class="scorecard-gauge ${g.cls}">${isFinite(score.pct) ? score.pct : '—'}<span>/100</span></div>
+        <div>
+          <div class="scorecard-grade ${g.cls}">${g.label}</div>
+          <div class="scorecard-coverage">Scored on ${score.coverage}/10 criteria${score.coverage < 10 ? ' — the rest have no data yet' : ''}</div>
+        </div>
+      </div>
+      <table class="scorecard-table">
+        <thead><tr><th></th><th>Criterion</th><th class="num">Value</th></tr></thead>
+        <tbody>${criteriaRows}${excludedRows}</tbody>
+      </table>
+    `;
+  }
+
+  function renderScorecardBody() {
+    const r = (lastScorecardRows || []).find(x => x.symbol === selectedScoreSymbol);
+    const body = document.getElementById('scorecardBody');
+    if (!r) { body.innerHTML = '<div class="scorecard-empty">No data available for this symbol yet.</div>'; return; }
+    body.innerHTML = buildScorecardBodyHtml(r._score);
+  }
+
+  // Ad-hoc "look up any stock" — for a symbol NOT in Holdings/Watchlist, so the fundamental screening
+  // step doesn't require adding it anywhere first. Calls the scorecardLookup action on the same
+  // DashboardSettings Web App used for column-visibility settings (Apps Script allows only one doGet per
+  // project, so this rides the existing endpoint/URL rather than a new deployment). Read-only, no token
+  // needed — same as the existing action=read call.
+  function coerceLookupRow(row) {
+    // JSON has no NaN — the endpoint sends null for any criterion Screener.in didn't have, and
+    // isFinite(null) is true in JS, so every null must become NaN before computeScorecard() sees it, or a
+    // missing criterion would score as a fail (0) instead of being excluded from the denominator.
+    const out = Object.assign({}, row);
+    Object.keys(out).forEach(k => { if (out[k] === null) out[k] = NaN; });
+    return out;
+  }
+
+  async function runScorecardLookup() {
+    const input = document.getElementById('scorecardLookupInput');
+    const status = document.getElementById('scorecardLookupStatus');
+    const resultBox = document.getElementById('scorecardLookupResult');
+    const btn = document.getElementById('scorecardLookupBtn');
+    const sym = (input.value || '').trim().toUpperCase();
+    if (!sym) { status.textContent = 'Enter a symbol first.'; status.className = 'scorecard-lookup-status err'; return; }
+
+    btn.disabled = true;
+    status.textContent = `Looking up ${sym} on Screener.in… (can take up to 15s)`;
+    status.className = 'scorecard-lookup-status';
+    resultBox.style.display = 'none';
+
+    try {
+      const res = await fetch(SETTINGS_WEBAPP_URL + '?action=scorecardLookup&symbol=' + encodeURIComponent(sym));
+      const data = await res.json();
+      if (data.status !== 'ok') {
+        status.textContent = data.message || 'Lookup failed — please check the symbol.';
+        status.className = 'scorecard-lookup-status err';
+        return;
+      }
+      const row = coerceLookupRow(Object.assign({ isHolding: false }, data.row));
+      const score = computeScorecard(row);
+      status.textContent = '';
+      resultBox.style.display = '';
+      resultBox.innerHTML = `
+        <div class="scorecard-lookup-head">
+          <span class="scorecard-lookup-symbol">${escapeHtmlText(row.symbol)} <span class="scorecard-wl-tag">Lookup — not tracked</span></span>
+          <button class="scorecard-lookup-clear" onclick="clearScorecardLookup()">✕ Clear</button>
+        </div>
+        ${buildScorecardBodyHtml(score)}
+      `;
+    } catch (err) {
+      status.textContent = 'Lookup failed: ' + (err && err.message ? err.message : String(err));
+      status.className = 'scorecard-lookup-status err';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function clearScorecardLookup() {
+    document.getElementById('scorecardLookupResult').style.display = 'none';
+    document.getElementById('scorecardLookupResult').innerHTML = '';
+    document.getElementById('scorecardLookupInput').value = '';
+    document.getElementById('scorecardLookupStatus').textContent = '';
+    document.getElementById('scorecardLookupStatus').className = 'scorecard-lookup-status';
+  }
+
   // Reads the "Fundamentals" tab, auto-populated once a day by the Apps Script updateFundamentals()
   // job (P/E, ROCE, ROE pulled from Screener.in's public company page). Optional — if this tab doesn't
   // exist yet, or the daily job hasn't run yet, the panel just stays hidden, same as Realized Gains does.
@@ -2757,6 +3246,14 @@
           annSales: num(pick(o, 'Ann. Sales')), annSalesPeriod: extractPeriod(pick(o, 'Ann. Sales')),
           annOpProfit: num(pick(o, 'Ann. Op. Profit')), annOpProfitPeriod: extractPeriod(pick(o, 'Ann. Op. Profit')),
           annProfit: num(pick(o, 'Ann. Profit')), annProfitPeriod: extractPeriod(pick(o, 'Ann. Profit')),
+          // Growth Scorecard's 3 fields not covered above — Margin Expansion, Debt-to-Equity, Institutional
+          // Sponsorship — added by updateFundamentals() alongside the columns above; see computeScorecard().
+          opmLatest: num(pick(o, 'OPM % (Latest Q)')),
+          opmYoyChg: num(pick(o, 'OPM YoY Chg (pp)')),
+          debtToEquity: num(pick(o, 'Debt/Equity')),
+          debtToEquityYoyChg: num(pick(o, 'Debt/Equity YoY Chg')),
+          institutionalPct: num(pick(o, 'Institutional % (FII+DII)')),
+          institutionalYoyChg: num(pick(o, 'Institutional YoY Chg (pp)')),
           lastUpdated: parseGvizDate(pick(o, 'Last Updated')),
         };
       }).filter(r => r.symbol && String(r.symbol).trim() && !/^portfolio beta/i.test(String(r.symbol).trim()));
@@ -2821,6 +3318,7 @@
     document.getElementById('fundBody').innerHTML = sortRows(enrichedRows.filter(hasFundData), fundSort.key, fundSort.dir)
       .map(r => `<tr>${fundRowTds(r, fundVisibleCols, false)}</tr>`).join('');
     renderColSettingsButtonState('fund');
+    renderScorecard();
   }
 
   // Reads the "Watchlist" tab — Column A (Symbol) is maintained by hand, the rest auto-filled once a day
@@ -2854,9 +3352,15 @@
           annSales: num(pick(o, 'Ann. Sales')), annSalesPeriod: extractPeriod(pick(o, 'Ann. Sales')),
           annOpProfit: num(pick(o, 'Ann. Op. Profit')), annOpProfitPeriod: extractPeriod(pick(o, 'Ann. Op. Profit')),
           annProfit: num(pick(o, 'Ann. Profit')), annProfitPeriod: extractPeriod(pick(o, 'Ann. Profit')),
+          opmLatest: num(pick(o, 'OPM % (Latest Q)')),
+          opmYoyChg: num(pick(o, 'OPM YoY Chg (pp)')),
+          debtToEquity: num(pick(o, 'Debt/Equity')),
+          debtToEquityYoyChg: num(pick(o, 'Debt/Equity YoY Chg')),
+          institutionalPct: num(pick(o, 'Institutional % (FII+DII)')),
+          institutionalYoyChg: num(pick(o, 'Institutional YoY Chg (pp)')),
           lastUpdated: parseGvizDate(pick(o, 'Last Updated')),
         };
-      }).filter(r => r.symbol && String(r.symbol).trim());
+      }).filter(r => r.symbol && String(r.symbol).trim() && !/^portfolio beta/i.test(String(r.symbol).trim()));
       lastWatchlist = parsed;
       renderWatchlist(parsed);
     } catch (err) {
@@ -2906,6 +3410,7 @@
     document.getElementById('watchlistBody').innerHTML = sortRows(rows.filter(hasFundData), watchlistSort.key, watchlistSort.dir)
       .map(r => `<tr>${fundRowTds(r, watchlistVisibleCols, true)}</tr>`).join('');
     renderColSettingsButtonState('watchlist');
+    renderScorecard();
   }
 
   // News.gs writes Published/FetchedAt as "yyyy-MM-dd'T'HH:mm:ss" text, but Sheets auto-detects
@@ -4383,6 +4888,124 @@
     cfg.rerender();
     const status = document.getElementById(table + 'ColSettingsStatus');
     if (status) status.textContent = 'Not saved yet';
+  }
+
+  // ---- Add / Modify Stock (Stock Portfolio panel) ----
+  // Shared modal for both flows: "Add" collects all 5 mandatory fields + optional Sector and inserts
+  // a brand-new row (alphabetically) into the Portfolio sheet tab; "Edit" locks everything except
+  // Quantity and Buy Price, matched by symbol. Both call the same addStock/modifyStock actions on the
+  // existing DashboardSettings Web App (SETTINGS_WEBAPP_URL/SETTINGS_TOKEN) used by column settings.
+  // ETF add/modify is intentionally out of scope for now — this only touches the Stocks table/sheet.
+  let stockFormMode = 'add'; // 'add' | 'edit'
+  let stockFormEditSymbol = null;
+
+  function todayIsoDate() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function setStockModalStatus(text, cls) {
+    const el = document.getElementById('stockModalStatus');
+    el.textContent = text || '';
+    el.className = 'stock-modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function openAddStockModal() {
+    stockFormMode = 'add';
+    stockFormEditSymbol = null;
+    document.getElementById('stockModalTitle').textContent = 'Add Stock';
+    document.getElementById('stockModalSub').textContent = 'Inserted into the "Portfolio" tab in alphabetical order.';
+    document.getElementById('stockFormSymbol').value = '';
+    document.getElementById('stockFormSymbol').disabled = false;
+    document.getElementById('stockFormBuyDate').value = todayIsoDate();
+    document.getElementById('stockFormBuyDate').disabled = false;
+    document.getElementById('stockFormQty').value = '';
+    document.getElementById('stockFormBuyPrice').value = '';
+    document.getElementById('stockFormMarketCap').value = '';
+    document.getElementById('stockFormMarketCap').disabled = false;
+    document.getElementById('stockFormSector').value = '';
+    document.getElementById('stockFormSector').disabled = false;
+    document.getElementById('stockFormSectorOptLabel').textContent = '(optional)';
+    document.getElementById('stockFormEditNote').style.display = 'none';
+    document.getElementById('stockFormSaveBtn').textContent = 'Add Stock';
+    setStockModalStatus('');
+    document.getElementById('stockModalOverlay').classList.add('show');
+    document.getElementById('stockFormSymbol').focus();
+  }
+
+  function openEditStockModal(symbol) {
+    const s = lastStocks.find(x => x.symbol === symbol);
+    if (!s) return;
+    stockFormMode = 'edit';
+    stockFormEditSymbol = symbol;
+    document.getElementById('stockModalTitle').textContent = 'Edit ' + symbol;
+    document.getElementById('stockModalSub').textContent = 'Only Quantity and Buy Price can be updated here.';
+    document.getElementById('stockFormSymbol').value = symbol;
+    document.getElementById('stockFormSymbol').disabled = true;
+    document.getElementById('stockFormBuyDate').value = s.buyDate && !isNaN(s.buyDate) ? (() => {
+      const d = s.buyDate, pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    })() : '';
+    document.getElementById('stockFormBuyDate').disabled = true;
+    document.getElementById('stockFormQty').value = isFinite(s.qty) ? s.qty : '';
+    document.getElementById('stockFormBuyPrice').value = isFinite(s.buy) ? s.buy : '';
+    document.getElementById('stockFormMarketCap').value = s.cap || '';
+    document.getElementById('stockFormMarketCap').disabled = true;
+    document.getElementById('stockFormSector').value = s.sector || '';
+    document.getElementById('stockFormSector').disabled = true;
+    document.getElementById('stockFormSectorOptLabel').textContent = '';
+    document.getElementById('stockFormEditNote').style.display = 'block';
+    document.getElementById('stockFormSaveBtn').textContent = 'Save Changes';
+    setStockModalStatus('');
+    document.getElementById('stockModalOverlay').classList.add('show');
+    document.getElementById('stockFormQty').focus();
+  }
+
+  function closeStockFormModal() {
+    document.getElementById('stockModalOverlay').classList.remove('show');
+  }
+
+  async function submitStockForm() {
+    const saveBtn = document.getElementById('stockFormSaveBtn');
+    const qty = Number(document.getElementById('stockFormQty').value);
+    const buyPrice = Number(document.getElementById('stockFormBuyPrice').value);
+
+    if (!isFinite(qty) || qty <= 0) { setStockModalStatus('Enter a valid Quantity (greater than 0).', 'err'); return; }
+    if (!isFinite(buyPrice) || buyPrice <= 0) { setStockModalStatus('Enter a valid Buy Price (greater than 0).', 'err'); return; }
+
+    let payload;
+    if (stockFormMode === 'add') {
+      const symbol = document.getElementById('stockFormSymbol').value.trim().toUpperCase();
+      const buyDate = document.getElementById('stockFormBuyDate').value;
+      const marketCap = document.getElementById('stockFormMarketCap').value;
+      const sector = document.getElementById('stockFormSector').value.trim();
+      if (!symbol) { setStockModalStatus('Symbol is required.', 'err'); return; }
+      if (!buyDate) { setStockModalStatus('Buy Date is required.', 'err'); return; }
+      if (!marketCap) { setStockModalStatus('Select a Market Cap.', 'err'); return; }
+      payload = { token: SETTINGS_TOKEN, action: 'addStock', symbol, buyDate, qty, buyPrice, marketCap, sector };
+    } else {
+      payload = { token: SETTINGS_TOKEN, action: 'modifyStock', symbol: stockFormEditSymbol, qty, buyPrice };
+    }
+
+    saveBtn.disabled = true;
+    setStockModalStatus(stockFormMode === 'add' ? 'Adding…' : 'Saving…');
+    try {
+      const resp = await fetch(SETTINGS_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      if (data.status !== 'ok') throw new Error(data.message || 'Save failed');
+      setStockModalStatus(stockFormMode === 'add' ? 'Added ✓ Refreshing…' : 'Saved ✓ Refreshing…', 'ok');
+      await syncFromSheet();
+      closeStockFormModal();
+    } catch (err) {
+      setStockModalStatus(err.message || 'Save failed — try again.', 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
   }
 
   async function saveColumnSettings(table) {
