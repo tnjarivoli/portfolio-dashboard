@@ -6,11 +6,12 @@
 <title>Portfolio Dashboard — Stocks &amp; ETFs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: light;
     --surface-1:      #fcfcfb;
+    --surface-2:      #f2f1ec;
     --page-plane:     #f9f9f7;
     --text-primary:   #0b0b0b;
     --text-secondary: #52514e;
@@ -18,6 +19,7 @@
     --gridline:       #e1e0d9;
     --baseline:       #c3c2b7;
     --border:         rgba(11,11,11,0.10);
+    --card-shadow:    0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05);
     --seq-400: #3987e5;
     --status-good:      #0ca30c;
     --status-critical:  #d03b3b;
@@ -27,6 +29,7 @@
     :root:where(:not([data-theme="light"])) {
       color-scheme: dark;
       --surface-1:      #1a1a19;
+      --surface-2:      #242422;
       --page-plane:     #0d0d0d;
       --text-primary:   #ffffff;
       --text-secondary: #c3c2b7;
@@ -34,6 +37,7 @@
       --gridline:       #2c2c2a;
       --baseline:       #383835;
       --border:         rgba(255,255,255,0.10);
+      --card-shadow:    0 4px 6px -1px rgba(0,0,0,0.3);
       --seq-400:          #3987e5;
       --status-good:      #0ca30c;
       --status-critical:  #e66767;
@@ -43,6 +47,7 @@
   :root[data-theme="dark"] {
     color-scheme: dark;
     --surface-1:      #1a1a19;
+    --surface-2:      #242422;
     --page-plane:     #0d0d0d;
     --text-primary:   #ffffff;
     --text-secondary: #c3c2b7;
@@ -50,6 +55,7 @@
     --gridline:       #2c2c2a;
     --baseline:       #383835;
     --border:         rgba(255,255,255,0.10);
+    --card-shadow:    0 4px 6px -1px rgba(0,0,0,0.3);
     --seq-400:          #3987e5;
     --status-good:      #0ca30c;
     --status-critical:  #e66767;
@@ -79,7 +85,7 @@
   .toolbar {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
     background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 14px; margin-bottom: 18px; font-size: 12.5px;
+    padding: 10px 14px; margin-bottom: 18px; font-size: 12.5px; box-shadow: var(--card-shadow);
   }
   .toolbar .grp { display: flex; align-items: center; gap: 8px; }
   .toolbar button {
@@ -104,16 +110,37 @@
   }
   .error-banner a { color: inherit; }
 
+  .stage-banner {
+    display: none; background: color-mix(in srgb, var(--status-good) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--status-good) 30%, transparent); color: var(--text-primary);
+    border-radius: 10px; padding: 12px 14px; font-size: 12.5px; margin-bottom: 18px; line-height: 1.6;
+  }
+  .stage-banner.has-decline { background: color-mix(in srgb, var(--status-warning) 10%, transparent); border-color: color-mix(in srgb, var(--status-warning) 30%, transparent); }
+  .stage-banner .stage-banner-title { font-weight: 700; margin-bottom: 6px; }
+  .stage-banner .stage-chip { display: inline-block; margin: 2px 6px 2px 0; padding: 3px 9px; border-radius: 999px; background: var(--surface-1); border: 1px solid var(--border); font-weight: 600; }
+  .stage-banner .stage-chip.up { color: var(--status-good); }
+  .stage-banner .stage-chip.down { color: var(--status-warning); }
+  .stage-banner .stage-banner-dismiss { float: right; cursor: pointer; color: var(--text-muted); font-size: 11px; font-weight: 600; }
+
   .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px; }
-  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--card-shadow); }
   .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
-  .tile .value { font-size: 22px; font-weight: 700; font-variant-numeric: proportional-nums; }
-  .tile .value-sub { font-size: 15px; font-weight: 700; font-variant-numeric: proportional-nums; margin-top: 1px; }
+  .tile .value { font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+  .tile .value-sub { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; margin-top: 1px; }
   .tile .note { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
+  .alpha-tile { position: relative; }
+  .alpha-toggle-btn {
+    position: absolute; top: 10px; right: 10px; font-size: 10.5px; font-weight: 700;
+    padding: 3px 9px; border-radius: 999px; background: var(--page-plane); border: 1px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; line-height: 1.3; font-family: inherit;
+  }
+  .alpha-toggle-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
   .book-split-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
-  .book-split { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-  .book-split-title { font-size: 12.5px; font-weight: 700; margin-bottom: 10px; }
+  .book-split { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--card-shadow); }
+  .book-split-title { font-size: 12.5px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .book-split-allocation { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; color: var(--text-secondary); background: var(--page-plane); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
   .book-split .tiles { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 0; }
   .book-split .tile { background: var(--page-plane); padding: 10px 12px; }
   .book-split .tile .value { font-size: 18px; }
@@ -128,7 +155,7 @@
   .mover-row:first-child { border-top: none; padding-top: 2px; }
   .mover-row .mover-rank { color: var(--text-muted); font-size: 11px; width: 14px; flex: none; }
   .mover-row .mover-sym { font-weight: 600; font-size: 13px; flex: 1; }
-  .mover-row .mover-chg { font-size: 12px; font-variant-numeric: proportional-nums; text-align: right; white-space: nowrap; }
+  .mover-row .mover-chg { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; text-align: right; white-space: nowrap; }
 
   .news-list { display: flex; flex-direction: column; }
   .news-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
@@ -140,8 +167,8 @@
   .news-row .news-meta { margin-top: 3px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .news-tag-earnings { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--seq-400); background: color-mix(in srgb, var(--seq-400) 14%, transparent); border-radius: 4px; padding: 1px 6px; }
 
-  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
-  .panel h2 { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: var(--card-shadow); }
+  .panel h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
   .panel h2 .meta { font-weight: 400; color: var(--text-muted); font-size: 12px; }
   .panel .sub-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
   .panel ol, .panel ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; }
@@ -153,8 +180,8 @@
   .mini-tiles { display: flex; gap: 24px; flex-wrap: wrap; padding-bottom: 12px; }
   .mini-tile { text-align: right; }
   .mini-tile .mini-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 3px; }
-  .mini-tile .mini-value { font-size: 15.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .mini-tile .mini-subvalue { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .mini-tile .mini-value { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
+  .mini-tile .mini-subvalue { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 600; margin-top: 1px; }
   @media (max-width: 560px) { .mini-tiles { justify-content: flex-start; } .mini-tile { text-align: left; } }
   .fund-period { font-size: 10.5px; color: var(--text-muted); font-weight: 400; }
 
@@ -173,17 +200,20 @@
   .bar-row.active .bar-fill { background: var(--status-good); }
   .bar-row { cursor: pointer; }
 
-  .table-scroll { overflow-x: auto; }
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 760px; }
-  thead th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); font-weight: 600; padding: 0 8px 8px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+  thead { background: var(--surface-2); }
+  thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
   thead th.sortable-th { cursor: pointer; user-select: none; }
   thead th.sortable-th:hover { color: var(--text-primary); }
   thead th.active-sort { color: var(--text-primary); }
   thead th .sort-arrow { font-size: 8px; margin-left: 2px; }
-  tbody td, tfoot td { padding: 8px; border-bottom: 1px solid var(--gridline); vertical-align: middle; white-space: nowrap; }
-  tbody tr:last-child td { border-bottom: 1px solid var(--gridline); }
+  tbody td, tfoot td { padding: 9px 12px; border-bottom: 1px solid var(--gridline); vertical-align: middle; white-space: nowrap; }
+  tbody tr:hover { background-color: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+  tbody tr:last-child td { border-bottom: none; }
+  tfoot { background: var(--surface-2); }
   tfoot td { border-bottom: none; border-top: 1px solid var(--baseline); font-weight: 700; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.num, th.num { text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
   td.sym { font-weight: 700; }
   td.sym a.sym-link { color: var(--text-primary); text-decoration: none; }
   td.sym a.sym-link:hover { color: var(--seq-400); text-decoration: underline; }
@@ -205,7 +235,7 @@
   .fy-table th, .fy-table td { padding: 6px 16px 6px 0; text-align: left; white-space: nowrap; }
   .fy-table th.num, .fy-table td.num { text-align: right; }
   .fy-table thead th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--gridline); }
-  .fy-table tbody td { border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; }
+  .fy-table tbody td { border-bottom: 1px solid var(--gridline); font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
   .fy-table tbody tr:last-child td { border-bottom: none; }
   .mover-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; margin-top: 10px; }
   .movers-period-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
@@ -254,10 +284,10 @@
 
   .indices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   @media (max-width: 560px) { .indices-grid { grid-template-columns: 1fr; } }
-  .index-tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; }
+  .index-tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
   .index-tile .idx-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .index-tile .idx-value { font-size: 16.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .index-tile .idx-chg-row { font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .index-tile .idx-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; }
+  .index-tile .idx-chg-row { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 600; margin-top: 1px; }
   .idx-live-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; letter-spacing: .03em; padding: 1px 6px; border-radius: 999px; vertical-align: middle; margin-left: 2px; }
   .idx-live-badge.idx-live-on { color: var(--status-good); background: color-mix(in srgb, var(--status-good) 14%, transparent); }
   .idx-live-badge.idx-live-on::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: pulse 1.4s infinite; }
@@ -272,7 +302,7 @@
   .bar-row .bar-label { width: 130px; flex: 0 0 130px; font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bar-row .bar-track { flex: 1; background: var(--gridline); border-radius: 4px; height: 12px; overflow: hidden; }
   .bar-row .bar-fill { height: 100%; background: var(--seq-400); border-radius: 4px; }
-  .bar-row .bar-val { width: 108px; flex: 0 0 108px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .bar-row .bar-val { width: 108px; flex: 0 0 108px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
   .bar-row .bar-val .g { font-size: 11px; margin-left: 4px; }
 
   .footer-line { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-align: center; line-height: 1.6; }
@@ -296,12 +326,12 @@
   .asset-mix-legend .am-row { display: flex; align-items: baseline; gap: 7px; }
   .asset-mix-legend .am-row .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: 0 0 10px; }
   .asset-mix-legend .am-label { color: var(--text-secondary); }
-  .asset-mix-legend .am-value { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .asset-mix-legend .am-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-primary); }
   .asset-mix-legend .am-pct { color: var(--text-muted); }
   .analysis-stats { flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--text-secondary); }
   .analysis-stats .stat-row b.big { font-size: 15px; color: var(--text-primary); }
   .analysis-stats .stat-row .stockname { color: var(--seq-400); font-weight: 600; }
-  .analysis-stats .stat-row .figpct { font-weight: 700; color: var(--text-primary); }
+  .analysis-stats .stat-row .figpct { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-primary); }
   .analysis-stats hr { border: none; border-top: 1px solid var(--gridline); margin: 2px 0; }
 
   .viz-tooltip {
@@ -315,7 +345,7 @@
   .viz-tooltip .tt-head .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px; }
   .viz-tooltip .tt-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 2px 0; }
   .viz-tooltip .tt-row .tt-label { color: var(--text-muted); }
-  .viz-tooltip .tt-row .tt-value { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .viz-tooltip .tt-row .tt-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
 
   .history-legend { display: flex; gap: 18px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px; flex-wrap: wrap; }
   .history-legend .lg-item { display: flex; align-items: center; gap: 7px; }
@@ -324,7 +354,7 @@
   .history-chart-wrap { position: relative; }
   .history-chart-wrap svg { display: block; width: 100%; height: auto; }
   .history-chart-wrap .grid-line { stroke: var(--gridline); stroke-width: 1; }
-  .history-chart-wrap .axis-label { fill: var(--text-muted); font-size: 10px; }
+  .history-chart-wrap .axis-label { fill: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
   .history-chart-wrap .crosshair-line { stroke: var(--baseline); stroke-width: 1; pointer-events: none; opacity: 0; }
   .history-chart-wrap .hit-layer { fill: transparent; cursor: crosshair; }
   .history-chart-wrap .daily-hit { fill: transparent; cursor: crosshair; }
@@ -336,6 +366,7 @@
     :root, :root[data-theme="dark"] {
       color-scheme: light;
       --surface-1:      #ffffff;
+      --surface-2:      #ffffff;
       --page-plane:     #ffffff;
       --text-primary:   #000000;
       --text-secondary: #333333;
@@ -348,7 +379,7 @@
     .toolbar, .theme-toggle, .status-pill, .filter-row, .viz-tooltip,
     .movers-period-label { display: none !important; }
     .viz-root { padding: 0 8px; max-width: none; }
-    .panel { break-inside: avoid; box-shadow: none; }
+    .panel, .tile, .book-split { break-inside: avoid; box-shadow: none; }
     .table-scroll { overflow: visible; }
     table { min-width: 0; }
     a { text-decoration: none; color: inherit; }
@@ -415,18 +446,24 @@
   </div>
 
   <div class="error-banner" id="errorBanner"></div>
+  <div class="stage-banner" id="stageBanner"></div>
 
   <div class="tiles">
     <div class="tile"><div class="label">Total Portfolio Value</div><div class="value" id="tileTotalValue">—</div><div class="note" id="tileTotalNote">—</div></div>
     <div class="tile"><div class="label">Overall Gain</div><div class="value" id="tileOverallGain">—</div><div class="value-sub" id="tileOverallGainPct">—</div></div>
     <div class="tile"><div class="label">Today</div><div class="value" id="tileToday">—</div><div class="note" id="tileTodayNote">Day move</div></div>
     <div class="tile" title="Money-weighted annualized return — the same rate a mutual fund NAV calc would give, accounting for exactly when and how much you invested"><div class="label">Portfolio XIRR</div><div class="value" id="tileXirr">—</div><div class="note" id="tileXirrNote">Annualized, money-weighted</div></div>
-    <div class="tile"><div class="label">Stocks / ETF Split</div><div class="value" id="tileSplit">—</div><div class="note">By current value</div></div>
+    <div class="tile alpha-tile" title="Your stock portfolio's cash-flow-adjusted NAV vs the selected index, both indexed to 100 on the same start date — positive means you've beaten that index over that stretch. Click the button top-right to switch between Nifty 50 and Nifty 500.">
+      <button class="alpha-toggle-btn" id="alphaToggleBtn" onclick="toggleAlphaBenchmark()" title="Switch benchmark">Nifty 500</button>
+      <div class="label">Alpha vs Nifty</div>
+      <div class="value" id="tileAlpha">—</div>
+      <div class="note" id="tileAlphaNote">Needs NAV + Nifty 50 history</div>
+    </div>
   </div>
 
   <div class="book-split-row">
     <div class="book-split" id="stockBookSplit" style="display:none">
-      <div class="book-split-title">Stock Portfolio</div>
+      <div class="book-split-title">Stock Portfolio<span class="book-split-allocation" id="stockBookAllocation" title="Share of total portfolio value">—</span></div>
       <div class="tiles">
         <div class="tile"><div class="label">Value</div><div class="value" id="stockBookValue">—</div><div class="note" id="stockBookNote">—</div></div>
         <div class="tile"><div class="label">Overall Gain</div><div class="value" id="stockBookGain">—</div><div class="value-sub" id="stockBookGainPct">—</div></div>
@@ -435,7 +472,7 @@
       </div>
     </div>
     <div class="book-split" id="etfBookSplit" style="display:none">
-      <div class="book-split-title">ETF Portfolio</div>
+      <div class="book-split-title">ETF Portfolio<span class="book-split-allocation" id="etfBookAllocation" title="Share of total portfolio value">—</span></div>
       <div class="tiles">
         <div class="tile"><div class="label">Value</div><div class="value" id="etfBookValue">—</div><div class="note" id="etfBookNote">—</div></div>
         <div class="tile"><div class="label">Overall Gain</div><div class="value" id="etfBookGain">—</div><div class="value-sub" id="etfBookGainPct">—</div></div>
@@ -713,6 +750,7 @@
         <div class="mini-tile"><div class="mini-label">Total Realized</div><div class="mini-value" id="realizedMiniTotal">—</div></div>
         <div class="mini-tile" title="Held 365+ days — eligible for LTCG tax treatment"><div class="mini-label">Long-Term</div><div class="mini-value" id="realizedMiniLT">—</div></div>
         <div class="mini-tile" title="Held under 365 days"><div class="mini-label">Short-Term</div><div class="mini-value" id="realizedMiniST">—</div></div>
+        <div class="mini-tile" title="From the 'Dividends' sheet tab — log Date, Stock, Amount there and it'll total up here"><div class="mini-label">Dividends Received</div><div class="mini-value" id="dividendsMiniTotal">—</div></div>
       </div>
     </div>
     <div id="fyBreakdownWrap" style="display:none">
@@ -724,6 +762,37 @@
       <thead id="realizedThead"></thead>
       <tbody id="realizedBody"></tbody>
       <tfoot id="realizedFoot"></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="panel" id="taxPlanningPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Tax Planning Reminders <span class="meta">— unrealized-loss harvesting candidates &amp; short-term holdings nearing LTCG eligibility</span></h2>
+        <div class="sub-meta" id="taxPlanningSubMeta">Waiting for first sync…</div>
+      </div>
+      <div class="mini-tiles">
+        <div class="mini-tile" title="Current holdings sitting below their invested amount, at today's price"><div class="mini-label">Loss Candidates</div><div class="mini-value" id="taxLossMiniCount">—</div></div>
+        <div class="mini-tile" title="Combined unrealized loss across those holdings, at current price"><div class="mini-label">Harvestable Loss</div><div class="mini-value" id="taxLossMiniTotal">—</div></div>
+        <div class="mini-tile" title="Short-term holdings within 45 days of crossing the 365-day LTCG mark"><div class="mini-label">Nearing LTCG</div><div class="mini-value" id="taxNearingMiniCount">—</div></div>
+      </div>
+    </div>
+    <div class="fy-caption">Informational only, not tax advice <span class="meta-note">— whether harvesting a loss or waiting out a short-term-to-long-term crossover actually helps depends on your full tax picture (other gains/losses, applicable rates and exemptions) which this dashboard has no visibility into. Check with a tax advisor before acting on anything here.</span></div>
+
+    <div class="fy-caption" style="margin-top:14px">Unrealized-loss candidates <span class="meta-note">— sorted by loss size, largest first. Selling one of these before FY-end (31 Mar) books a capital loss that can be set off against gains elsewhere.</span></div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Symbol</th><th>Book</th><th class="num">Invested</th><th class="num">Value</th><th class="num">Unrealized Loss</th><th class="num">Loss %</th><th class="num">Held</th></tr></thead>
+      <tbody id="taxLossBody"></tbody>
+    </table>
+    </div>
+
+    <div class="fy-caption" style="margin-top:18px">Approaching LTCG eligibility <span class="meta-note">— short-term holdings within 45 days of crossing the 365-day mark. If you're already planning to sell one of these, waiting the extra days may change how the gain is taxed.</span></div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Symbol</th><th>Book</th><th class="num">Held</th><th class="num">Days to LT</th><th>Buy Date</th></tr></thead>
+      <tbody id="taxNearingBody"></tbody>
     </table>
     </div>
   </div>
@@ -789,6 +858,7 @@
   const HISTORY_DATA_START = new Date(2026, 7, 20); // 20 Aug 2026 (month is 0-indexed)
   const PRICE_HISTORY_SHEET_NAME = 'Price History'; // daily per-symbol price snapshots — powers the Top Movers period dropdown
   const SOLD_STOCKS_SHEET_NAME = 'Sold Stocks'; // manually-maintained closed-positions ledger — powers the Realized Gains panel
+  const DIVIDENDS_SHEET_NAME = 'Dividends'; // manually-maintained ledger (Date, Stock, Amount) — powers the Dividends Received mini-tile
   const FUNDAMENTALS_SHEET_NAME = 'Fundamentals'; // auto-populated daily by the Apps Script updateFundamentals() job — powers the Fundamentals (Holdings) panel
   const INDICES_SHEET_NAME = 'Indices'; // auto-populated daily by the Apps Script updateIndices() job — powers the Market Indices panel's history/sparkline
   const LIVE_INDICES_SHEET_NAME = 'LiveIndices'; // small GOOGLEFINANCE-formula block Google Sheets keeps recalculating on its own — powers the Market Indices panel's live intraday value
@@ -800,10 +870,13 @@
   let autoTimer = null;
   let lastStocks = [];
   let lastEtfs = [];
+  let lastSplitText = '—'; // "xx.x% / yy.y%" Stocks/ETF value split — feeds the Word export summary row
+  let alphaBenchmark = 'Nifty 50'; // which index the Alpha vs Nifty tile is currently showing — toggled by its top-right button
   let lastEtfLots = []; // [{symbol, buyDate, invested}], one row per ETF purchase lot — used for precise XIRR cash flow
   let lastHistoryPoints = [];
   let lastPriceHistory = {}; // normalized symbol -> [{date, price}, ...] sorted ascending by date
   let lastSoldStocks = []; // closed positions read from the Sold Stocks tab
+  let lastDividends = []; // dividend entries read from the Dividends tab
   let lastFundamentals = []; // P/E, ROCE, ROE per holding, read from the Fundamentals tab
   let lastPortfolioBeta = NaN; // value-weighted portfolio beta vs Nifty 50, read from the "Portfolio Beta" summary row in the Fundamentals tab
   let lastIndices = {}; // index name -> [{date, value}, ...] sorted ascending by date, read from the daily-snapshot Indices tab
@@ -869,6 +942,7 @@
 
   const CONCENTRATION_THRESHOLD = 15; // % of book — flag any single holding above this
   const LTCG_DAYS = 365; // India: listed equity held 365+ days qualifies for LTCG tax treatment
+  const NEARING_LT_WINDOW_DAYS = 45; // Tax Planning panel: how close to the 365-day mark counts as "nearing LTCG"
   const ANN_RETURN_MIN_DAYS = 30; // shorter holds annualize wildly — wait before showing a per-stock rate
 
   // NSE equity-segment trading holidays (full-day market closures only — Muhurat/special sessions on an
@@ -1334,6 +1408,57 @@
   }
   function clearError() { document.getElementById('errorBanner').style.display = 'none'; }
 
+  // ---- Stage-change / breakout callout ----
+  // Weinstein-style "Stage" is a manually-set column on the Portfolio tab (e.g. "Stage 1 Late",
+  // "Stage 2"). There's no server-side history of it, so this remembers each symbol's stage in this
+  // browser's localStorage and diffs against it on every sync — a stage that changed since the last
+  // time this dashboard was opened here shows up as a callout. Per-viewer only, by design: it answers
+  // "what changed since I last looked", not a synced record across devices.
+  const STAGE_HISTORY_KEY = 'portfolioStageHistory';
+  let stageBannerDismissed = false;
+
+  function checkStageChanges(stocks) {
+    let prev = {};
+    try { prev = JSON.parse(localStorage.getItem(STAGE_HISTORY_KEY) || '{}'); } catch (e) { prev = {}; }
+    const current = {};
+    const changes = [];
+    stocks.forEach(s => {
+      const sym = s.symbol;
+      const stage = (s.stage || '').trim();
+      if (!sym || !stage) return;
+      current[sym] = stage;
+      if (prev[sym] && prev[sym] !== stage) changes.push({ symbol: sym, from: prev[sym], to: stage });
+    });
+    try { localStorage.setItem(STAGE_HISTORY_KEY, JSON.stringify(current)); } catch (e) {}
+    renderStageBanner(changes);
+  }
+
+  function renderStageBanner(changes) {
+    const el = document.getElementById('stageBanner');
+    if (!el) return;
+    if (!changes.length || stageBannerDismissed) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    const isBreakout = (from, to) => /stage\s*2/i.test(to) && !/stage\s*2/i.test(from);
+    const isBreakdown = (from, to) => /stage\s*(3|4)/i.test(to) && /stage\s*(1|2)/i.test(from);
+    let anyDecline = false;
+    const chips = changes.map(c => {
+      const breakdown = isBreakdown(c.from, c.to);
+      const breakout = isBreakout(c.from, c.to);
+      if (breakdown) anyDecline = true;
+      const icon = breakout ? '🚀 ' : breakdown ? '⚠️ ' : '↔ ';
+      return `<span class="stage-chip ${breakdown ? 'down' : 'up'}">${icon}${escapeHtmlText(c.symbol)}: ${escapeHtmlText(c.from)} → ${escapeHtmlText(c.to)}</span>`;
+    }).join('');
+    el.className = 'stage-banner' + (anyDecline ? ' has-decline' : '');
+    el.innerHTML = `<span class="stage-banner-dismiss" onclick="dismissStageBanner()">Dismiss ✕</span>`
+      + `<div class="stage-banner-title">Stage changes since your last visit</div>${chips}`;
+    el.style.display = '';
+  }
+
+  function dismissStageBanner() {
+    stageBannerDismissed = true;
+    const el = document.getElementById('stageBanner');
+    if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  }
+
   async function syncFromSheet() {
     setStatus('syncing', 'Syncing…');
     try {
@@ -1383,6 +1508,7 @@
 
       lastStocks = stocks; lastEtfs = etfs;
       render(stocks, etfs);
+      checkStageChanges(stocks);
       clearError();
       const now = new Date();
       document.getElementById('syncedAt').textContent = 'Last synced: ' + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1400,6 +1526,7 @@
         syncAnalystRatings(), // independent, optional — target price + forward growth forecasts, updated weekly by Apps Script
         syncDashboardSettings(), // independent, optional — saved column-visibility choice for the Fundamentals/Watchlist panels
         syncXirrHistory(),   // independent, optional — daily Total/Stock/ETF XIRR snapshots for the XIRR Performance panel
+        syncDividends(),     // independent, optional — manually-logged dividend entries for the Dividends Received mini-tile
       ]);
     } catch (err) {
       setStatus('err', 'Sync failed');
@@ -1442,6 +1569,63 @@
     todayEl.textContent = (dayGain >= 0 ? '+' : '') + fmtMoney(dayGain);
     todayEl.className = 'value ' + chgClass(dayGain);
     document.getElementById(prefix + 'TodayNote').textContent = fmtPct(dayPct) + ' day move';
+  }
+
+  // Tax Planning Reminders panel: surfaces two signals from the same daysHeld/ltEligible/gain fields
+  // already computed on each stock/ETF row above — (1) current holdings sitting on an unrealized loss,
+  // which could be sold to book a capital loss that offsets gains elsewhere, and (2) short-term holdings
+  // close enough to the 365-day LTCG mark that waiting a little longer changes how a sale would be taxed.
+  // Deliberately just surfaces the numbers — see the panel's own disclaimer for why this stops short of
+  // telling you what to actually do.
+  function renderTaxPlanning(stocks, etfs) {
+    const panel = document.getElementById('taxPlanningPanel');
+    if (!panel) return;
+    const combined = [
+      ...stocks.map(s => ({ symbol: s.symbol, book: 'Stock', invested: s.invested, value: s.value, gain: s.gain, gainPct: s.gainPct, daysHeld: s.daysHeld, ltEligible: s.ltEligible, buyDate: s.buyDate })),
+      ...etfs.map(e => ({ symbol: e.symbol, book: 'ETF', invested: e.invested, value: e.value, gain: e.gain, gainPct: e.gainPct, daysHeld: e.daysHeld, ltEligible: e.ltEligible, buyDate: e.buyDate })),
+    ];
+    if (!combined.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const lossRows = combined.filter(r => isFinite(r.gain) && r.gain < 0).sort((a, b) => a.gain - b.gain);
+    const nearingRows = combined
+      .filter(r => r.ltEligible === false && isFinite(r.daysHeld))
+      .map(r => ({ ...r, daysToLT: LTCG_DAYS - r.daysHeld }))
+      .filter(r => r.daysToLT > 0 && r.daysToLT <= NEARING_LT_WINDOW_DAYS)
+      .sort((a, b) => a.daysToLT - b.daysToLT);
+
+    const totalLoss = sumBy(lossRows, 'gain');
+    document.getElementById('taxLossMiniCount').textContent = lossRows.length ? String(lossRows.length) : '0';
+    const lossTotalEl = document.getElementById('taxLossMiniTotal');
+    lossTotalEl.textContent = lossRows.length ? fmtMoney(totalLoss) : '—';
+    lossTotalEl.className = 'mini-value' + (lossRows.length ? ' chg-down' : '');
+    document.getElementById('taxNearingMiniCount').textContent = nearingRows.length ? String(nearingRows.length) : '0';
+    document.getElementById('taxPlanningSubMeta').textContent =
+      `${lossRows.length} holding${lossRows.length === 1 ? '' : 's'} at a loss · ${nearingRows.length} nearing LTCG (within ${NEARING_LT_WINDOW_DAYS} days)`;
+
+    const lossBody = document.getElementById('taxLossBody');
+    lossBody.innerHTML = lossRows.length
+      ? lossRows.map(r => `<tr>
+          <td>${escapeHtmlText(r.symbol)}</td>
+          <td>${r.book}</td>
+          <td class="num">${fmtMoney(r.invested)}</td>
+          <td class="num">${fmtMoney(r.value)}</td>
+          <td class="num chg-down">${fmtMoney(r.gain)}</td>
+          <td class="num chg-down">${fmtPct(r.gainPct)}</td>
+          <td class="num">${isFinite(r.daysHeld) ? fmtNum(r.daysHeld, 0) + 'd' : '—'}<span class="ltcg-badge ${r.ltEligible ? 'ltcg-lt' : 'ltcg-st'}">${r.ltEligible ? 'LT' : 'ST'}</span></td>
+        </tr>`).join('')
+      : `<tr><td colspan="7" class="skel">No holdings currently sitting on a loss.</td></tr>`;
+
+    const nearingBody = document.getElementById('taxNearingBody');
+    nearingBody.innerHTML = nearingRows.length
+      ? nearingRows.map(r => `<tr>
+          <td>${escapeHtmlText(r.symbol)}</td>
+          <td>${r.book}</td>
+          <td class="num">${fmtNum(r.daysHeld, 0)}d</td>
+          <td class="num">${fmtNum(r.daysToLT, 0)}d</td>
+          <td>${r.buyDate ? fmtDateShort(r.buyDate) : '—'}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="5" class="skel">No short-term holdings within ${NEARING_LT_WINDOW_DAYS} days of turning long-term.</td></tr>`;
   }
 
   function populateFilterOptions(stocks) {
@@ -1624,6 +1808,9 @@
       `<tr>${etfFootTds(etfVisibleCols, etfInvested, etfValue, etfGain, etfGainPct, etfDayGain, etfDayPct)}</tr>`;
     renderColSettingsButtonState('etf');
 
+    // ---- Tax Planning Reminders: unrealized-loss harvesting candidates + ST holdings nearing LTCG ----
+    renderTaxPlanning(stocks, etfs);
+
     // ---- Top tiles ----
     const totalValue = stocksValue + etfValue;
     const totalInvested = stocksInvested + etfInvested;
@@ -1642,8 +1829,13 @@
     const todayTile = document.getElementById('tileToday');
     todayTile.textContent = (totalDayGain >= 0 ? '+' : '') + fmtMoney(totalDayGain); todayTile.className = 'value ' + chgClass(totalDayGain);
     document.getElementById('tileTodayNote').textContent = fmtPct(totalDayPct) + ' day move';
-    document.getElementById('tileSplit').textContent =
-      totalValue ? `${((stocksValue / totalValue) * 100).toFixed(1)}% / ${((etfValue / totalValue) * 100).toFixed(1)}%` : '—';
+    const stockAllocPct = totalValue ? (stocksValue / totalValue) * 100 : null;
+    const etfAllocPct = totalValue ? (etfValue / totalValue) * 100 : null;
+    lastSplitText = totalValue ? `${stockAllocPct.toFixed(1)}% / ${etfAllocPct.toFixed(1)}%` : '—';
+    const stockAllocEl = document.getElementById('stockBookAllocation');
+    if (stockAllocEl) stockAllocEl.textContent = stockAllocPct !== null ? `${stockAllocPct.toFixed(1)}% of portfolio` : '—';
+    const etfAllocEl = document.getElementById('etfBookAllocation');
+    if (etfAllocEl) etfAllocEl.textContent = etfAllocPct !== null ? `${etfAllocPct.toFixed(1)}% of portfolio` : '—';
 
     // ---- Stock Portfolio / ETF Portfolio split tiles — same Value/Gain/Today shape as the top tiles
     // bar, scoped to just one book, side by side, so each book's numbers (and XIRR, below) don't require
@@ -2273,8 +2465,51 @@
       renderSoldStocks(parsed);
     } catch (err) {
       lastSoldStocks = [];
-      document.getElementById('realizedGainsPanel').style.display = 'none';
+      if (!lastDividends.length) {
+        document.getElementById('realizedGainsPanel').style.display = 'none';
+        document.getElementById('fyBreakdownWrap').style.display = 'none';
+      }
+    }
+  }
+
+  // Optional — reads a manually-maintained "Dividends" tab (columns: Date, Stock, Amount) if the user
+  // has created one. Same tab (Realized Gains) as booked capital gains, since both are money the
+  // portfolio has actually paid out, but shown as its own mini-tile so the two aren't summed together.
+  async function syncDividends() {
+    try {
+      const rows = await fetchSheet(DIVIDENDS_SHEET_NAME);
+      lastDividends = rows
+        .map(o => ({ date: parseGvizDate(pick(o, 'Date')), symbol: pick(o, 'Stock', 'Symbol'), amount: num(pick(o, 'Amount')) }))
+        .filter(r => isFinite(r.amount));
+    } catch (err) {
+      lastDividends = []; // tab doesn't exist yet, or isn't reachable — the mini-tile just stays blank
+    }
+    renderDividendsMini();
+  }
+
+  function renderDividendsMini() {
+    const el = document.getElementById('dividendsMiniTotal');
+    if (!el) return;
+    if (!lastDividends.length) { el.textContent = '—'; el.className = 'mini-value'; return; }
+    el.textContent = fmtMoney(sumBy(lastDividends, 'amount'));
+    el.className = 'mini-value chg-up';
+    // The sold-stocks sync may have hidden this whole panel (no closed positions) before dividends
+    // arrived — un-hide it so the mini-tile is actually visible, and blank out the sold-stocks-specific
+    // parts rather than leaving stale content from a previous sync.
+    const panel = document.getElementById('realizedGainsPanel');
+    if (panel.style.display === 'none') {
+      panel.style.display = '';
       document.getElementById('fyBreakdownWrap').style.display = 'none';
+      document.getElementById('realizedSubMeta').textContent = 'No closed positions yet';
+      document.getElementById('realizedMiniTotal').textContent = '—';
+      document.getElementById('realizedMiniTotal').className = 'mini-value';
+      document.getElementById('realizedMiniLT').textContent = '—';
+      document.getElementById('realizedMiniLT').className = 'mini-value';
+      document.getElementById('realizedMiniST').textContent = '—';
+      document.getElementById('realizedMiniST').className = 'mini-value';
+      renderThead('realizedThead', SOLD_COLUMNS, 'sold');
+      document.getElementById('realizedBody').innerHTML = '';
+      document.getElementById('realizedFoot').innerHTML = '';
     }
   }
 
@@ -2816,7 +3051,11 @@
 
   function renderSoldStocks(rows) {
     const panel = document.getElementById('realizedGainsPanel');
-    if (!rows.length) { panel.style.display = 'none'; document.getElementById('fyBreakdownWrap').style.display = 'none'; return; }
+    if (!rows.length) {
+      if (!lastDividends.length) panel.style.display = 'none'; // keep it open if dividends alone have content to show
+      document.getElementById('fyBreakdownWrap').style.display = 'none';
+      return;
+    }
     panel.style.display = '';
     renderFyBreakdown(rows);
 
@@ -3191,6 +3430,53 @@
       </div>`;
 
     setupHistoryCrosshair(points, portIdx, indexSeries, xAt, padL, plotW, portColor);
+    updateAlphaTile();
+  }
+
+  // Cumulative outperformance vs Nifty 50 since the NAV history's start date — both series indexed to 100
+  // on that same date (the portfolio side is already cash-flow-adjusted, same basis as the chart above),
+  // so the difference is a fair like-for-like comparison regardless of what the user has checked in the
+  // chart's index legend.
+  // Computes cumulative alpha (your stock NAV's move minus the given index's move, both indexed to 100
+  // from the same start date) against whichever index series is passed in. Shared by the Alpha vs Nifty
+  // tile's primary (Nifty 50) and secondary (Nifty 500) figures so the two stay consistent by construction
+  // rather than two hand-duplicated calculations drifting apart.
+  function computeAlphaVsIndex(indexKey) {
+    const points = lastHistoryPoints;
+    const series = lastIndices[indexKey];
+    if (!points.length || !series || !series.length) return null;
+    const map = buildIndexValueMap(series);
+    const baseI = points.findIndex(p => isFinite(map.get(dateKeyOf(p.date))));
+    if (baseI < 0) return null;
+    const base = map.get(dateKeyOf(points[baseI].date));
+    let lastIdxVal = null, lastPort = null;
+    for (let i = points.length - 1; i >= baseI; i--) {
+      const v = map.get(dateKeyOf(points[i].date));
+      if (isFinite(v) && isFinite(base)) { lastIdxVal = (v / base) * 100; lastPort = points[i].nav; break; }
+    }
+    if (lastIdxVal === null) return null;
+    return { alpha: (lastPort - 100) - (lastIdxVal - 100), baseDate: points[baseI].date };
+  }
+
+  // Flips which index the Alpha vs Nifty tile compares against (button shows the OTHER option — the
+  // one clicking it switches to) and re-renders immediately from data already in memory, no re-fetch needed.
+  function toggleAlphaBenchmark() {
+    alphaBenchmark = (alphaBenchmark === 'Nifty 50') ? 'Nifty 500' : 'Nifty 50';
+    updateAlphaTile();
+  }
+
+  function updateAlphaTile() {
+    const el = document.getElementById('tileAlpha');
+    const noteEl = document.getElementById('tileAlphaNote');
+    const btn = document.getElementById('alphaToggleBtn');
+    if (!el) return;
+    if (btn) btn.textContent = (alphaBenchmark === 'Nifty 50') ? 'Nifty 500' : 'Nifty 50';
+    const reset = (note) => { el.textContent = '—'; el.className = 'value'; if (noteEl) noteEl.textContent = note; };
+    const r = computeAlphaVsIndex(alphaBenchmark);
+    if (!r) { reset(`Needs NAV + ${alphaBenchmark} history`); return; }
+    el.textContent = (r.alpha >= 0 ? '+' : '') + r.alpha.toFixed(1) + '%';
+    el.className = 'value ' + chgClass(r.alpha);
+    if (noteEl) noteEl.textContent = `Cumulative, vs ${alphaBenchmark}, since ${fmtDateShort(r.baseDate)}`;
   }
 
   function setupHistoryCrosshair(points, portIdx, indexSeries, xAt, padL, plotW, portColor) {
@@ -3576,6 +3862,19 @@
     if (mins > 0) autoTimer = setInterval(syncFromSheet, mins * 60 * 1000);
   }
 
+  // Pause the auto-refresh timer while this tab is in the background (no point polling Sheets/Yahoo
+  // for a page nobody's looking at) and catch up with one immediate refresh the moment it's visible again.
+  let autoTimerPausedByHidden = false;
+  document.addEventListener('visibilitychange', () => {
+    const mins = parseInt(document.getElementById('intervalSelect').value, 10);
+    if (document.hidden) {
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; autoTimerPausedByHidden = true; }
+    } else if (autoTimerPausedByHidden) {
+      autoTimerPausedByHidden = false;
+      if (mins > 0) { onIntervalChange(); syncFromSheet(); }
+    }
+  });
+
   // ---- Export ----
   function download(filename, content, mime) {
     const blob = new Blob([content], { type: mime });
@@ -3655,7 +3954,7 @@
       totalValue: get('tileTotalValue'), totalNote: get('tileTotalNote'),
       overallGain: get('tileOverallGain'), overallGainPct: get('tileOverallGainPct'),
       today: get('tileToday'), todayNote: get('tileTodayNote'),
-      xirr: get('tileXirr'), split: get('tileSplit'),
+      xirr: get('tileXirr'), split: lastSplitText,
     };
   }
   function reportGainColor(n) { return isFinite(n) ? (n >= 0 ? '#0ca30c' : '#d03b3b') : '#666'; }
@@ -3794,6 +4093,10 @@
     setStyle('.status-pill.err', 'background', hexToRgba(cCrit, 0.14));
     setStyle('.error-banner', 'background', hexToRgba(cCrit, 0.10));
     setStyle('.error-banner', 'borderColor', hexToRgba(cCrit, 0.30));
+    setStyle('.stage-banner:not(.has-decline)', 'background', hexToRgba(cGood, 0.10));
+    setStyle('.stage-banner:not(.has-decline)', 'borderColor', hexToRgba(cGood, 0.30));
+    setStyle('.stage-banner.has-decline', 'background', hexToRgba(cWarn, 0.10));
+    setStyle('.stage-banner.has-decline', 'borderColor', hexToRgba(cWarn, 0.30));
     setStyle('.filter-row button', 'borderColor', hexToRgba(cCrit, 0.30));
     setStyle('.ltcg-lt', 'background', hexToRgba(cGood, 0.14));
     setStyle('.ltcg-st', 'background', hexToRgba(cWarn, 0.14));
