@@ -829,6 +829,10 @@
         <div class="mini-tile" title="Held under 365 days"><div class="mini-label">Short-Term</div><div class="mini-value" id="realizedMiniST">—</div></div>
         <div class="mini-tile" title="From the 'Dividends' sheet tab — log Date, Stock, Amount there and it'll total up here"><div class="mini-label">Dividends Received</div><div class="mini-value" id="dividendsMiniTotal">—</div></div>
       </div>
+      <div class="col-settings">
+        <button type="button" class="col-settings-btn" id="soldColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('sold')">⚙️</button>
+        <div class="col-settings-menu" id="soldColSettingsMenu"></div>
+      </div>
     </div>
     <div id="fyBreakdownWrap" style="display:none">
       <div class="fy-caption">By financial year <span class="meta-note">— Indian FY (Apr–Mar), grouped by Sell Date. Reference only, not tax advice — actual liability depends on applicable rates, exemptions, and any other capital gains not tracked here.</span></div>
@@ -1159,6 +1163,7 @@
   let watchlistHiddenColumns = new Set();
   let stocksHiddenColumns = new Set();
   let etfHiddenColumns = new Set();
+  let soldHiddenColumns = new Set();
 
   const CONCENTRATION_THRESHOLD = 15; // % of book — flag any single holding above this
   const LTCG_DAYS = 365; // India: listed equity held 365+ days qualifies for LTCG tax treatment
@@ -1239,7 +1244,7 @@
     { key: 'annReturn', label: 'Ann. %', num: true, title: 'Annualized return since earliest purchase lot (shown after 30 days held). Approximate — based on first lot date only.' },
   ];
   const SOLD_COLUMNS = [
-    { key: 'symbol', label: 'Stock' }, { key: 'sector', label: 'Sector' }, { key: 'cap', label: 'Mkt Cap' },
+    { key: 'symbol', label: 'Stock', fixed: true }, { key: 'sector', label: 'Sector' }, { key: 'cap', label: 'Mkt Cap' },
     { key: 'buyDate', label: 'Buy Date' }, { key: 'sellDate', label: 'Sell Date' },
     { key: 'qty', label: 'Qty', num: true }, { key: 'buyPrice', label: 'Buy', num: true }, { key: 'sellPrice', label: 'Sell', num: true },
     { key: 'invested', label: 'Invested', num: true }, { key: 'saleValue', label: 'Sale Value', num: true },
@@ -2728,9 +2733,10 @@
       document.getElementById('realizedMiniLT').className = 'mini-value';
       document.getElementById('realizedMiniST').textContent = '—';
       document.getElementById('realizedMiniST').className = 'mini-value';
-      renderThead('realizedThead', SOLD_COLUMNS, 'sold');
+      renderThead('realizedThead', visibleColumns(SOLD_COLUMNS, soldHiddenColumns), 'sold');
       document.getElementById('realizedBody').innerHTML = '';
       document.getElementById('realizedFoot').innerHTML = '';
+      renderColSettingsButtonState('sold');
     }
   }
 
@@ -3685,6 +3691,45 @@
       </tbody>`;
   }
 
+  // Single source of truth for one Realized Gains-table <td>, keyed by column — mirrors stocksCellTd's
+  // role for the Stocks table, so hiding a column via the Settings gear actually removes its cells
+  // everywhere (thead/tbody/tfoot) instead of just shrinking the header.
+  function soldCellTd(colKey, r) {
+    switch (colKey) {
+      case 'symbol': return `<td class="sym">${escapeHtmlText(r.symbol)}</td>`;
+      case 'sector': return `<td class="sec">${escapeHtmlText(r.sector || '—')}</td>`;
+      case 'cap': return `<td class="sec">${escapeHtmlText(String(r.cap || '—').replace(' Cap', ''))}</td>`;
+      case 'buyDate': return `<td>${r.buyDate ? r.buyDate.toLocaleDateString('en-IN') : '—'}</td>`;
+      case 'sellDate': return `<td>${r.sellDate ? r.sellDate.toLocaleDateString('en-IN') : '—'}</td>`;
+      case 'qty': return `<td class="num">${fmtNum(r.qty, 0)}</td>`;
+      case 'buyPrice': return `<td class="num">${fmtNum(r.buyPrice)}</td>`;
+      case 'sellPrice': return `<td class="num">${fmtNum(r.sellPrice)}</td>`;
+      case 'invested': return `<td class="num">${fmtMoney(r.invested)}</td>`;
+      case 'saleValue': return `<td class="num">${fmtMoney(r.saleValue)}</td>`;
+      case 'gain':
+        return `<td class="num ${chgClass(r.gain)}">${r.gain >= 0 ? '+' : ''}${fmtMoney(r.gain)}<span class="ltcg-badge ${r.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${r.ltEligible ? 'Long-term — 365+ days held' : 'Short-term — under 365 days held'}">${r.ltEligible ? 'LT' : 'ST'}</span></td>`;
+      case 'gainPct': return `<td class="num ${chgClass(r.gainPct)}">${fmtPct(r.gainPct)}</td>`;
+      case 'holdingDays': return `<td class="num">${isFinite(r.holdingDays) ? fmtNum(r.holdingDays, 0) + 'd' : '—'}</td>`;
+      case 'reason':
+        return `<td class="sec" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtmlText(r.reason || '')}">${r.reason ? escapeHtmlText(r.reason) : '—'}</td>`;
+      default: return '<td></td>';
+    }
+  }
+  function soldRowTds(r, columns) { return columns.map(c => soldCellTd(c.key, r)).join(''); }
+
+  function soldFootTd(colKey, totals) {
+    switch (colKey) {
+      case 'symbol': return `<td>Total</td>`;
+      case 'invested': return `<td class="num">${fmtMoney(totals.invested)}</td>`;
+      case 'saleValue': return `<td class="num">${fmtMoney(totals.saleValue)}</td>`;
+      case 'gain': return `<td class="num ${chgClass(totals.gain)}">${totals.gain >= 0 ? '+' : ''}${fmtMoney(totals.gain)}</td>`;
+      case 'gainPct': return `<td class="num ${chgClass(totals.gainPct)}">${fmtPct(totals.gainPct)}</td>`;
+      case 'holdingDays': return `<td class="num"></td>`;
+      default: return '<td></td>'; // sector, cap, buyDate, sellDate, qty, buyPrice, sellPrice, reason — blank in the totals row
+    }
+  }
+  function soldFootTds(columns, totals) { return columns.map(c => soldFootTd(c.key, totals)).join(''); }
+
   function renderSoldStocks(rows) {
     const panel = document.getElementById('realizedGainsPanel');
     if (!rows.length) {
@@ -3715,24 +3760,14 @@
     document.getElementById('realizedSubMeta').innerHTML =
       `${rows.length} closed position${rows.length === 1 ? '' : 's'} · Invested ${fmtMoney(totalInvested)} → ${fmtMoney(totalSaleValue)} <span class="${chgClass(totalGainPct)}">(${fmtPct(totalGainPct)})</span>`;
 
-    renderThead('realizedThead', SOLD_COLUMNS, 'sold');
-    document.getElementById('realizedBody').innerHTML = sortRows(rows, soldSort.key, soldSort.dir).map(r => `
-      <tr>
-        <td class="sym">${escapeHtmlText(r.symbol)}</td><td class="sec">${escapeHtmlText(r.sector || '—')}</td><td class="sec">${escapeHtmlText(String(r.cap || '—').replace(' Cap', ''))}</td>
-        <td>${r.buyDate ? r.buyDate.toLocaleDateString('en-IN') : '—'}</td><td>${r.sellDate ? r.sellDate.toLocaleDateString('en-IN') : '—'}</td>
-        <td class="num">${fmtNum(r.qty, 0)}</td><td class="num">${fmtNum(r.buyPrice)}</td><td class="num">${fmtNum(r.sellPrice)}</td>
-        <td class="num">${fmtMoney(r.invested)}</td><td class="num">${fmtMoney(r.saleValue)}</td>
-        <td class="num ${chgClass(r.gain)}">${r.gain >= 0 ? '+' : ''}${fmtMoney(r.gain)}<span class="ltcg-badge ${r.ltEligible ? 'ltcg-lt' : 'ltcg-st'}" title="${r.ltEligible ? 'Long-term — 365+ days held' : 'Short-term — under 365 days held'}">${r.ltEligible ? 'LT' : 'ST'}</span></td>
-        <td class="num ${chgClass(r.gainPct)}">${fmtPct(r.gainPct)}</td>
-        <td class="num">${isFinite(r.holdingDays) ? fmtNum(r.holdingDays, 0) + 'd' : '—'}</td>
-        <td class="sec" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtmlText(r.reason || '')}">${r.reason ? escapeHtmlText(r.reason) : '—'}</td>
-      </tr>`).join('');
+    const soldCols = visibleColumns(SOLD_COLUMNS, soldHiddenColumns);
+    renderThead('realizedThead', soldCols, 'sold');
+    document.getElementById('realizedBody').innerHTML = sortRows(rows, soldSort.key, soldSort.dir)
+      .map(r => `<tr>${soldRowTds(r, soldCols)}</tr>`).join('');
 
     document.getElementById('realizedFoot').innerHTML =
-      `<tr><td>Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-        <td class="num">${fmtMoney(totalInvested)}</td><td class="num">${fmtMoney(totalSaleValue)}</td>
-        <td class="num ${chgClass(totalGain)}">${totalGain >= 0 ? '+' : ''}${fmtMoney(totalGain)}</td>
-        <td class="num ${chgClass(totalGainPct)}">${fmtPct(totalGainPct)}</td><td class="num"></td><td></td></tr>`;
+      `<tr>${soldFootTds(soldCols, { invested: totalInvested, saleValue: totalSaleValue, gain: totalGain, gainPct: totalGainPct })}</tr>`;
+    renderColSettingsButtonState('sold');
   }
 
   async function syncHistory() {
@@ -4843,6 +4878,7 @@
       etf:       { columns: ETF_COLUMNS,       hidden: etfHiddenColumns,       sheetName: 'ETF',          rerender: () => render(lastStocks, lastEtfs) },
       fund:      { columns: FUND_COLUMNS,      hidden: fundHiddenColumns,      sheetName: 'Fundamentals', rerender: () => renderFundamentals(lastFundamentals) },
       watchlist: { columns: WATCHLIST_COLUMNS, hidden: watchlistHiddenColumns, sheetName: 'Watchlist',    rerender: () => renderWatchlist(lastWatchlist) },
+      sold:      { columns: SOLD_COLUMNS,      hidden: soldHiddenColumns,      sheetName: 'Sold',         rerender: () => renderSoldStocks(lastSoldStocks) },
     };
   }
 
@@ -5039,9 +5075,11 @@
       if (Array.isArray(data.settings.ETF)) etfHiddenColumns = new Set(data.settings.ETF);
       if (Array.isArray(data.settings.Fundamentals)) fundHiddenColumns = new Set(data.settings.Fundamentals);
       if (Array.isArray(data.settings.Watchlist)) watchlistHiddenColumns = new Set(data.settings.Watchlist);
+      if (Array.isArray(data.settings.Sold)) soldHiddenColumns = new Set(data.settings.Sold);
       render(lastStocks, lastEtfs);
       if (lastFundamentals.length) renderFundamentals(lastFundamentals);
       if (lastWatchlist.length) renderWatchlist(lastWatchlist);
+      if (lastSoldStocks.length) renderSoldStocks(lastSoldStocks);
     } catch (err) {
       // Web App unreachable (offline, not yet deployed, etc.) — dashboard just falls back to showing
       // every column, same as before this feature existed.
