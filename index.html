@@ -260,12 +260,13 @@
   }
   .stock-add-btn:hover { opacity: .88; }
 
-  .row-edit-btn {
+  .row-edit-btn, .row-sell-btn {
     display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
     width: 18px; height: 18px; margin-left: 4px; border: none; background: transparent; color: var(--text-muted);
     cursor: pointer; font-size: 11.5px; border-radius: 4px; padding: 0;
   }
   .row-edit-btn:hover { color: var(--seq-400); background: var(--gridline); }
+  .row-sell-btn:hover { color: var(--status-critical); background: var(--gridline); }
 
   .stock-modal-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
@@ -303,6 +304,15 @@
   .stock-modal-actions .btn-save { background: var(--seq-400); border: 1px solid var(--seq-400); color: #fff; }
   .stock-modal-actions .btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
+  .panel-settings-modal { max-width: 460px; }
+  .panel-settings-list { max-height: 50vh; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; }
+  .panel-settings-row {
+    display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 600; color: var(--text-primary);
+    padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .panel-settings-row:last-child { border-bottom: none; }
+  .panel-settings-row input[type="checkbox"] { flex: none; width: 15px; height: 15px; cursor: pointer; }
+
   .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: var(--card-shadow); }
   .panel h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
   .panel h2 .meta { font-weight: 400; color: var(--text-muted); font-size: 12px; }
@@ -331,6 +341,13 @@
     font-size: 12px; font-weight: 600; color: var(--status-critical); background: transparent;
     border: 1px solid color-mix(in srgb, var(--status-critical) 30%, transparent); border-radius: 6px;
     padding: 3px 9px; cursor: pointer;
+  }
+  /* "+ Add Stock" now lives in the filter row (moved out of the panel head) — re-assert its own pill
+     look over the plain ".filter-row button" rule above (which otherwise wins on specificity), and push
+     it to the right end of the row, clear of the Sector/Market Cap filters. */
+  .filter-row .stock-add-btn {
+    margin-left: auto; font-size: 12.5px; font-weight: 700; color: #fff;
+    background: var(--seq-400); border: 1px solid var(--seq-400); border-radius: 8px; padding: 0 12px;
   }
   .bar-row.active .bar-label { color: var(--text-primary); font-weight: 700; }
   .bar-row.active .bar-fill { background: var(--status-good); }
@@ -577,6 +594,7 @@
     <div class="divider"></div>
     <div class="grp">
       <button class="quiet" onclick="printDashboard()">🖶 Print</button>
+      <button class="quiet" onclick="openPanelSettingsModal()" title="Show or hide panels on this page">🗂️ Panels</button>
     </div>
     <div class="synced-at" id="syncedAt">Last synced: —</div>
   </div>
@@ -618,7 +636,7 @@
     </div>
   </div>
 
-  <div class="dual-row">
+  <div class="dual-row" id="indicesMoversRow">
   <div class="panel" id="indicesPanel" style="display:none">
     <div class="panel-head">
       <div class="panel-head-left">
@@ -651,7 +669,7 @@
   </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="stocksPortfolioPanel">
     <div class="panel-head">
       <div class="panel-head-left">
         <h2>Stocks Portfolio <span class="meta">— Zerodha + mStock</span></h2>
@@ -662,7 +680,6 @@
         <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="stocksMiniGainAmt">—</div><div class="mini-subvalue" id="stocksMiniGainPct">—</div></div>
         <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="stocksMiniTodayAmt">—</div><div class="mini-subvalue" id="stocksMiniTodayPct">—</div></div>
       </div>
-      <button type="button" class="stock-add-btn" onclick="openAddStockModal()" title="Add a new stock holding to your Portfolio sheet">+ Add Stock</button>
       <div class="col-settings">
         <button type="button" class="col-settings-btn" id="stocksColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('stocks')">⚙️</button>
         <div class="col-settings-menu" id="stocksColSettingsMenu"></div>
@@ -676,6 +693,7 @@
         <select id="capFilterSelect" onchange="onFilterChange()"><option value="All">All</option></select>
       </label>
       <button id="clearFilterBtn" onclick="clearFilters()" style="display:none">✕ Clear filter</button>
+      <button type="button" class="stock-add-btn" onclick="openAddStockModal()" title="Add a new stock holding to your Portfolio sheet">+ Add Stock</button>
     </div>
     <div class="holding-caveat" id="stocksHoldingCaveat" style="display:none">📅 <b>Held</b> and <b>Ann. %</b> are estimated from each stock's first Buy Date in your sheet — if you added to a position later, the actual holding period for those later shares will be shorter than shown.</div>
     <div class="table-scroll">
@@ -687,7 +705,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="analysisPanel">
     <h2>Analysis <span class="meta">— Stocks, live from your sheet</span></h2>
     <div class="analysis-grid">
       <div class="donut-wrap">
@@ -708,7 +726,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="etfPortfolioPanel">
     <div class="panel-head">
       <div class="panel-head-left">
         <h2>ETF Portfolio <span class="meta">— Fyers</span></h2>
@@ -806,7 +824,7 @@
     <div style="margin-top:8px;color:var(--text-muted);font-size:11px">Add symbols to the <b>Watchlist</b> tab in your sheet (column A) — the rest fills in once a day, pulled from Screener.in the same way as the Holdings table above.</div>
   </div>
 
-  <div class="foot-grid">
+  <div class="foot-grid" id="allocationBarsRow">
     <div class="panel">
       <h2>Sector Allocation <span class="meta">— Stocks, by weight</span></h2>
       <div id="sectorBars" style="margin-top:12px"><div class="skel" style="font-size:12.5px">Populates after first sync…</div></div>
@@ -879,7 +897,7 @@
     <div style="margin-top:14px;color:var(--text-muted);font-size:11px">Score = criteria passed (1 pt) + partial (½ pt), out of the criteria with available data for that symbol — a symbol with data gaps is scored out of a smaller total rather than penalized for the gap. 3 criteria from the original screening checklist (Earnings Surprise History, New Product/Catalyst, Sector/Industry Strength) aren't automatable from available data and are excluded from the score entirely — shown below for reference. Thresholds are editable in the dashboard source (SCORECARD_THRESHOLDS). The "Look up any stock" box above calls Screener.in live for a one-off symbol — it's a quick fundamentals sanity-check before you move to technicals, not something the dashboard tracks or refreshes automatically.</div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="navChartPanel">
     <div class="panel-head">
       <div class="panel-head-left">
         <h2>Stock Portfolio NAV vs Market Indices <span class="meta">— indexed to 100, adjusted for money added or withdrawn; stocks only, ETFs excluded</span></h2>
@@ -901,7 +919,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="xirrPanel">
     <div class="panel-head">
       <div class="panel-head-left">
         <h2>XIRR Performance <span class="meta">— money-weighted annualized return, Total vs Stocks vs ETFs, snapshotted once a day</span></h2>
@@ -1062,6 +1080,57 @@
   </div>
 </div>
 
+<div class="stock-modal-overlay" id="sellModalOverlay" onclick="if(event.target===this) closeSellModal()">
+  <div class="stock-modal">
+    <h3 id="sellModalTitle">Log Sale</h3>
+    <div class="stock-modal-sub">Pulls Sector/Market Cap/Buy Date from Portfolio automatically, appends a row to "Sold Stocks", then removes or reduces this Portfolio holding.</div>
+    <div class="stock-field">
+      <label for="sellFormSymbol">Symbol</label>
+      <input type="text" id="sellFormSymbol" maxlength="20" disabled>
+    </div>
+    <div class="stock-field">
+      <label for="sellFormSellDate">Sell Date <span class="req">*</span></label>
+      <div class="stock-field-row">
+        <input type="date" id="sellFormSellDate">
+        <button type="button" class="cal-btn" title="Pick a custom date" onclick="const el=document.getElementById('sellFormSellDate'); if(el.showPicker) el.showPicker(); else el.focus();">📅</button>
+      </div>
+      <div class="stock-field-note">Defaults to today — click 📅 for a custom date.</div>
+    </div>
+    <div class="stock-field">
+      <label for="sellFormQty">Quantity <span class="req">*</span></label>
+      <input type="number" id="sellFormQty" min="0" step="any" placeholder="e.g. 10">
+      <div class="stock-field-note" id="sellFormQtyNote">Sells this much off your current Portfolio holding — can't exceed what you hold.</div>
+    </div>
+    <div class="stock-field">
+      <label for="sellFormSellPrice">Sell Price <span class="req">*</span></label>
+      <input type="number" id="sellFormSellPrice" min="0" step="0.01" placeholder="e.g. 1250.50">
+    </div>
+    <div class="stock-field">
+      <label for="sellFormReason">Reason <span style="color:var(--text-muted)">(optional)</span></label>
+      <input type="text" id="sellFormReason" placeholder="e.g. Stage 4. Price below 150 DMA" maxlength="240">
+      <div class="stock-field-note">Saved as "Reasons for sold out" on the Sold Stocks tab.</div>
+    </div>
+    <div class="stock-modal-status" id="sellModalStatus"></div>
+    <div class="stock-modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeSellModal()">Cancel</button>
+      <button type="button" class="btn-save" id="sellFormSaveBtn" onclick="submitSellForm()">Log Sale</button>
+    </div>
+  </div>
+</div>
+
+<div class="stock-modal-overlay" id="panelSettingsOverlay" onclick="if(event.target===this) closePanelSettingsModal()">
+  <div class="stock-modal panel-settings-modal">
+    <h3>Panels</h3>
+    <div class="stock-modal-sub">Choose which panels show on this page. Saved to your sheet, so it applies on every device.</div>
+    <div class="panel-settings-list" id="panelSettingsList"></div>
+    <div class="stock-modal-status" id="panelSettingsStatus"></div>
+    <div class="stock-modal-actions">
+      <button type="button" class="btn-cancel" onclick="closePanelSettingsModal()">Cancel</button>
+      <button type="button" class="btn-save" id="panelSettingsSaveBtn" onclick="savePanelSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const SHEET_ID = '19JTwr2EmfZO-ng3x-ydM7gpn5SSAyBaJ3iQIp4KEBaw';
   const STOCKS_SHEET_NAME = 'Portfolio';
@@ -1076,6 +1145,7 @@
   // than showing a false trend or a fake overnight "crash" once the fixed, correct rows start landing.
   const HISTORY_DATA_START = new Date(2026, 7, 20); // 20 Aug 2026 (month is 0-indexed)
   const PRICE_HISTORY_SHEET_NAME = 'Price History'; // daily per-symbol price snapshots — powers the Top Movers period dropdown
+  const HOLIDAYS_SHEET_NAME = 'Holidays'; // user-maintained list of NSE market holidays for the year, one date per row in column A — powers the Top Movers "Today" vs "Since Buy Date" default
   const SOLD_STOCKS_SHEET_NAME = 'Sold Stocks'; // manually-maintained closed-positions ledger — powers the Realized Gains panel
   const DIVIDENDS_SHEET_NAME = 'Dividends'; // manually-maintained ledger (Date, Stock, Amount) — powers the Dividends Received mini-tile
   const FUNDAMENTALS_SHEET_NAME = 'Fundamentals'; // auto-populated daily by the Apps Script updateFundamentals() job — powers the Fundamentals (Holdings) panel
@@ -1109,16 +1179,53 @@
   let selectedInsightSymbol = null; // which holding's insights are currently shown in the Company Insights panel
   let selectedScoreSymbol = null; // which symbol's breakdown is currently shown in the Growth Scorecard panel
   let lastXirrHistory = []; // [{date, total, stock, etf}] sorted ascending by date, read from the daily-snapshot XirrHistory tab — total/stock/etf are % or null
+  let nseHolidays = new Set(); // 'YYYY-MM-DD' keys read from column A of the "Holidays" tab — NSE market holidays for the year
+  let moversPeriodTouchedByUser = false; // true once the user picks a Top Movers period themselves — stops the holiday-aware default from overriding their choice after a late-arriving Holidays fetch
   // Which index lines are checked on in the "Portfolio NAV vs Market Indices" chart — Portfolio NAV itself
   // always shows and has no checkbox; at least one index must stay checked (enforced in onNavIndexToggle).
   let navChartVisibleIndices = new Set(['Nifty 50', 'Nifty 500', 'Nifty Midcap 150', 'Nifty 200']);
-  // Top Movers period default: "Today" during the trading day (9:15 AM – 11:59 PM IST, matching the
-  // NSE market-open time used elsewhere in this dashboard), "Since Buy Date" otherwise (before the
-  // market opens). Computed in IST explicitly since NSE hours don't depend on the viewer's timezone.
+
+  // Formats "today" as a 'YYYY-MM-DD' key in IST specifically (not the viewer's local timezone) — matches
+  // how defaultMoversPeriod()/isMarketOpenNow() already compute "today" for NSE-hours purposes. The 'en-CA'
+  // locale's default date format is already ISO-shaped (YYYY-MM-DD), which is all this needs.
+  function istTodayKey() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  }
+
+  // Parses one Holidays-tab cell (a gviz Date(y,m,d), or a plain "YYYY-MM-DD"/"MM/DD/YYYY" string) into a
+  // 'YYYY-MM-DD' key, built directly from the parsed digits rather than via a Date object — so there's no
+  // local-timezone round-trip to get wrong when comparing against istTodayKey(). Returns null for anything
+  // that isn't a recognizable date (e.g. a stray header cell), so callers can just filter those out.
+  function parseCalendarDateKey(v) {
+    const pad = n => String(n).padStart(2, '0');
+    if (v instanceof Date) return `${v.getFullYear()}-${pad(v.getMonth() + 1)}-${pad(v.getDate())}`;
+    if (typeof v === 'string') {
+      const gvizM = v.match(/^Date\((\d+),(\d+),(\d+)/);
+      if (gvizM) return `${gvizM[1]}-${pad(+gvizM[2] + 1)}-${pad(+gvizM[3])}`; // gviz month is 0-indexed
+      const isoM = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (isoM) return `${isoM[1]}-${pad(+isoM[2])}-${pad(+isoM[3])}`;
+      const usM = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (usM) return `${usM[3]}-${pad(+usM[1])}-${pad(+usM[2])}`;
+      const parsed = new Date(v);
+      if (!isNaN(parsed)) return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+    }
+    return null;
+  }
+
+  // Top Movers period default: "Today" only on an actual NSE trading day — Mon–Fri, and not a date listed
+  // in the "Holidays" tab — and only within the 9:15 AM – 11:59 PM IST window; "Since Buy Date" otherwise.
+  // Previously this only checked the time window, so a weekend (or holiday) visit during those hours showed
+  // "Today" with a stale/zero Day Gain, since the market never opened that day. Computed in IST explicitly
+  // since NSE trading days/hours don't depend on the viewer's timezone. nseHolidays is populated
+  // asynchronously by syncHolidays() — this runs safely against the empty Set before that resolves.
   function defaultMoversPeriod() {
     const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false
+      timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short'
     }).formatToParts(new Date());
+    const weekday = parts.find(p => p.type === 'weekday').value;
+    if (weekday === 'Sat' || weekday === 'Sun') return 'sinceBuy';
+    if (nseHolidays.has(istTodayKey())) return 'sinceBuy';
+
     const hour = Number(parts.find(p => p.type === 'hour').value);
     const minute = Number(parts.find(p => p.type === 'minute').value);
     const minutesNow = hour * 60 + minute;
@@ -1374,7 +1481,7 @@
     const flagged = s.wt > CONCENTRATION_THRESHOLD;
     switch (colKey) {
       case 'symbol':
-        return `<td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(s.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a><button type="button" class="row-edit-btn" onclick="openEditStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Edit Qty / Buy Price">✎</button></td>`;
+        return `<td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(s.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a><button type="button" class="row-edit-btn" onclick="openEditStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Edit Qty / Buy Price">✎</button><button type="button" class="row-sell-btn" onclick="openSellStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Log Sale — appends to Sold Stocks, removes/reduces this Portfolio holding">💰</button></td>`;
       case 'sector': return `<td class="sec">${escapeHtmlText(s.sector)}</td>`;
       case 'cap': return `<td class="sec">${escapeHtmlText(s.cap.replace(' Cap', ''))}</td>`;
       case 'qty': return `<td class="num">${fmtNum(s.qty, 0)}</td>`;
@@ -1610,6 +1717,19 @@
     return gvizToObjects(resp);
   }
 
+  // Like fetchSheet(), but returns raw column-A cell values instead of header-keyed objects — used for the
+  // Holidays tab, which is just a bare list of dates in column A with no fixed header name to look up (and
+  // gvizToObjects() silently drops any column whose header cell is blank, which a header-less date list
+  // could easily be).
+  async function fetchSheetColumnA(sheetName) {
+    const resp = await jsonpFetch(gvizUrl(sheetName));
+    if (!resp || resp.status === 'error') {
+      const msg = (resp && resp.errors && resp.errors[0] && resp.errors[0].detailed_message) || 'unknown gviz error';
+      throw new Error(msg);
+    }
+    return resp.table.rows.map(r => (r.c && r.c[0] ? r.c[0].v : null)).filter(v => v !== null && v !== undefined && v !== '');
+  }
+
   function extractHoldings(objs, qtyKeys) {
     return objs
       .map(o => ({
@@ -1742,6 +1862,7 @@
         syncHistory(),       // independent, optional — never fails the main sync
         syncEtfLots(),       // independent, optional — precise per-lot dates for ETF XIRR, when available
         syncPriceHistory(),  // independent, optional — daily per-symbol snapshots for the Top Movers period dropdown
+        syncHolidays(),      // independent, optional — NSE holiday dates for the Top Movers "Today"/"Since Buy Date" default
         syncSoldStocks(),    // independent, optional — closed positions for the Realized Gains panel
         syncFundamentals(),  // independent, optional — P/E, ROCE, ROE for the Fundamentals panel, updated daily by Apps Script
         syncIndices(),       // independent, optional — Nifty 50/500/Midcap 150 broader-market indices, updated daily by Apps Script
@@ -1754,6 +1875,7 @@
         syncXirrHistory(),   // independent, optional — daily Total/Stock/ETF XIRR snapshots for the XIRR Performance panel
         syncDividends(),     // independent, optional — manually-logged dividend entries for the Dividends Received mini-tile
       ]);
+      enforceHiddenPanels(); // safety net — re-clamp anything a data-driven render above might have shown despite being user-hidden
     } catch (err) {
       setStatus('err', 'Sync failed');
       showDiagnosis(`⚠ <b>Couldn't sync:</b> ${err.message || err}. This dashboard now loads your sheet via a script tag rather than a background
@@ -2110,6 +2232,7 @@
 
   function onMoversPeriodChange() {
     moversPeriod = document.getElementById('moversPeriodSelect').value;
+    moversPeriodTouchedByUser = true; // a manual pick should stick — don't let a later holiday-aware default recompute override it
     renderTopMovers(lastStocks);
   }
 
@@ -2655,6 +2778,26 @@
     }
   }
 
+  // Reads the "Holidays" tab (column A = NSE market holidays for the year, user-maintained) so the Top
+  // Movers period default can skip those dates too, not just weekends. Optional — if this tab doesn't
+  // exist, the default just falls back to the plain weekday/time-window check (see defaultMoversPeriod()).
+  // The initial default is computed synchronously at page load, before this has had a chance to run, so
+  // once it resolves, recompute and re-render — but only if the user hasn't already picked a period
+  // themselves, so a late-arriving Holidays fetch never overrides a manual choice.
+  async function syncHolidays() {
+    try {
+      const values = await fetchSheetColumnA(HOLIDAYS_SHEET_NAME);
+      nseHolidays = new Set(values.map(parseCalendarDateKey).filter(Boolean));
+    } catch (err) {
+      nseHolidays = new Set();
+    } finally {
+      if (!moversPeriodTouchedByUser) {
+        moversPeriod = defaultMoversPeriod();
+        if (lastStocks.length) renderTopMovers(lastStocks);
+      }
+    }
+  }
+
   // Reads the manually-maintained "Sold Stocks" tab (closed positions) and powers the Realized Gains
   // panel. Optional — if this tab doesn't exist yet, the panel just stays hidden, same as Top Movers
   // and NAV vs Nifty do when their source tabs aren't set up.
@@ -3084,8 +3227,11 @@
     const scored = rows.map(r => Object.assign({}, r, { _score: computeScorecard(r) }))
       .sort((a, b) => (isFinite(b._score.pct) ? b._score.pct : -1) - (isFinite(a._score.pct) ? a._score.pct : -1) || a.symbol.localeCompare(b.symbol));
 
-    if (!selectedScoreSymbol || !scored.some(r => r.symbol === selectedScoreSymbol)) {
-      selectedScoreSymbol = scored[0].symbol;
+    // No default selection on load/resync — a card only appears once the user picks a pill or runs a
+    // lookup. If a previously-selected symbol drops out of the list (sold out, removed from Watchlist),
+    // clear the selection rather than falling back to the top scorer.
+    if (selectedScoreSymbol && !scored.some(r => r.symbol === selectedScoreSymbol)) {
+      selectedScoreSymbol = null;
     }
 
     document.getElementById('scorecardSubMeta').textContent =
@@ -3109,6 +3255,8 @@
     document.querySelectorAll('#scorecardSymbolRow .scorecard-symbol-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.symbol === symbol);
     });
+    // Only one detail card at a time — picking a pill replaces any ad-hoc lookup card that was showing.
+    hideScorecardLookupResult();
     renderScorecardBody();
   }
 
@@ -3145,10 +3293,27 @@
   }
 
   function renderScorecardBody() {
-    const r = (lastScorecardRows || []).find(x => x.symbol === selectedScoreSymbol);
     const body = document.getElementById('scorecardBody');
+    if (!selectedScoreSymbol) { body.innerHTML = ''; return; } // nothing picked yet — no card by default
+    const r = (lastScorecardRows || []).find(x => x.symbol === selectedScoreSymbol);
     if (!r) { body.innerHTML = '<div class="scorecard-empty">No data available for this symbol yet.</div>'; return; }
-    body.innerHTML = buildScorecardBodyHtml(r._score);
+    // Same head/clear-button styling as the ad-hoc lookup card, so a pill-selected card can be dismissed
+    // back to the no-card, page-load state without waiting for another pill click or a lookup.
+    body.innerHTML = `
+      <div class="scorecard-lookup-head">
+        <span class="scorecard-lookup-symbol">${escapeHtmlText(r.symbol)}</span>
+        <button class="scorecard-lookup-clear" onclick="clearScoreSelection()">✕ Clear</button>
+      </div>
+      ${buildScorecardBodyHtml(r._score)}
+    `;
+  }
+
+  // Dismisses the currently pill-selected card, returning the panel to the same no-card state it's in
+  // on page load. Mirrors clearScorecardLookup() for the ad-hoc lookup side.
+  function clearScoreSelection() {
+    selectedScoreSymbol = null;
+    document.querySelectorAll('#scorecardSymbolRow .scorecard-symbol-btn').forEach(btn => btn.classList.remove('active'));
+    renderScorecardBody();
   }
 
   // Ad-hoc "look up any stock" — for a symbol NOT in Holdings/Watchlist, so the fundamental screening
@@ -3189,6 +3354,12 @@
       const row = coerceLookupRow(Object.assign({ isHolding: false }, data.row));
       const score = computeScorecard(row);
       status.textContent = '';
+
+      // Only one detail card at a time — a lookup replaces whatever pill-selected card was showing.
+      selectedScoreSymbol = null;
+      document.querySelectorAll('#scorecardSymbolRow .scorecard-symbol-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('scorecardBody').innerHTML = '';
+
       resultBox.style.display = '';
       resultBox.innerHTML = `
         <div class="scorecard-lookup-head">
@@ -3205,9 +3376,16 @@
     }
   }
 
-  function clearScorecardLookup() {
+  // Hides/empties just the lookup result card, without touching the input text or status message — used
+  // when a pill click needs to make room for the tracked symbol's card (so a half-typed lookup query
+  // isn't wiped out just because the user clicked a pill).
+  function hideScorecardLookupResult() {
     document.getElementById('scorecardLookupResult').style.display = 'none';
     document.getElementById('scorecardLookupResult').innerHTML = '';
+  }
+
+  function clearScorecardLookup() {
+    hideScorecardLookupResult();
     document.getElementById('scorecardLookupInput').value = '';
     document.getElementById('scorecardLookupStatus').textContent = '';
     document.getElementById('scorecardLookupStatus').className = 'scorecard-lookup-status';
@@ -4865,6 +5043,108 @@
   // ---- Print ----
   function printDashboard() { window.print(); }
 
+  // ---- Panel visibility settings (🗂️ Panels button, next to Print) --------
+  // Page-level analog of the per-table column-visibility settings below: instead of hiding columns
+  // within one table, this hides whole panels/sections, so the page doesn't have to show every panel on
+  // every load. Persisted the same way — reusing the same DashboardSettings Web App/sheet, as a new
+  // 'Panels' pseudo-table (see syncDashboardSettings() and savePanelSettings() further down) — so the
+  // layout saved here survives across devices/sessions too.
+  //
+  // Two entries combine two visually-adjacent panels into one checkbox, per spec ("if a row has two
+  // panels, consider as one checkbox to hide both"): Market Indices + Portfolio Top Movers share the
+  // ".dual-row" wrapper, and Sector + Market Cap Allocation share the ".foot-grid" wrapper, so each of
+  // those groups just targets its one shared wrapper element. Every other panel gets its own checkbox —
+  // including Stocks Portfolio and ETF Portfolio, which (despite the similar names) are NOT actually in
+  // the same row today: the "Analysis" panel sits between them — confirmed with Arivoli rather than
+  // guessed, since bundling them would've meant hiding "Analysis" too without being asked.
+  const PANEL_GROUPS = [
+    { key: 'indicesMovers',         label: 'Market Indices & Portfolio Top Movers',     elementIds: ['indicesMoversRow'] },
+    { key: 'stocksPortfolio',       label: 'Stocks Portfolio',                          elementIds: ['stocksPortfolioPanel'] },
+    { key: 'analysis',              label: 'Analysis (Sector / Market Cap donut charts)', elementIds: ['analysisPanel'] },
+    { key: 'etfPortfolio',          label: 'ETF Portfolio',                             elementIds: ['etfPortfolioPanel'] },
+    { key: 'allocation',            label: 'Portfolio Allocation',                      elementIds: ['allocationPanel'] },
+    { key: 'fundamentalsHoldings',  label: 'Fundamentals / Technical (Holdings)',       elementIds: ['fundamentalsPanel'] },
+    { key: 'fundamentalsWatchlist', label: 'Fundamentals (Watchlist)',                  elementIds: ['watchlistPanel'] },
+    { key: 'allocationBars',        label: 'Sector & Market Cap Allocation (bar charts)', elementIds: ['allocationBarsRow'] },
+    { key: 'realizedGains',         label: 'Realized Gains',                            elementIds: ['realizedGainsPanel'] },
+    { key: 'insights',              label: 'Company Insights',                          elementIds: ['insightsPanel'] },
+    { key: 'scorecard',             label: 'Growth Scorecard',                          elementIds: ['scorecardPanel'] },
+    { key: 'navChart',              label: 'Stock Portfolio NAV vs Market Indices',     elementIds: ['navChartPanel'] },
+    { key: 'xirr',                  label: 'XIRR Performance',                          elementIds: ['xirrPanel'] },
+    { key: 'riskStats',             label: 'Stock Portfolio Risk Stats',                elementIds: ['riskStatsPanel'] },
+    { key: 'dailyPerf',             label: 'Daily Performance',                         elementIds: ['dailyPerfPanel'] },
+    { key: 'taxPlanning',           label: 'Tax Planning Reminders',                    elementIds: ['taxPlanningPanel'] },
+    { key: 'news',                  label: 'Company News',                              elementIds: ['newsPanel'] },
+    { key: 'analyst',               label: 'Analyst Consensus',                         elementIds: ['analystPanel'] },
+  ];
+  let hiddenPanelGroups = new Set(); // group keys the user has unchecked — loaded from the sheet in syncDashboardSettings()
+
+  // Force-hides every element belonging to a user-hidden group. Deliberately one-directional: it only
+  // ever sets display:none, never display:'' — showing a panel again is left entirely to that panel's
+  // own existing data-driven logic (most panels already hide themselves when they have no data yet;
+  // forcing them visible here would fight that and show empty/skeleton content instead). Re-enabling a
+  // group in the Panels modal below triggers a fresh syncFromSheet() instead, so each panel's own render
+  // logic gets to naturally decide whether it actually has anything to show.
+  function enforceHiddenPanels() {
+    PANEL_GROUPS.forEach(g => {
+      if (!hiddenPanelGroups.has(g.key)) return;
+      g.elementIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    });
+  }
+
+  function panelSettingsStatus(text, cls) {
+    const el = document.getElementById('panelSettingsStatus');
+    if (!el) return;
+    el.textContent = text || '';
+    el.className = 'stock-modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function openPanelSettingsModal() {
+    const list = document.getElementById('panelSettingsList');
+    list.innerHTML = PANEL_GROUPS.map(g =>
+      `<label class="panel-settings-row"><input type="checkbox"${hiddenPanelGroups.has(g.key) ? '' : ' checked'} data-panel-key="${g.key}"> ${escapeHtmlText(g.label)}</label>`
+    ).join('');
+    panelSettingsStatus('');
+    document.getElementById('panelSettingsOverlay').classList.add('show');
+  }
+
+  function closePanelSettingsModal() {
+    document.getElementById('panelSettingsOverlay').classList.remove('show');
+  }
+
+  // Saves whichever boxes are currently checked in the modal (not a live-toggle-as-you-go like the
+  // column settings menu — panel visibility only takes effect on Save, since unlike a column, hiding a
+  // whole panel while the modal from which you'd undo it is still open would be disorienting).
+  async function savePanelSettings() {
+    const saveBtn = document.getElementById('panelSettingsSaveBtn');
+    const checked = Array.from(document.querySelectorAll('#panelSettingsList input[type="checkbox"]'));
+    const newHidden = new Set(checked.filter(c => !c.checked).map(c => c.dataset.panelKey));
+
+    saveBtn.disabled = true;
+    panelSettingsStatus('Saving…');
+    try {
+      const resp = await fetch(SETTINGS_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ token: SETTINGS_TOKEN, table: 'Panels', hiddenColumns: Array.from(newHidden) })
+      });
+      const data = await resp.json();
+      if (data.status !== 'ok') throw new Error(data.message || 'save failed');
+      hiddenPanelGroups = newHidden;
+      panelSettingsStatus('Saved ✓ Refreshing…', 'ok');
+      enforceHiddenPanels();
+      await syncFromSheet(); // lets any newly-unhidden panel's own render logic decide what it actually has to show
+      closePanelSettingsModal();
+    } catch (err) {
+      panelSettingsStatus(err.message || 'Save failed — try again.', 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
   // ---- Column-visibility settings (Fundamentals/Watchlist gear icon) ----
   // One config entry per table drives every settings-menu function below generically — adding a table
   // to this feature means adding an entry here (its column list, backing hidden-columns Set, matching
@@ -5044,6 +5324,84 @@
     }
   }
 
+  // --- Log Sale (Stock Portfolio panel, per-row 💰 icon) ---------------------
+  // Separate modal/state from the Add/Edit Stock one above — this writes to the
+  // "Sold Stocks" tab (via the sellStock action on the same DashboardSettings Web
+  // App) and reconciles the matching "Portfolio" row (delete on a full sell,
+  // reduce Quantity only on a partial sell). No modify/edit for logged sales.
+  // Opened only from an existing holding's row (the 💰 icon next to ✎ Edit) —
+  // Symbol is prefilled and locked (you can only sell what you already hold, so
+  // free-typing an arbitrary symbol here never made sense), and Quantity defaults
+  // to the full held amount but stays editable for a partial sell.
+  let sellFormHeldQty = NaN; // held Quantity at the moment the modal was opened, for a fast client-side oversell check
+
+  function setSellModalStatus(text, cls) {
+    const el = document.getElementById('sellModalStatus');
+    el.textContent = text || '';
+    el.className = 'stock-modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function openSellStockModal(symbol) {
+    const s = lastStocks.find(x => x.symbol === symbol);
+    if (!s) return;
+    sellFormHeldQty = isFinite(s.qty) ? s.qty : NaN;
+    document.getElementById('sellModalTitle').textContent = 'Log Sale — ' + symbol;
+    document.getElementById('sellFormSymbol').value = symbol;
+    document.getElementById('sellFormSellDate').value = todayIsoDate();
+    document.getElementById('sellFormQty').value = sellFormHeldQty;
+    document.getElementById('sellFormQty').max = isFinite(sellFormHeldQty) ? sellFormHeldQty : '';
+    document.getElementById('sellFormQtyNote').textContent =
+      isFinite(sellFormHeldQty)
+        ? `You hold ${fmtNum(sellFormHeldQty, 0)} — defaults to selling all of it; lower this for a partial sell.`
+        : `Sells this much off your current Portfolio holding — can't exceed what you hold.`;
+    document.getElementById('sellFormSellPrice').value = '';
+    document.getElementById('sellFormReason').value = '';
+    setSellModalStatus('');
+    document.getElementById('sellModalOverlay').classList.add('show');
+    document.getElementById('sellFormQty').focus();
+    document.getElementById('sellFormQty').select();
+  }
+
+  function closeSellModal() {
+    document.getElementById('sellModalOverlay').classList.remove('show');
+  }
+
+  async function submitSellForm() {
+    const saveBtn = document.getElementById('sellFormSaveBtn');
+    const symbol = document.getElementById('sellFormSymbol').value.trim().toUpperCase();
+    const sellDate = document.getElementById('sellFormSellDate').value;
+    const qty = Number(document.getElementById('sellFormQty').value);
+    const sellPrice = Number(document.getElementById('sellFormSellPrice').value);
+    const reason = document.getElementById('sellFormReason').value.trim();
+
+    if (!symbol) { setSellModalStatus('Symbol is required.', 'err'); return; }
+    if (!sellDate) { setSellModalStatus('Sell Date is required.', 'err'); return; }
+    if (!isFinite(qty) || qty <= 0) { setSellModalStatus('Enter a valid Quantity (greater than 0).', 'err'); return; }
+    if (isFinite(sellFormHeldQty) && qty > sellFormHeldQty) { setSellModalStatus(`You only hold ${fmtNum(sellFormHeldQty, 0)} — lower the Quantity.`, 'err'); return; }
+    if (!isFinite(sellPrice) || sellPrice <= 0) { setSellModalStatus('Enter a valid Sell Price (greater than 0).', 'err'); return; }
+
+    const payload = { token: SETTINGS_TOKEN, action: 'sellStock', symbol, sellDate, qty, sellPrice, reason };
+
+    saveBtn.disabled = true;
+    setSellModalStatus('Logging sale…');
+    try {
+      const resp = await fetch(SETTINGS_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      if (data.status !== 'ok') throw new Error(data.message || 'Save failed');
+      setSellModalStatus('Logged ✓ Refreshing…', 'ok');
+      await syncFromSheet();
+      closeSellModal();
+    } catch (err) {
+      setSellModalStatus(err.message || 'Save failed — try again.', 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
   async function saveColumnSettings(table) {
     const status = document.getElementById(table + 'ColSettingsStatus');
     const cfg = colSettingsTables()[table];
@@ -5076,10 +5434,12 @@
       if (Array.isArray(data.settings.Fundamentals)) fundHiddenColumns = new Set(data.settings.Fundamentals);
       if (Array.isArray(data.settings.Watchlist)) watchlistHiddenColumns = new Set(data.settings.Watchlist);
       if (Array.isArray(data.settings.Sold)) soldHiddenColumns = new Set(data.settings.Sold);
+      if (Array.isArray(data.settings.Panels)) hiddenPanelGroups = new Set(data.settings.Panels);
       render(lastStocks, lastEtfs);
       if (lastFundamentals.length) renderFundamentals(lastFundamentals);
       if (lastWatchlist.length) renderWatchlist(lastWatchlist);
       if (lastSoldStocks.length) renderSoldStocks(lastSoldStocks);
+      enforceHiddenPanels();
     } catch (err) {
       // Web App unreachable (offline, not yet deployed, etc.) — dashboard just falls back to showing
       // every column, same as before this feature existed.
