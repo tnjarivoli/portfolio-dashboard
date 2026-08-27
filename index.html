@@ -221,6 +221,8 @@
   .sc-icon.sc-fail { background: color-mix(in srgb, var(--status-critical) 18%, transparent); color: var(--status-critical); }
   .sc-icon.sc-na { background: var(--page-plane); color: var(--text-muted); }
   .scorecard-table tr.sc-excluded td { color: var(--text-muted); }
+  .scorecard-table tr.sc-group-head td { padding: 10px 8px 4px; border-top: none; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .scorecard-table tr.sc-group-head:first-child td { padding-top: 0; }
   .scorecard-empty { font-size: 12.5px; color: var(--text-muted); }
   .scorecard-lookup-box {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -349,6 +351,31 @@
     margin-left: auto; font-size: 12.5px; font-weight: 700; color: #fff;
     background: var(--seq-400); border: 1px solid var(--seq-400); border-radius: 8px; padding: 0 12px;
   }
+  /* Realized Gains filter bar (Period FY / custom From-To / Category / Item / GO) — same .filter-row
+     base as the Stock Portfolio Sector/Market Cap row, plus date inputs and a GO button styled apart
+     from the plain ".filter-row button" red "clear filter" look above. */
+  .sold-filter-row .filter-or { font-size: 12px; color: var(--text-muted); font-style: italic; }
+  .sold-filter-row input[type="date"] {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-primary); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; cursor: pointer; width: 128px; box-sizing: border-box;
+  }
+  .sold-date-row { display: flex; gap: 5px; align-items: center; }
+  .sold-date-row .cal-btn {
+    flex: none; width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface-1); cursor: pointer; font-size: 11.5px; color: var(--text-secondary); padding: 0;
+  }
+  .sold-filter-row select:disabled { opacity: .5; cursor: not-allowed; }
+  .sold-filter-row .sold-go-btn {
+    font-size: 12.5px; font-weight: 700; color: #fff; background: var(--status-good);
+    border: 1px solid var(--status-good); border-radius: 6px; padding: 5px 18px;
+  }
+  .sold-filter-row .sold-go-btn:hover { opacity: .88; }
+  .sold-filter-row .sold-clear-btn {
+    font-size: 12.5px; font-weight: 600; color: var(--text-secondary); background: transparent;
+    border: 1px solid var(--border); border-radius: 6px; padding: 5px 14px;
+  }
+  .sold-filter-row .sold-clear-btn:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+  .sold-filter-caption { font-size: 12px; color: var(--text-secondary); margin: -6px 0 14px; }
   .bar-row.active .bar-label { color: var(--text-primary); font-weight: 700; }
   .bar-row.active .bar-fill { background: var(--status-good); }
   .bar-row { cursor: pointer; }
@@ -377,6 +404,13 @@
   .chg-down { color: var(--status-critical); font-variant-numeric: tabular-nums; }
   .chg-flat { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
   .wt-flag { color: var(--status-warning); font-weight: 700; }
+  .sl-flag { color: var(--status-critical); font-weight: 700; font-size: 11px; margin-left: 6px; vertical-align: middle; }
+  /* Color set on the <tr> (not each <td>) so it only affects cells with no color of their own —
+     cells that already carry a semantic color (chg-up/chg-down/wt-flag/sl-flag, set directly on
+     that td/span) keep their own color via the cascade, since a direct rule always wins over an
+     inherited one. */
+  tr.row-sl-alert { color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 6%, transparent); }
+  tr.row-sl-alert td.sym a.sym-link { color: var(--status-critical); }
   .ltcg-badge { display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: .02em; padding: 1.5px 5px; border-radius: 4px; margin-left: 5px; vertical-align: middle; }
   .ltcg-lt { color: var(--status-good); background: color-mix(in srgb, var(--status-good) 14%, transparent); }
   .ltcg-st { color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 14%, transparent); }
@@ -835,6 +869,26 @@
     </div>
   </div>
 
+  <div class="panel" id="scorecardPanel" style="display:none">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <h2>Growth Scorecard <span class="meta">— Growth (70 pts) + Quality (30 pts) = 100, computed from your Fundamentals &amp; Watchlist data</span></h2>
+        <div class="sub-meta" id="scorecardSubMeta">Waiting for first sync…</div>
+      </div>
+    </div>
+    <div class="scorecard-lookup-box">
+      <label for="scorecardLookupInput">Look up any stock (not in Holdings/Watchlist)</label>
+      <input type="text" id="scorecardLookupInput" placeholder="e.g. DMART" maxlength="20"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();runScorecardLookup();}">
+      <button id="scorecardLookupBtn" onclick="runScorecardLookup()">Look up</button>
+      <span id="scorecardLookupStatus" class="scorecard-lookup-status"></span>
+    </div>
+    <div id="scorecardLookupResult" class="scorecard-lookup-result" style="display:none"></div>
+    <div class="scorecard-symbol-row" id="scorecardSymbolRow"></div>
+    <div id="scorecardBody"></div>
+    <div style="margin-top:14px;color:var(--text-muted);font-size:11px">Score = points earned out of the points available for criteria with data for that symbol — a symbol with data gaps is scored out of a smaller total rather than penalized for the gap. Growth (70 pts): Quarterly EPS Growth 20 · Quarterly Sales Growth 15 · Annual EPS Growth 15 · Annual Sales Growth 10 · EPS Acceleration 5 · Sales Acceleration 5. Quality (30 pts): Return on Equity 15 · ROE Consistency (3Y) 10 · 5th criterion 5 (Margin Expansion for Banks/NBFCs/Financials, Debt-to-Equity for every other sector — classified from the Stocks sheet's Sector column). Bands: 90+ Elite Growth Company · 80–89 Excellent · 75–79 Good · 70–74 Watchlist · below 70 Ignore. Thresholds are editable in the dashboard source (SCORECARD_THRESHOLDS, SCORECARD_CRITERIA_V2). The "Look up any stock" box above calls Screener.in live for a one-off symbol — it's a quick fundamentals sanity-check before you move to technicals, not something the dashboard tracks or refreshes automatically.</div>
+  </div>
+
   <div class="panel" id="realizedGainsPanel" style="display:none">
     <div class="panel-head">
       <div class="panel-head-left">
@@ -852,6 +906,37 @@
         <div class="col-settings-menu" id="soldColSettingsMenu"></div>
       </div>
     </div>
+    <div class="filter-row sold-filter-row" id="soldFilterRow">
+      <label>Period
+        <select id="soldPeriodFilterSelect" onchange="onSoldPeriodChange()"></select>
+      </label>
+      <span class="filter-or">or</span>
+      <label>From
+        <span class="stock-field-row sold-date-row">
+          <input type="date" id="soldFilterFrom" onchange="onSoldCustomDateChange()">
+          <button type="button" class="cal-btn" title="Pick a start date" onclick="const el=document.getElementById('soldFilterFrom'); if(el.showPicker) el.showPicker(); else el.focus();">📅</button>
+        </span>
+      </label>
+      <label>To
+        <span class="stock-field-row sold-date-row">
+          <input type="date" id="soldFilterTo" onchange="onSoldCustomDateChange()">
+          <button type="button" class="cal-btn" title="Pick an end date" onclick="const el=document.getElementById('soldFilterTo'); if(el.showPicker) el.showPicker(); else el.focus();">📅</button>
+        </span>
+      </label>
+      <label>Category
+        <select id="soldCategoryFilterSelect" onchange="onSoldCategoryChange()">
+          <option value="All">All</option>
+          <option value="Stock">Stock</option>
+          <option value="ETF">ETF</option>
+        </select>
+      </label>
+      <label>
+        <select id="soldItemFilterSelect" onchange="onSoldItemChange()" disabled><option value="">All Invest</option></select>
+      </label>
+      <button type="button" class="sold-go-btn" onclick="onSoldFilterGo()">GO</button>
+      <button type="button" class="sold-clear-btn" onclick="onSoldFilterClear()">Clear</button>
+    </div>
+    <div class="sold-filter-caption" id="soldFilterCaption"></div>
     <div id="fyBreakdownWrap" style="display:none">
       <div class="fy-caption">By financial year <span class="meta-note">— Indian FY (Apr–Mar), grouped by Sell Date. Reference only, not tax advice — actual liability depends on applicable rates, exemptions, and any other capital gains not tracked here.</span></div>
       <div class="fy-table-wrap"><table class="fy-table" id="fyTable"></table></div>
@@ -875,26 +960,6 @@
     <div class="insights-symbol-row" id="insightsSymbolRow"></div>
     <div id="insightsBody"></div>
     <div style="margin-top:14px;color:var(--text-muted);font-size:11px">Sourced from each company's public Screener.in page, refreshed weekly by Apps Script. This is Screener's own analysis, not independently verified — treat Key Points/Pros/Cons as a starting point. Concall "AI Summary" isn't pulled here since it needs a logged-in Screener account; the raw Transcript link (and PPT, when Screener has one on file) is the source instead.</div>
-  </div>
-
-  <div class="panel" id="scorecardPanel" style="display:none">
-    <div class="panel-head">
-      <div class="panel-head-left">
-        <h2>Growth Scorecard <span class="meta">— 10 equal-weighted growth/momentum criteria, computed from your Fundamentals &amp; Watchlist data</span></h2>
-        <div class="sub-meta" id="scorecardSubMeta">Waiting for first sync…</div>
-      </div>
-    </div>
-    <div class="scorecard-lookup-box">
-      <label for="scorecardLookupInput">Look up any stock (not in Holdings/Watchlist)</label>
-      <input type="text" id="scorecardLookupInput" placeholder="e.g. DMART" maxlength="20"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();runScorecardLookup();}">
-      <button id="scorecardLookupBtn" onclick="runScorecardLookup()">Look up</button>
-      <span id="scorecardLookupStatus" class="scorecard-lookup-status"></span>
-    </div>
-    <div id="scorecardLookupResult" class="scorecard-lookup-result" style="display:none"></div>
-    <div class="scorecard-symbol-row" id="scorecardSymbolRow"></div>
-    <div id="scorecardBody"></div>
-    <div style="margin-top:14px;color:var(--text-muted);font-size:11px">Score = criteria passed (1 pt) + partial (½ pt), out of the criteria with available data for that symbol — a symbol with data gaps is scored out of a smaller total rather than penalized for the gap. 3 criteria from the original screening checklist (Earnings Surprise History, New Product/Catalyst, Sector/Industry Strength) aren't automatable from available data and are excluded from the score entirely — shown below for reference. Thresholds are editable in the dashboard source (SCORECARD_THRESHOLDS). The "Look up any stock" box above calls Screener.in live for a one-off symbol — it's a quick fundamentals sanity-check before you move to technicals, not something the dashboard tracks or refreshes automatically.</div>
   </div>
 
   <div class="panel" id="navChartPanel">
@@ -1057,6 +1122,11 @@
     <div class="stock-field">
       <label for="stockFormBuyPrice">Buy Price <span class="req">*</span></label>
       <input type="number" id="stockFormBuyPrice" min="0" step="0.01" placeholder="e.g. 1250.50">
+    </div>
+    <div class="stock-field">
+      <label for="stockFormSL">SL (Stop Loss) <span style="color:var(--text-muted)">(optional)</span></label>
+      <input type="number" id="stockFormSL" min="0" step="0.01" placeholder="e.g. 1180.00">
+      <div class="stock-field-note" id="stockFormSLNote">Trail this up as structure (HL) develops — editable any time.</div>
     </div>
     <div class="stock-field">
       <label for="stockFormMarketCap">Market Cap <span class="req">*</span></label>
@@ -1254,6 +1324,22 @@
   let moversPeriod = defaultMoversPeriod();
   let sectorFilter = 'All';
   let capFilter = 'All';
+  // ---- Realized Gains — Period/Category/Item filter bar ----
+  // Period defaults to the current Indian FY; the FY dropdown itself is recomputed fresh from "today"
+  // (IST) on every render (see getFiscalYearOptions()) rather than stored anywhere, so the rolling
+  // last-4-FY window and the April 1 add-newest/drop-oldest behavior Arivoli asked for both just fall
+  // out of that — no scheduled job needed. Custom From/To (matched against Sell Date) overrides the
+  // Period dropdown whenever both are set — the "Period ... or From/To" either/or the reference UI shows.
+  let soldFilterPeriodStartYear = null; // set on first populatePeriodFilterOptions() call
+  let soldFilterFrom = ''; // 'YYYY-MM-DD' — custom range start
+  let soldFilterTo = '';   // 'YYYY-MM-DD' — custom range end
+  let soldFilterCategory = 'All'; // 'All' | 'Stock' | 'ETF' — from the Sold Stocks "Category" column
+  let soldFilterSymbol = ''; // '' = "All Invest"; else one exact symbol from the Category-filtered list
+  // The table/FY-breakdown/totals only render once GO is pressed — dropdown/date changes alone never
+  // trigger a render (see onSoldPeriodChange etc.), and the panel starts idle on every fresh sync until
+  // GO is clicked (or clicked again after Clear). Period still defaults to the current FY under the hood
+  // (populatePeriodFilterOptions), it's just not applied to the table until asked for.
+  let soldFilterApplied = false;
   let stocksSort = { key: 'symbol', dir: 1 };
   let etfSort = { key: 'symbol', dir: 1 };
   let soldSort = { key: 'sellDate', dir: -1 }; // most recently sold first, by default
@@ -1479,9 +1565,10 @@
   // warning, colored gain/loss classes) rather than just on inner content.
   function stocksCellTd(colKey, s) {
     const flagged = s.wt > CONCENTRATION_THRESHOLD;
+    const slAlert = slBreached(s);
     switch (colKey) {
       case 'symbol':
-        return `<td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(s.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a><button type="button" class="row-edit-btn" onclick="openEditStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Edit Qty / Buy Price">✎</button><button type="button" class="row-sell-btn" onclick="openSellStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Log Sale — appends to Sold Stocks, removes/reduces this Portfolio holding">💰</button></td>`;
+        return `<td class="sym"><a class="sym-link" href="${screenerUrl(s.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(s.symbol)}</a><a class="sym-chart-link" href="${tradingViewUrl(s.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a>${slAlert ? `<span class="sl-flag" title="LTP (${fmtNum(s.ltp)}) is below SL (${fmtNum(s.sl)}) — stop triggered">🛑 SL</span>` : ''}<button type="button" class="row-edit-btn" onclick="openEditStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Edit Qty / Buy Price / SL">✎</button><button type="button" class="row-sell-btn" onclick="openSellStockModal('${s.symbol.replace(/'/g, "\\'")}')" title="Log Sale — appends to Sold Stocks, removes/reduces this Portfolio holding">💰</button></td>`;
       case 'sector': return `<td class="sec">${escapeHtmlText(s.sector)}</td>`;
       case 'cap': return `<td class="sec">${escapeHtmlText(s.cap.replace(' Cap', ''))}</td>`;
       case 'qty': return `<td class="num">${fmtNum(s.qty, 0)}</td>`;
@@ -1518,6 +1605,11 @@
     }
   }
   function stocksRowTds(s, columns) { return columns.map(c => stocksCellTd(c.key, s)).join(''); }
+
+  // True while a holding's live LTP is below its SL — purely computed from live data (no persisted
+  // "triggered" flag), so it clears itself the instant LTP recovers back above SL, and stays cleared
+  // once the row is sold off (the row simply stops existing in the Portfolio sheet at that point).
+  function slBreached(s) { return isFinite(s.sl) && s.sl > 0 && isFinite(s.ltp) && s.ltp < s.sl; }
 
   function stocksFootTd(colKey, view, isFiltered, shareOfBook) {
     switch (colKey) {
@@ -1933,7 +2025,7 @@
       ...etfs.map(e => ({ symbol: e.symbol, book: 'ETF', invested: e.invested, value: e.value, gain: e.gain, gainPct: e.gainPct, daysHeld: e.daysHeld, ltEligible: e.ltEligible, buyDate: e.buyDate })),
     ];
     if (!combined.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
     const lossRows = combined.filter(r => isFinite(r.gain) && r.gain < 0).sort((a, b) => a.gain - b.gain);
     const nearingRows = combined
@@ -2078,7 +2170,7 @@
       stocksBody.innerHTML = `<tr><td colspan="${stocksVisibleCols.length}" class="skel">No holdings match this filter.</td></tr>`;
     } else {
       stocksBody.innerHTML = sortRows(visibleStocks, stocksSort.key, stocksSort.dir)
-        .map(s => `<tr>${stocksRowTds(s, stocksVisibleCols)}</tr>`).join('');
+        .map(s => `<tr${slBreached(s) ? ' class="row-sl-alert"' : ''}>${stocksRowTds(s, stocksVisibleCols)}</tr>`).join('');
     }
     const shareOfBook = stocksInvested ? (view.invested / stocksInvested) * 100 : 0;
     document.getElementById('stocksFoot').innerHTML =
@@ -2640,7 +2732,7 @@
     const ev = isFinite(etfValue) ? etfValue : 0;
     const totalValue = sv + ev;
     if (!totalValue) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
     const palette = isDarkMode() ? SECTOR_PALETTE_DARK : SECTOR_PALETTE_LIGHT;
 
@@ -2824,10 +2916,15 @@
         const ltStRaw = String(pick(o, 'LT/ST') || '').trim().toUpperCase();
         const ltEligible = ltStRaw ? ltStRaw === 'LT' : (isFinite(holdingDays) ? holdingDays >= LTCG_DAYS : false);
         const reason = pick(o, 'Reasons for sold out', 'Reason for sold out', 'Reason');
+        // "Category" is a manually-added column (Stock/ETF) powering the Realized Gains filter bar —
+        // rows sold via this dashboard are always 'Stock' (ETF selling isn't wired up here yet, see
+        // handleSellStock_); a row predating the column, or one Arivoli hasn't tagged yet, reads as ''
+        // and simply won't match a Stock/ETF-specific filter until tagged (it still shows under "All").
+        const category = String(pick(o, 'Category') || '').trim();
         return {
           symbol: pick(o, 'Stock', 'Symbol'), sector: pick(o, 'Sector'), cap: pick(o, 'Market Cap'),
           buyDate, sellDate, qty, buyPrice, sellPrice, invested, saleValue, gain, gainPct, holdingDays, ltEligible,
-          reason: reason ? String(reason).trim() : '',
+          reason: reason ? String(reason).trim() : '', category,
         };
       }).filter(r => r.symbol && String(r.symbol).trim() && isFinite(r.qty));
       lastSoldStocks = parsed;
@@ -2867,8 +2964,12 @@
     // parts rather than leaving stale content from a previous sync.
     const panel = document.getElementById('realizedGainsPanel');
     if (panel.style.display === 'none') {
-      panel.style.display = '';
+      showPanelUnlessHidden_(panel);
       document.getElementById('fyBreakdownWrap').style.display = 'none';
+      const filterRow = document.getElementById('soldFilterRow');
+      if (filterRow) filterRow.style.display = 'none';
+      const caption = document.getElementById('soldFilterCaption');
+      if (caption) caption.innerHTML = '';
       document.getElementById('realizedSubMeta').textContent = 'No closed positions yet';
       document.getElementById('realizedMiniTotal').textContent = '—';
       document.getElementById('realizedMiniTotal').className = 'mini-value';
@@ -3211,9 +3312,241 @@
   function allScorecardCandidates() {
     const seen = new Set();
     const out = [];
-    lastFundamentals.forEach(r => { if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(Object.assign({ isHolding: true }, r)); } });
-    lastWatchlist.forEach(r => { if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(Object.assign({ isHolding: false }, r)); } });
+    lastFundamentals.forEach(r => { if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(Object.assign({ isHolding: true }, r, { sector: sectorForSymbol(r.symbol) })); } });
+    lastWatchlist.forEach(r => { if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(Object.assign({ isHolding: false }, r, { sector: sectorForSymbol(r.symbol) })); } });
     return out;
+  }
+
+  // The Sector column only exists on the "Stocks" (holdings) tab — Fundamentals and Watchlist don't
+  // carry their own Sector field — so this looks a symbol up against whatever's currently loaded into
+  // lastStocks. A Watchlist-only symbol that isn't also a holding has no sector source anywhere in the
+  // sheet today, so this returns '' for it (treated as non-financial — see isFinancialSector below).
+  function sectorForSymbol(symbol) {
+    const hit = lastStocks.find(s => s.symbol === symbol);
+    return (hit && hit.sector) || '';
+  }
+
+  // Banks/NBFCs/Financials (Scorecard B in the source doc) vs. everything else (IT, Pharma, Chemicals,
+  // Manufacturing, Consumer, Capital Goods, Auto, etc. — Scorecard A). Matched by keyword against the
+  // Stocks sheet's free-text Sector column rather than an exact list, since Screener's sector labels
+  // vary ("Bank", "Finance", "NBFC", "Financial Services", "Capital Markets" for exchanges/depositories/
+  // asset managers, "Insurance"). Unknown/blank sector (no data — see sectorForSymbol) defaults to
+  // non-financial, i.e. Debt-to-Equity, since that covers the larger, explicitly-named half of the doc's
+  // sector list.
+  function isFinancialSector(sector) {
+    return /bank|nbfc|financ|insur|capital market/i.test(sector || '');
+  }
+
+  // ================= Growth Scorecard V2 (Growth 70 / Quality 30 = 100 pts) =================
+  // Replaces the equal-weighted 10-criterion scorecard above with the weighted framework from the
+  // "Stock Evaluation Scorecards" doc you provided. Growth (70 pts) is identical for every stock. Quality
+  // (30 pts) is also identical for its first two criteria (ROE 15, ROE Consistency 10) — but the 5th
+  // criterion (5 pts) DOES split by sector, per your correction: Margin Expansion for Scorecard B
+  // (Banks/NBFCs/Financials), Debt-to-Equity for Scorecard A (IT, Pharma, Chemicals, Manufacturing,
+  // Consumer, Capital Goods, Auto, and any other non-financial sector). See isFinancialSector() /
+  // sectorForSymbol() above for how a row's sector is resolved and classified. The old equal-weighted
+  // engine above (SCORECARD_THRESHOLDS, SCORECARD_CRITERIA, SCORECARD_EXCLUDED, computeScorecard,
+  // scoreGrade, buildScorecardBodyHtml) is left fully intact and unused, per your "don't delete it yet" —
+  // only the three call sites below (renderScorecard, renderScorecardBody, runScorecardLookup) were
+  // switched to call the V2 functions here instead.
+  //
+  // Assumptions made where the doc didn't spell out an exact number (flagged so they're easy to correct):
+  //  - Growth criteria full/half-credit % cutoffs reuse the existing SCORECARD_THRESHOLDS values above,
+  //    just remapped onto the new point weights (20/15/15/10/5/5) instead of 1/0.5/0.
+  //  - ROE Consistency (10 pts) needs all 3 years of history (roeHistY1..Y3 — see updateFundamentals() /
+  //    updateWatchlist() in Apps Script, and buildScorecardLookupRow_ for the ad-hoc lookup): all 3 years
+  //    above 15% ROE scores full 10 pts, 2 of 3 years scores 5 pts, fewer scores 0.
+  //  - Margin Expansion keeps the existing OPM-YoY full/half thresholds (+1pp / -0.5pp); Debt-to-Equity
+  //    reuses the dormant V1 thresholds (≤0.3× full, ≤1.0× half, lower is better) — both now worth 5 pts.
+  //  - Sector data only exists on the Stocks (holdings) tab today, so a Watchlist-only symbol that isn't
+  //    also a holding has no sector to classify by and defaults to the Debt-to-Equity (non-financial)
+  //    branch. Add a Sector column to the Watchlist sheet if you want those symbols classified properly.
+  const SCORECARD_CRITERIA_V2 = [
+    {
+      key: 'qtrEpsGrowth', label: 'Quarterly EPS Growth', group: 'growth', maxPoints: 20,
+      note: 'Proxy: latest-quarter Net Profit YoY growth',
+      score(r) {
+        const v = r.profitYoyLatest;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.qtrEpsGrowth;
+        return { points: v >= t.full ? 20 : v >= t.half ? 10 : 0, text: fmtPct(v, 1) + ' YoY' };
+      },
+    },
+    {
+      key: 'qtrSalesGrowth', label: 'Quarterly Sales Growth', group: 'growth', maxPoints: 15,
+      score(r) {
+        const v = r.salesYoyLatest;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.qtrSalesGrowth;
+        return { points: v >= t.full ? 15 : v >= t.half ? 7.5 : 0, text: fmtPct(v, 1) + ' YoY' };
+      },
+    },
+    {
+      key: 'annEpsGrowth', label: 'Annual EPS Growth', group: 'growth', maxPoints: 15,
+      note: '3-year compounded (CAGR) EPS growth',
+      score(r) {
+        const v = r.eps3yr;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.annEpsGrowth;
+        return { points: v >= t.full ? 15 : v >= t.half ? 7.5 : 0, text: fmtPct(v, 1) + ' 3Y CAGR' };
+      },
+    },
+    {
+      key: 'annSalesGrowth', label: 'Annual Sales Growth', group: 'growth', maxPoints: 10,
+      note: '3-year compounded (CAGR) Sales growth',
+      score(r) {
+        const v = r.sales3yr;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.annSalesGrowth;
+        return { points: v >= t.full ? 10 : v >= t.half ? 5 : 0, text: fmtPct(v, 1) + ' 3Y CAGR' };
+      },
+    },
+    {
+      key: 'epsGrowthAccel', label: 'EPS Acceleration', group: 'growth', maxPoints: 5,
+      note: 'Is quarterly Net Profit YoY growth speeding up across the last 3 reported quarters?',
+      score(r) {
+        const a = r.profitYoyQ2, b = r.profitYoyQ1, c = r.profitYoyLatest;
+        if (!isFinite(a) || !isFinite(b) || !isFinite(c)) return null;
+        const points = (c > b && b > a) ? 5 : (c > a) ? 2.5 : 0;
+        return { points, text: `${fmtPct(a, 0)} → ${fmtPct(b, 0)} → ${fmtPct(c, 0)}` };
+      },
+    },
+    {
+      key: 'salesGrowthAccel', label: 'Sales Acceleration', group: 'growth', maxPoints: 5,
+      note: 'Is quarterly Sales YoY growth speeding up across the last 3 reported quarters?',
+      score(r) {
+        const a = r.salesYoyQ2, b = r.salesYoyQ1, c = r.salesYoyLatest;
+        if (!isFinite(a) || !isFinite(b) || !isFinite(c)) return null;
+        const points = (c > b && b > a) ? 5 : (c > a) ? 2.5 : 0;
+        return { points, text: `${fmtPct(a, 0)} → ${fmtPct(b, 0)} → ${fmtPct(c, 0)}` };
+      },
+    },
+    {
+      key: 'roe', label: 'Return on Equity', group: 'quality', maxPoints: 15,
+      note: '>20%→15 · 15–20%→12 · 12–15%→9 · 10–12%→6 · 8–10%→3 · <8%→0',
+      score(r) {
+        const v = r.roe;
+        if (!isFinite(v)) return null;
+        const points = v > 20 ? 15 : v >= 15 ? 12 : v >= 12 ? 9 : v >= 10 ? 6 : v >= 8 ? 3 : 0;
+        return { points, text: fmtNum(v, 1) + '%' };
+      },
+    },
+    {
+      key: 'roeConsistency', label: 'ROE Consistency (3Y)', group: 'quality', maxPoints: 10,
+      note: 'Years of the last 3 with ROE (or ROCE, for banks/NBFCs) above 15% — all 3 scores full, 2 of 3 scores half, fewer scores zero',
+      score(r) {
+        const y1 = r.roeHistY1, y2 = r.roeHistY2, y3 = r.roeHistY3;
+        if (!isFinite(y1) || !isFinite(y2) || !isFinite(y3)) return null;
+        const count = [y1, y2, y3].filter(v => v > 15).length;
+        const points = count === 3 ? 10 : count === 2 ? 5 : 0;
+        return { points, text: `${fmtNum(y3, 0)}% → ${fmtNum(y2, 0)}% → ${fmtNum(y1, 0)}%` };
+      },
+    },
+    {
+      key: 'qualityFifth', label: 'Margin Expansion (OPM) / Debt-to-Equity', group: 'quality', maxPoints: 5,
+      // Kept short deliberately — this generic note only ever shows when a criterion has no data for the
+      // row (see the label/note override in computeScorecardV2 below), and a long note here was wrapping
+      // to 3 lines and throwing off this row's vertical alignment vs. every other row in the table.
+      note: 'Margin Expansion (Banks/NBFCs/Financials) or Debt-to-Equity (every other sector)',
+      score(r) {
+        if (isFinancialSector(r.sector)) {
+          const v = r.opmYoyChg;
+          if (!isFinite(v)) return null;
+          const t = SCORECARD_THRESHOLDS.marginExpansion;
+          const latest = isFinite(r.opmLatest) ? fmtNum(r.opmLatest, 1) + '%' : '—';
+          return {
+            points: v >= t.full ? 5 : v >= t.half ? 2.5 : 0,
+            text: `${latest} (${v >= 0 ? '+' : ''}${fmtNum(v, 1)}pp YoY)`,
+            label: 'Margin Expansion (OPM)',
+            note: 'Latest-quarter Operating Profit Margin vs. the same quarter a year ago — Banks/NBFCs/Financials',
+          };
+        }
+        const v = r.debtToEquity;
+        if (!isFinite(v)) return null;
+        const t = SCORECARD_THRESHOLDS.debtToEquity;
+        return {
+          points: v <= t.full ? 5 : v <= t.half ? 2.5 : 0,
+          text: fmtNum(v, 2) + '×',
+          label: 'Debt-to-Equity',
+          note: 'Lower is better — non-financial sectors',
+        };
+      },
+    },
+  ];
+
+  function computeScorecardV2(r) {
+    const results = SCORECARD_CRITERIA_V2.map(c => {
+      const res = c.score(r);
+      // A criterion's score() may return its own label/note to override the static definition — used by
+      // the sector-dependent 5th Quality criterion above, so the breakdown table shows "Margin Expansion"
+      // or "Debt-to-Equity" (whichever actually applied to that row) instead of the combined generic name.
+      return {
+        key: c.key,
+        label: (res && res.label) || c.label,
+        note: (res && res.note) || c.note,
+        group: c.group, maxPoints: c.maxPoints,
+        available: !!res, points: res ? res.points : 0, text: res ? res.text : 'No data',
+      };
+    });
+    const available = results.filter(x => x.available);
+    const total = available.reduce((s, x) => s + x.points, 0);
+    const maxAvailable = available.reduce((s, x) => s + x.maxPoints, 0);
+    const sumBy = group => available.filter(x => x.group === group).reduce((s, x) => s + x.points, 0);
+    const maxBy = group => available.filter(x => x.group === group).reduce((s, x) => s + x.maxPoints, 0);
+    return {
+      criteria: results, total, maxAvailable,
+      pct: maxAvailable ? Math.round((total / maxAvailable) * 100) : NaN,
+      coverage: available.length,
+      growthTotal: sumBy('growth'), growthMax: maxBy('growth'),
+      qualityTotal: sumBy('quality'), qualityMax: maxBy('quality'),
+    };
+  }
+
+  // Overall bands per the doc: 90+ Elite, 80-89 Excellent, 75-79 Good, 70-74 Watchlist, <70 Ignore —
+  // mapped onto the 4 existing grade colors (strong/good/moderate/weak) since Elite and Excellent don't
+  // have a 5th distinct color in the current design; they're told apart by label text.
+  function scoreGradeV2(pct) {
+    if (!isFinite(pct)) return { label: 'No data', cls: 'grade-na' };
+    if (pct >= 90) return { label: 'Elite Growth Company', cls: 'grade-strong' };
+    if (pct >= 80) return { label: 'Excellent', cls: 'grade-strong' };
+    if (pct >= 75) return { label: 'Good', cls: 'grade-good' };
+    if (pct >= 70) return { label: 'Watchlist', cls: 'grade-moderate' };
+    return { label: 'Ignore', cls: 'grade-weak' };
+  }
+
+  // V2 counterpart of buildScorecardBodyHtml() — same shared-by-pill-and-lookup role, grouped into
+  // Growth/Quality sections with a points column since credit is no longer a flat 0/½/1 per criterion.
+  function buildScorecardBodyHtmlV2(score) {
+    const g = scoreGradeV2(score.pct);
+    const rowHtml = c => {
+      const icon = !c.available ? '<span class="sc-icon sc-na" title="No data available for this criterion">–</span>'
+        : c.points >= c.maxPoints ? '<span class="sc-icon sc-pass" title="Full credit">✓</span>'
+        : c.points > 0 ? '<span class="sc-icon sc-partial" title="Partial credit">½</span>'
+        : '<span class="sc-icon sc-fail" title="No credit">✕</span>';
+      const ptsText = c.available ? `${fmtNum(c.points, 1)}/${c.maxPoints}` : `–/${c.maxPoints}`;
+      return `<tr><td>${icon}</td><td>${escapeHtmlText(c.label)}${c.note ? `<div class="sc-note">${escapeHtmlText(c.note)}</div>` : ''}</td><td class="num">${escapeHtmlText(c.text)}</td><td class="num">${ptsText}</td></tr>`;
+    };
+    const growthRows = score.criteria.filter(c => c.group === 'growth').map(rowHtml).join('');
+    const qualityRows = score.criteria.filter(c => c.group === 'quality').map(rowHtml).join('');
+
+    return `
+      <div class="scorecard-headline">
+        <div class="scorecard-gauge ${g.cls}">${isFinite(score.pct) ? score.pct : '—'}<span>/100</span></div>
+        <div>
+          <div class="scorecard-grade ${g.cls}">${g.label}</div>
+          <div class="scorecard-coverage">Growth ${fmtNum(score.growthTotal, 1)}/${score.growthMax || 70} · Quality ${fmtNum(score.qualityTotal, 1)}/${score.qualityMax || 30}${score.coverage < SCORECARD_CRITERIA_V2.length ? ` — scored on ${score.coverage}/${SCORECARD_CRITERIA_V2.length} criteria, rest have no data yet` : ''}</div>
+        </div>
+      </div>
+      <table class="scorecard-table">
+        <thead><tr><th></th><th>Criterion</th><th class="num">Value</th><th class="num">Points</th></tr></thead>
+        <tbody>
+          <tr class="sc-group-head"><td colspan="4">Growth — 70 pts</td></tr>
+          ${growthRows}
+          <tr class="sc-group-head"><td colspan="4">Quality — 30 pts</td></tr>
+          ${qualityRows}
+        </tbody>
+      </table>
+    `;
   }
 
   // Called from the end of both renderFundamentals() and renderWatchlist(), since the Scorecard draws
@@ -3222,9 +3555,9 @@
     const panel = document.getElementById('scorecardPanel');
     const rows = allScorecardCandidates();
     if (!rows.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
-    const scored = rows.map(r => Object.assign({}, r, { _score: computeScorecard(r) }))
+    const scored = rows.map(r => Object.assign({}, r, { _score: computeScorecardV2(r) }))
       .sort((a, b) => (isFinite(b._score.pct) ? b._score.pct : -1) - (isFinite(a._score.pct) ? a._score.pct : -1) || a.symbol.localeCompare(b.symbol));
 
     // No default selection on load/resync — a card only appears once the user picks a pill or runs a
@@ -3238,7 +3571,7 @@
       `${rows.length} symbol${rows.length === 1 ? '' : 's'} scored, sorted highest first`;
 
     document.getElementById('scorecardSymbolRow').innerHTML = scored.map(r => {
-      const g = scoreGrade(r._score.pct);
+      const g = scoreGradeV2(r._score.pct);
       return `<button class="scorecard-symbol-btn ${g.cls}${r.symbol === selectedScoreSymbol ? ' active' : ''}" data-symbol="${escapeHtmlText(r.symbol)}">` +
         `${escapeHtmlText(r.symbol)}${r.isHolding ? '' : ' <span class="scorecard-wl-tag">WL</span>'} <span class="scorecard-pill-score">${isFinite(r._score.pct) ? r._score.pct : '—'}</span></button>`;
     }).join('');
@@ -3304,7 +3637,7 @@
         <span class="scorecard-lookup-symbol">${escapeHtmlText(r.symbol)}</span>
         <button class="scorecard-lookup-clear" onclick="clearScoreSelection()">✕ Clear</button>
       </div>
-      ${buildScorecardBodyHtml(r._score)}
+      ${buildScorecardBodyHtmlV2(r._score)}
     `;
   }
 
@@ -3351,8 +3684,8 @@
         status.className = 'scorecard-lookup-status err';
         return;
       }
-      const row = coerceLookupRow(Object.assign({ isHolding: false }, data.row));
-      const score = computeScorecard(row);
+      const row = coerceLookupRow(Object.assign({ isHolding: false }, data.row, { sector: sectorForSymbol(data.row.symbol) }));
+      const score = computeScorecardV2(row);
       status.textContent = '';
 
       // Only one detail card at a time — a lookup replaces whatever pill-selected card was showing.
@@ -3366,7 +3699,7 @@
           <span class="scorecard-lookup-symbol">${escapeHtmlText(row.symbol)} <span class="scorecard-wl-tag">Lookup — not tracked</span></span>
           <button class="scorecard-lookup-clear" onclick="clearScorecardLookup()">✕ Clear</button>
         </div>
-        ${buildScorecardBodyHtml(score)}
+        ${buildScorecardBodyHtmlV2(score)}
       `;
     } catch (err) {
       status.textContent = 'Lookup failed: ' + (err && err.message ? err.message : String(err));
@@ -3438,6 +3771,11 @@
           debtToEquityYoyChg: num(pick(o, 'Debt/Equity YoY Chg')),
           institutionalPct: num(pick(o, 'Institutional % (FII+DII)')),
           institutionalYoyChg: num(pick(o, 'Institutional YoY Chg (pp)')),
+          // 3-year ROE (or ROCE, for non-financials) history — added by updateFundamentals() for the
+          // Growth Scorecard V2's ROE Consistency check. roeHistY1 is the most recent year.
+          roeHistY1: num(pick(o, 'ROE Y-1 (%)')),
+          roeHistY2: num(pick(o, 'ROE Y-2 (%)')),
+          roeHistY3: num(pick(o, 'ROE Y-3 (%)')),
           lastUpdated: parseGvizDate(pick(o, 'Last Updated')),
         };
       }).filter(r => r.symbol && String(r.symbol).trim() && !/^portfolio beta/i.test(String(r.symbol).trim()));
@@ -3453,7 +3791,7 @@
   function renderFundamentals(rows) {
     const panel = document.getElementById('fundamentalsPanel');
     if (!rows.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
     const avgOf = key => {
       const vals = rows.map(r => r[key]).filter(isFinite);
@@ -3542,6 +3880,9 @@
           debtToEquityYoyChg: num(pick(o, 'Debt/Equity YoY Chg')),
           institutionalPct: num(pick(o, 'Institutional % (FII+DII)')),
           institutionalYoyChg: num(pick(o, 'Institutional YoY Chg (pp)')),
+          roeHistY1: num(pick(o, 'ROE Y-1 (%)')),
+          roeHistY2: num(pick(o, 'ROE Y-2 (%)')),
+          roeHistY3: num(pick(o, 'ROE Y-3 (%)')),
           lastUpdated: parseGvizDate(pick(o, 'Last Updated')),
         };
       }).filter(r => r.symbol && String(r.symbol).trim() && !/^portfolio beta/i.test(String(r.symbol).trim()));
@@ -3556,7 +3897,7 @@
   function renderWatchlist(rows) {
     const panel = document.getElementById('watchlistPanel');
     if (!rows.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
     const avgOf = key => {
       const vals = rows.map(r => r[key]).filter(isFinite);
@@ -3663,7 +4004,7 @@
   function renderNews(rows) {
     const panel = document.getElementById('newsPanel');
     if (!rows.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
     const sorted = rows.slice().sort((a, b) => (b.published ? b.published.getTime() : 0) - (a.published ? a.published.getTime() : 0));
     const symbols = new Set(rows.map(r => r.symbol));
@@ -3716,7 +4057,7 @@
   function renderInsights(rows) {
     const panel = document.getElementById('insightsPanel');
     if (!rows.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
     const sorted = rows.slice().sort((a, b) => a.symbol.localeCompare(b.symbol));
     if (!selectedInsightSymbol || !sorted.some(r => r.symbol === selectedInsightSymbol)) {
@@ -3798,7 +4139,7 @@
   function renderAnalystRatings(rows) {
     const panel = document.getElementById('analystPanel');
     if (!rows.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
 
     // Current price comes from the live Holdings sync (lastStocks), not scraped again here —
     // Trendlyne's page has its own last-traded price, but reusing what's already on-screen keeps
@@ -3825,6 +4166,134 @@
       </tr>
     `;
     }).join('');
+  }
+
+  // ---- Realized Gains filter bar: fiscal-year list, date-range resolution, filtering, dropdowns ----
+
+  // Current Indian FY's start calendar year, from "today" in IST (not the viewer's local timezone) —
+  // matches how the rest of the dashboard already computes "today" for NSE-hours/holiday purposes.
+  function currentFyStartYear() {
+    const [y, m] = istTodayKey().split('-').map(Number);
+    return m >= 4 ? y : y - 1; // April(4)+ belongs to the FY starting this calendar year
+  }
+  function fyLabelForStartYear(startYear) {
+    const endYY = String((startYear + 1) % 100).padStart(2, '0');
+    return `FY ${startYear}-${endYY}`;
+  }
+  function fyDateRangeForStartYear(startYear) {
+    return { from: `${startYear}-04-01`, to: `${startYear + 1}-03-31` };
+  }
+  // Rolling last-4-FY window, purely computed from "today" — no scheduled job needed for the "every
+  // April 1, add the new FY and drop the oldest" behavior Arivoli asked for; it just falls out of this
+  // being recomputed live every time the filter bar renders. Oldest first.
+  function getFiscalYearOptions() {
+    const cur = currentFyStartYear();
+    return [cur - 3, cur - 2, cur - 1, cur].map(y => ({ startYear: y, label: fyLabelForStartYear(y), ...fyDateRangeForStartYear(y) }));
+  }
+
+  // Custom From/To (both set) wins over the Period dropdown, matching the "Period ... or From/To"
+  // either/or layout — picking one clears the other (see onSoldPeriodChange/onSoldCustomDateChange).
+  function soldFilterEffectiveRange() {
+    if (soldFilterFrom && soldFilterTo) return { from: soldFilterFrom, to: soldFilterTo };
+    const fy = getFiscalYearOptions().find(f => f.startYear === soldFilterPeriodStartYear);
+    return fy ? { from: fy.from, to: fy.to } : { from: '', to: '' };
+  }
+
+  function applySoldFilters(rows) {
+    const { from, to } = soldFilterEffectiveRange();
+    const fromDate = from ? new Date(from + 'T00:00:00') : null;
+    const toDate = to ? new Date(to + 'T23:59:59') : null;
+    return rows.filter(r => {
+      if (fromDate && (!r.sellDate || r.sellDate < fromDate)) return false;
+      if (toDate && (!r.sellDate || r.sellDate > toDate)) return false;
+      if (soldFilterCategory !== 'All' && (r.category || '') !== soldFilterCategory) return false;
+      if (soldFilterSymbol && r.symbol !== soldFilterSymbol) return false;
+      return true;
+    });
+  }
+
+  // Populates the Period <select> with the rolling last-4-FY list (newest first) every time it's called
+  // (cheap — 4 options), so it self-corrects even if the dashboard tab is left open across an FY
+  // boundary. Snaps the current selection back to "this FY" if it ever rolls out of the 4-year window.
+  function populatePeriodFilterOptions() {
+    const sel = document.getElementById('soldPeriodFilterSelect');
+    if (!sel) return;
+    const fys = getFiscalYearOptions();
+    if (soldFilterPeriodStartYear === null || !fys.some(f => f.startYear === soldFilterPeriodStartYear)) {
+      soldFilterPeriodStartYear = currentFyStartYear();
+    }
+    sel.innerHTML = fys.slice().reverse()
+      .map(f => `<option value="${f.startYear}"${f.startYear === soldFilterPeriodStartYear ? ' selected' : ''}>${f.label}</option>`)
+      .join('');
+  }
+
+  // Item dropdown is Category-scoped and period-scoped: "All" category means nothing to pick from (a
+  // single item can't span both Stocks and ETFs), otherwise it lists distinct symbols sold within the
+  // currently-selected Category + Period/custom range, defaulting to "All Invest".
+  function populateSoldItemOptions() {
+    const sel = document.getElementById('soldItemFilterSelect');
+    if (!sel) return;
+    if (soldFilterCategory === 'All') {
+      sel.innerHTML = '<option value="">All Invest</option>';
+      sel.disabled = true;
+      soldFilterSymbol = '';
+      return;
+    }
+    sel.disabled = false;
+    const { from, to } = soldFilterEffectiveRange();
+    const fromDate = from ? new Date(from + 'T00:00:00') : null;
+    const toDate = to ? new Date(to + 'T23:59:59') : null;
+    const symbols = [...new Set(
+      lastSoldStocks
+        .filter(r => (r.category || '') === soldFilterCategory)
+        .filter(r => !fromDate || (r.sellDate && r.sellDate >= fromDate))
+        .filter(r => !toDate || (r.sellDate && r.sellDate <= toDate))
+        .map(r => r.symbol)
+    )].sort((a, b) => a.localeCompare(b));
+    sel.innerHTML = '<option value="">All Invest</option>' +
+      symbols.map(s => `<option value="${escapeHtmlText(s)}"${s === soldFilterSymbol ? ' selected' : ''}>${escapeHtmlText(s)}</option>`).join('');
+    if (!symbols.includes(soldFilterSymbol)) { soldFilterSymbol = ''; sel.value = ''; }
+  }
+
+  function renderSoldFilterCaption() {
+    const el = document.getElementById('soldFilterCaption');
+    if (!el) return;
+    const { from, to } = soldFilterEffectiveRange();
+    const fmtDDMMYYYY = iso => { const [y, m, d] = iso.split('-'); return `${d}-${m}-${y}`; };
+    el.innerHTML = (from && to)
+      ? `Transactions for the period : <b>${fmtDDMMYYYY(from)}</b> to <b>${fmtDDMMYYYY(to)}</b>`
+      : 'Transactions for the period : <b>All time</b>';
+  }
+
+  function onSoldPeriodChange() {
+    soldFilterPeriodStartYear = Number(document.getElementById('soldPeriodFilterSelect').value);
+    // Picking a Fiscal Year clears any custom range — the two are an either/or choice, as in the
+    // reference UI ("Period ... or From/To").
+    soldFilterFrom = ''; soldFilterTo = '';
+    document.getElementById('soldFilterFrom').value = '';
+    document.getElementById('soldFilterTo').value = '';
+    populateSoldItemOptions();
+  }
+  function onSoldCustomDateChange() {
+    soldFilterFrom = document.getElementById('soldFilterFrom').value;
+    soldFilterTo = document.getElementById('soldFilterTo').value;
+    populateSoldItemOptions();
+  }
+  function onSoldCategoryChange() {
+    soldFilterCategory = document.getElementById('soldCategoryFilterSelect').value;
+    soldFilterSymbol = '';
+    populateSoldItemOptions();
+  }
+  function onSoldItemChange() {
+    soldFilterSymbol = document.getElementById('soldItemFilterSelect').value;
+  }
+  function onSoldFilterGo() {
+    soldFilterApplied = true;
+    renderSoldStocks(lastSoldStocks);
+  }
+  function onSoldFilterClear() {
+    soldFilterApplied = false;
+    renderSoldStocks(lastSoldStocks);
   }
 
   function fyInfo(date) {
@@ -3915,15 +4384,48 @@
       document.getElementById('fyBreakdownWrap').style.display = 'none';
       return;
     }
-    panel.style.display = '';
-    renderFyBreakdown(rows);
+    showPanelUnlessHidden_(panel);
+    const filterRowEl = document.getElementById('soldFilterRow');
+    if (filterRowEl) filterRowEl.style.display = '';
 
-    const totalInvested = sumBy(rows, 'invested');
-    const totalSaleValue = sumBy(rows, 'saleValue');
+    // Filter bar: dropdowns are repopulated on every render (cheap, and self-corrects the rolling FY
+    // list / item options against whatever's currently selected) — see the Realized Gains filter bar
+    // functions above (populatePeriodFilterOptions, populateSoldItemOptions, applySoldFilters).
+    populatePeriodFilterOptions();
+    populateSoldItemOptions();
+
+    // Idle state: on first load (and again after Clear) the table/FY-breakdown/totals stay empty —
+    // Period already defaults to the current FY under the hood, but nothing is applied to the results
+    // until GO is pressed (onSoldFilterGo), matching the reference broker UI. Changing any dropdown or
+    // date alone never lands here with soldFilterApplied true — only onSoldFilterGo sets that.
+    if (!soldFilterApplied) {
+      document.getElementById('fyBreakdownWrap').style.display = 'none';
+      document.getElementById('soldFilterCaption').innerHTML = '';
+      ['realizedMiniTotal', 'realizedMiniLT', 'realizedMiniST'].forEach(id => {
+        const el = document.getElementById(id);
+        el.textContent = '—'; el.className = 'mini-value';
+      });
+      document.getElementById('realizedSubMeta').textContent = 'Choose a period/category/item above and click GO to view realized gains.';
+      const soldColsIdle = visibleColumns(SOLD_COLUMNS, soldHiddenColumns);
+      renderThead('realizedThead', soldColsIdle, 'sold');
+      document.getElementById('realizedBody').innerHTML =
+        `<tr><td colspan="${soldColsIdle.length}" class="skel">Click GO to list realized gains for the selected period/category/item.</td></tr>`;
+      document.getElementById('realizedFoot').innerHTML = '';
+      renderColSettingsButtonState('sold');
+      return;
+    }
+
+    renderSoldFilterCaption();
+    const filtered = applySoldFilters(rows);
+
+    renderFyBreakdown(filtered);
+
+    const totalInvested = sumBy(filtered, 'invested');
+    const totalSaleValue = sumBy(filtered, 'saleValue');
     const totalGain = totalSaleValue - totalInvested;
     const totalGainPct = totalInvested ? (totalGain / totalInvested) * 100 : 0;
-    const ltGain = sumBy(rows.filter(r => r.ltEligible), 'gain');
-    const stGain = sumBy(rows.filter(r => !r.ltEligible), 'gain');
+    const ltGain = sumBy(filtered.filter(r => r.ltEligible), 'gain');
+    const stGain = sumBy(filtered.filter(r => !r.ltEligible), 'gain');
 
     const totalEl = document.getElementById('realizedMiniTotal');
     totalEl.textContent = (totalGain >= 0 ? '+' : '') + fmtMoney(totalGain) + ' (' + fmtPct(totalGainPct) + ')';
@@ -3935,13 +4437,15 @@
     stEl.textContent = (stGain >= 0 ? '+' : '') + fmtMoney(stGain);
     stEl.className = 'mini-value ' + chgClass(stGain);
 
-    document.getElementById('realizedSubMeta').innerHTML =
-      `${rows.length} closed position${rows.length === 1 ? '' : 's'} · Invested ${fmtMoney(totalInvested)} → ${fmtMoney(totalSaleValue)} <span class="${chgClass(totalGainPct)}">(${fmtPct(totalGainPct)})</span>`;
+    document.getElementById('realizedSubMeta').innerHTML = filtered.length
+      ? `${filtered.length} closed position${filtered.length === 1 ? '' : 's'} · Invested ${fmtMoney(totalInvested)} → ${fmtMoney(totalSaleValue)} <span class="${chgClass(totalGainPct)}">(${fmtPct(totalGainPct)})</span>`
+      : 'No transactions match this filter';
 
     const soldCols = visibleColumns(SOLD_COLUMNS, soldHiddenColumns);
     renderThead('realizedThead', soldCols, 'sold');
-    document.getElementById('realizedBody').innerHTML = sortRows(rows, soldSort.key, soldSort.dir)
-      .map(r => `<tr>${soldRowTds(r, soldCols)}</tr>`).join('');
+    document.getElementById('realizedBody').innerHTML = filtered.length
+      ? sortRows(filtered, soldSort.key, soldSort.dir).map(r => `<tr>${soldRowTds(r, soldCols)}</tr>`).join('')
+      : `<tr><td colspan="${soldCols.length}" class="skel">No transactions for this period/category/item — try widening the filter.</td></tr>`;
 
     document.getElementById('realizedFoot').innerHTML =
       `<tr>${soldFootTds(soldCols, { invested: totalInvested, saleValue: totalSaleValue, gain: totalGain, gainPct: totalGainPct })}</tr>`;
@@ -4051,13 +4555,13 @@
     const panel = document.getElementById('riskStatsPanel');
     const stats = computeRiskStats(points);
     if (stats.insufficientDays !== undefined) {
-      panel.style.display = '';
+      showPanelUnlessHidden_(panel);
       document.getElementById('riskStatsSubMeta').textContent =
         `Available after ${RISK_STATS_MIN_DAYS} days of history — ${stats.insufficientDays} day${stats.insufficientDays === 1 ? '' : 's'} so far.`;
       ['riskMiniDrawdown', 'riskMiniVol', 'riskMiniBest', 'riskMiniWorst'].forEach(id => { document.getElementById(id).textContent = '—'; });
       return;
     }
-    panel.style.display = '';
+    showPanelUnlessHidden_(panel);
     document.getElementById('riskStatsSubMeta').textContent = `Over the last ${stats.days} days`;
 
     const ddEl = document.getElementById('riskMiniDrawdown');
@@ -4563,7 +5067,7 @@
 
     const truncated = daily.length > DAILY_PERF_MAX_SESSIONS;
     const shown = truncated ? daily.slice(daily.length - DAILY_PERF_MAX_SESSIONS) : daily;
-    document.getElementById('dailyPerfPanel').style.display = '';
+    showPanelUnlessHidden_(document.getElementById('dailyPerfPanel'));
 
     const W = 760, H = 220, padL = 46, padR = 14, padT = 14, padB = 26;
     const plotW = W - padL - padR, plotH = H - padT - padB;
@@ -5095,6 +5599,19 @@
     });
   }
 
+  // Guards a panel's own data-driven "un-hide myself" logic against the exact race enforceHiddenPanels()
+  // exists to clean up after: each independent sync (syncInsights, syncNews, syncFundamentals, etc.) runs
+  // concurrently inside one Promise.all in syncFromSheet(), and a panel's render function un-hides it the
+  // moment *its own* sync resolves — but enforceHiddenPanels() only runs once, after the whole Promise.all
+  // settles. For a panel the user unchecked in Panels settings, that gap (however long the slowest sync in
+  // that batch takes) is exactly the "flashes on for a few seconds, then disappears" symptom. Use this
+  // instead of a bare `panel.style.display = ''` for any panel id tracked in PANEL_GROUPS.
+  function showPanelUnlessHidden_(panel) {
+    if (!panel) return;
+    const hidden = PANEL_GROUPS.some(g => hiddenPanelGroups.has(g.key) && g.elementIds.includes(panel.id));
+    if (!hidden) panel.style.display = '';
+  }
+
   function panelSettingsStatus(text, cls) {
     const el = document.getElementById('panelSettingsStatus');
     if (!el) return;
@@ -5238,6 +5755,9 @@
     document.getElementById('stockFormBuyDate').disabled = false;
     document.getElementById('stockFormQty').value = '';
     document.getElementById('stockFormBuyPrice').value = '';
+    document.getElementById('stockFormSL').value = '';
+    document.getElementById('stockFormSL').disabled = false;
+    document.getElementById('stockFormSLNote').textContent = 'Optional — sets the initial stop, if you already have one.';
     document.getElementById('stockFormMarketCap').value = '';
     document.getElementById('stockFormMarketCap').disabled = false;
     document.getElementById('stockFormSector').value = '';
@@ -5256,7 +5776,7 @@
     stockFormMode = 'edit';
     stockFormEditSymbol = symbol;
     document.getElementById('stockModalTitle').textContent = 'Edit ' + symbol;
-    document.getElementById('stockModalSub').textContent = 'Only Quantity and Buy Price can be updated here.';
+    document.getElementById('stockModalSub').textContent = 'Only Quantity, Buy Price and SL can be updated here.';
     document.getElementById('stockFormSymbol').value = symbol;
     document.getElementById('stockFormSymbol').disabled = true;
     document.getElementById('stockFormBuyDate').value = s.buyDate && !isNaN(s.buyDate) ? (() => {
@@ -5266,6 +5786,9 @@
     document.getElementById('stockFormBuyDate').disabled = true;
     document.getElementById('stockFormQty').value = isFinite(s.qty) ? s.qty : '';
     document.getElementById('stockFormBuyPrice').value = isFinite(s.buy) ? s.buy : '';
+    document.getElementById('stockFormSL').value = isFinite(s.sl) ? s.sl : '';
+    document.getElementById('stockFormSL').disabled = false;
+    document.getElementById('stockFormSLNote').textContent = 'Trail this up as structure (HL) develops — leave blank to clear.';
     document.getElementById('stockFormMarketCap').value = s.cap || '';
     document.getElementById('stockFormMarketCap').disabled = true;
     document.getElementById('stockFormSector').value = s.sector || '';
@@ -5286,9 +5809,12 @@
     const saveBtn = document.getElementById('stockFormSaveBtn');
     const qty = Number(document.getElementById('stockFormQty').value);
     const buyPrice = Number(document.getElementById('stockFormBuyPrice').value);
+    const slRaw = document.getElementById('stockFormSL').value.trim();
+    const sl = slRaw === '' ? '' : Number(slRaw);
 
     if (!isFinite(qty) || qty <= 0) { setStockModalStatus('Enter a valid Quantity (greater than 0).', 'err'); return; }
     if (!isFinite(buyPrice) || buyPrice <= 0) { setStockModalStatus('Enter a valid Buy Price (greater than 0).', 'err'); return; }
+    if (slRaw !== '' && (!isFinite(sl) || sl <= 0)) { setStockModalStatus('SL must be a positive number, or left blank.', 'err'); return; }
 
     let payload;
     if (stockFormMode === 'add') {
@@ -5299,9 +5825,9 @@
       if (!symbol) { setStockModalStatus('Symbol is required.', 'err'); return; }
       if (!buyDate) { setStockModalStatus('Buy Date is required.', 'err'); return; }
       if (!marketCap) { setStockModalStatus('Select a Market Cap.', 'err'); return; }
-      payload = { token: SETTINGS_TOKEN, action: 'addStock', symbol, buyDate, qty, buyPrice, marketCap, sector };
+      payload = { token: SETTINGS_TOKEN, action: 'addStock', symbol, buyDate, qty, buyPrice, sl, marketCap, sector };
     } else {
-      payload = { token: SETTINGS_TOKEN, action: 'modifyStock', symbol: stockFormEditSymbol, qty, buyPrice };
+      payload = { token: SETTINGS_TOKEN, action: 'modifyStock', symbol: stockFormEditSymbol, qty, buyPrice, sl };
     }
 
     saveBtn.disabled = true;
