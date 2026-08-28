@@ -270,6 +270,24 @@
   .row-edit-btn:hover { color: var(--seq-400); background: var(--gridline); }
   .row-sell-btn:hover { color: var(--status-critical); background: var(--gridline); }
 
+  /* Edit Mode gate — UX only, see applyEditModeUI() in the script below. Hides every write-capable
+     control (Add Stock, row Edit/Log Sale, the column-settings gears, Panels) when the "EditMode"
+     tab in the Google Sheet has B2 set to 0/blank. The real enforcement is server-side.
+     Also hides two read-only-but-Arivoli-only features the same way, per his explicit request —
+     the ad-hoc "Look up any stock" search (Growth Scorecard) and the Period/Category/Item filter +
+     GO button (Realized Gains, which only ever reveals its table once GO is pressed) — so a public
+     viewer of the page can't use or see either, only Arivoli with the flag on. */
+  body.edit-mode-off .stock-add-btn,
+  body.edit-mode-off .row-edit-btn,
+  body.edit-mode-off .row-sell-btn,
+  body.edit-mode-off .col-settings-btn,
+  body.edit-mode-off #panelsSettingsBtn,
+  body.edit-mode-off .scorecard-lookup-box,
+  body.edit-mode-off #scorecardLookupResult,
+  body.edit-mode-off #soldFilterRow {
+    display: none !important;
+  }
+
   .stock-modal-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
     align-items: center; justify-content: center; padding: 20px;
@@ -574,7 +592,7 @@
   }
 </style>
 </head>
-<body>
+<body class="edit-mode-off">
 <script>
   // Apply the saved theme choice before first paint, to avoid a flash of the wrong theme.
   // Defaults to 'light' when nothing is saved yet.
@@ -628,7 +646,7 @@
     <div class="divider"></div>
     <div class="grp">
       <button class="quiet" onclick="printDashboard()">🖶 Print</button>
-      <button class="quiet" onclick="openPanelSettingsModal()" title="Show or hide panels on this page">🗂️ Panels</button>
+      <button class="quiet" id="panelsSettingsBtn" onclick="openPanelSettingsModal()" title="Show or hide panels on this page">🗂️ Panels</button>
     </div>
     <div class="synced-at" id="syncedAt">Last synced: —</div>
   </div>
@@ -1351,7 +1369,23 @@
   // to the "DashboardSettings" tab via the DashboardSettings.gs Web App so the choice survives across
   // devices/sessions — read once at startup by syncDashboardSettings(), written by saveColumnSettings().
   const SETTINGS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwQN-vEwFZO-Wt5XLwstJkp2tQ6zuF9IZAjn0xtXvuEqajSYpS2luqDyJUV_H97XCqHlg/exec';
-  const SETTINGS_TOKEN = 'lDkf1bbPUy1zjTwhS5IQMpdvz6NHak-E';
+  const SETTINGS_TOKEN = 'CUy6OXWHBeaInxHcWjYjQD8aJ_kiyRxS';
+
+  // ---- Edit Mode gate (UX only — see applyEditModeUI()) ---------------------
+  // Mirrors the "EditMode" tab in the Google Sheet (B2 = 1/0), read from the same
+  // action=read response as the column-visibility settings below. This ONLY hides
+  // buttons for a nicer look on this device — it is NOT the real security boundary.
+  // The real enforcement is server-side in DashboardSettings.gs's doPost(), which
+  // rejects every write when the sheet's flag is off regardless of what the page
+  // looks like, since a client-side hide alone can't stop a direct API call. <body>
+  // starts with the edit-mode-off class so write buttons stay hidden until the
+  // first sync confirms the flag is actually on (fail-safe default).
+  let editModeOn = false;
+  function applyEditModeUI(on) {
+    editModeOn = !!on;
+    document.body.classList.toggle('edit-mode-off', !editModeOn);
+  }
+
   let fundHiddenColumns = new Set();
   let watchlistHiddenColumns = new Set();
   let stocksHiddenColumns = new Set();
@@ -4405,11 +4439,14 @@
         const el = document.getElementById(id);
         el.textContent = '—'; el.className = 'mini-value';
       });
-      document.getElementById('realizedSubMeta').textContent = 'Choose a period/category/item above and click GO to view realized gains.';
+      document.getElementById('realizedSubMeta').textContent = editModeOn
+        ? 'Choose a period/category/item above and click GO to view realized gains.'
+        : 'Realized Gains details are only visible in Edit Mode.';
       const soldColsIdle = visibleColumns(SOLD_COLUMNS, soldHiddenColumns);
       renderThead('realizedThead', soldColsIdle, 'sold');
-      document.getElementById('realizedBody').innerHTML =
-        `<tr><td colspan="${soldColsIdle.length}" class="skel">Click GO to list realized gains for the selected period/category/item.</td></tr>`;
+      document.getElementById('realizedBody').innerHTML = editModeOn
+        ? `<tr><td colspan="${soldColsIdle.length}" class="skel">Click GO to list realized gains for the selected period/category/item.</td></tr>`
+        : `<tr><td colspan="${soldColsIdle.length}" class="skel">Realized Gains details are only visible in Edit Mode.</td></tr>`;
       document.getElementById('realizedFoot').innerHTML = '';
       renderColSettingsButtonState('sold');
       return;
@@ -5961,6 +5998,7 @@
       if (Array.isArray(data.settings.Watchlist)) watchlistHiddenColumns = new Set(data.settings.Watchlist);
       if (Array.isArray(data.settings.Sold)) soldHiddenColumns = new Set(data.settings.Sold);
       if (Array.isArray(data.settings.Panels)) hiddenPanelGroups = new Set(data.settings.Panels);
+      applyEditModeUI(data.editMode === 1);
       render(lastStocks, lastEtfs);
       if (lastFundamentals.length) renderFundamentals(lastFundamentals);
       if (lastWatchlist.length) renderWatchlist(lastWatchlist);
