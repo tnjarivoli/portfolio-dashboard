@@ -262,13 +262,14 @@
   }
   .stock-add-btn:hover { opacity: .88; }
 
-  .row-edit-btn, .row-sell-btn {
+  .row-edit-btn, .row-sell-btn, .watchlist-delete-btn {
     display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
     width: 18px; height: 18px; margin-left: 4px; border: none; background: transparent; color: var(--text-muted);
     cursor: pointer; font-size: 11.5px; border-radius: 4px; padding: 0;
   }
   .row-edit-btn:hover { color: var(--seq-400); background: var(--gridline); }
   .row-sell-btn:hover { color: var(--status-critical); background: var(--gridline); }
+  .watchlist-delete-btn:hover { color: var(--status-critical); background: var(--gridline); }
 
   /* Edit Mode gate — UX only, see applyEditModeUI() in the script below. Hides every write-capable
      control (Add Stock, row Edit/Log Sale, the column-settings gears, Panels) when the "EditMode"
@@ -280,6 +281,7 @@
   body.edit-mode-off .stock-add-btn,
   body.edit-mode-off .row-edit-btn,
   body.edit-mode-off .row-sell-btn,
+  body.edit-mode-off .watchlist-delete-btn,
   body.edit-mode-off .col-settings-btn,
   body.edit-mode-off #panelsSettingsBtn,
   body.edit-mode-off .scorecard-lookup-box,
@@ -323,6 +325,32 @@
   .stock-modal-actions .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
   .stock-modal-actions .btn-save { background: var(--seq-400); border: 1px solid var(--seq-400); color: #fff; }
   .stock-modal-actions .btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+  /* ETF per-lot Edit/Sell modals — wider than the plain .stock-modal since they hold a small table
+     (one row per purchase lot in the "ETF" tab) instead of a flat field list. */
+  .etf-lots-modal { max-width: 620px; }
+  .etf-lots-table-wrap { max-height: 42vh; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 8px; }
+  .etf-lots-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .etf-lots-table th {
+    text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted);
+    font-weight: 700; padding: 8px 8px; border-bottom: 1px solid var(--border); background: var(--page-plane);
+    position: sticky; top: 0;
+  }
+  .etf-lots-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .etf-lots-table tr:last-child td { border-bottom: none; }
+  .etf-lots-table input[type="text"], .etf-lots-table input[type="number"], .etf-lots-table input[type="date"] {
+    width: 100%; font-family: inherit; font-size: 12.5px; font-weight: 600; background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 6px; padding: 5px 7px; color: var(--text-primary); box-sizing: border-box;
+  }
+  .etf-lots-table .lot-held { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .etf-lot-delete-btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+    border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 13px; border-radius: 6px;
+  }
+  .etf-lot-delete-btn:hover { color: var(--status-critical); background: var(--gridline); }
+  .etf-lots-empty { padding: 18px 12px; text-align: center; color: var(--text-muted); font-size: 12.5px; }
+  .etf-lots-shared-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .etf-lots-shared-fields { grid-template-columns: 1fr; } }
 
   .panel-settings-modal { max-width: 460px; }
   .panel-settings-list { max-height: 50vh; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; }
@@ -789,6 +817,7 @@
         <div class="mini-tile"><div class="mini-label">Overall Gain</div><div class="mini-value" id="etfMiniGainAmt">—</div><div class="mini-subvalue" id="etfMiniGainPct">—</div></div>
         <div class="mini-tile"><div class="mini-label">Today</div><div class="mini-value" id="etfMiniTodayAmt">—</div><div class="mini-subvalue" id="etfMiniTodayPct">—</div></div>
       </div>
+      <button type="button" class="stock-add-btn" id="etfAddBtn" onclick="openAddEtfModal()" title="Add a new purchase lot to your ETF sheet">+ Add ETF</button>
       <div class="col-settings">
         <button type="button" class="col-settings-btn" id="etfColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('etf')">⚙️</button>
         <div class="col-settings-menu" id="etfColSettingsMenu"></div>
@@ -862,6 +891,7 @@
         <div class="mini-tile" title="Average Return on Capital Employed across tracked symbols with a value"><div class="mini-label">Avg ROCE</div><div class="mini-value" id="watchlistMiniRoce">—</div></div>
         <div class="mini-tile" title="Average Return on Equity across tracked symbols with a value"><div class="mini-label">Avg ROE</div><div class="mini-value" id="watchlistMiniRoe">—</div></div>
       </div>
+      <button type="button" class="stock-add-btn" id="watchlistAddBtn" onclick="openAddWatchlistModal()" title="Add a symbol to your Watchlist sheet — just the symbol; the rest fills in on the next daily refresh">+ Add Stock</button>
       <div class="col-settings">
         <button type="button" class="col-settings-btn" id="watchlistColSettingsBtn" title="Choose visible columns" onclick="toggleColSettingsMenu('watchlist')">⚙️</button>
         <div class="col-settings-menu" id="watchlistColSettingsMenu"></div>
@@ -1219,6 +1249,108 @@
   </div>
 </div>
 
+<div class="stock-modal-overlay" id="watchlistAddModalOverlay" onclick="if(event.target===this) closeAddWatchlistModal()">
+  <div class="stock-modal">
+    <h3>Add to Watchlist</h3>
+    <div class="stock-modal-sub">Just the symbol — appended to the "Watchlist" tab; P/E, ROCE, ROE and growth figures fill in on the next daily refresh.</div>
+    <div class="stock-field">
+      <label for="watchlistAddSymbol">Symbol <span class="req">*</span></label>
+      <input type="text" id="watchlistAddSymbol" placeholder="e.g. DMART" maxlength="20" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="stock-modal-status" id="watchlistAddModalStatus"></div>
+    <div class="stock-modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeAddWatchlistModal()">Cancel</button>
+      <button type="button" class="btn-save" id="watchlistAddSaveBtn" onclick="submitAddWatchlistForm()">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="stock-modal-overlay" id="etfAddModalOverlay" onclick="if(event.target===this) closeAddEtfModal()">
+  <div class="stock-modal">
+    <h3>Add ETF</h3>
+    <div class="stock-modal-sub">Inserted as a new purchase lot into the "ETF" tab; "ETF Summary" picks it up automatically.</div>
+    <div class="stock-field">
+      <label for="etfAddSymbol">Symbol <span class="req">*</span></label>
+      <input type="text" id="etfAddSymbol" placeholder="e.g. NIFTYBEES" maxlength="20" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="stock-field">
+      <label for="etfAddBuyDate">Buy Date <span class="req">*</span></label>
+      <div class="stock-field-row">
+        <input type="date" id="etfAddBuyDate">
+        <button type="button" class="cal-btn" title="Pick a custom date" onclick="const el=document.getElementById('etfAddBuyDate'); if(el.showPicker) el.showPicker(); else el.focus();">📅</button>
+      </div>
+      <div class="stock-field-note">Defaults to today — click 📅 for a custom date.</div>
+    </div>
+    <div class="stock-field">
+      <label for="etfAddQty">Quantity <span class="req">*</span></label>
+      <input type="number" id="etfAddQty" min="0" step="any" placeholder="e.g. 10">
+    </div>
+    <div class="stock-field">
+      <label for="etfAddBuyPrice">Buy Price <span class="req">*</span></label>
+      <input type="number" id="etfAddBuyPrice" min="0" step="0.01" placeholder="e.g. 250.50">
+    </div>
+    <div class="stock-modal-status" id="etfAddModalStatus"></div>
+    <div class="stock-modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeAddEtfModal()">Cancel</button>
+      <button type="button" class="btn-save" id="etfAddSaveBtn" onclick="submitAddEtfForm()">Add ETF</button>
+    </div>
+  </div>
+</div>
+
+<div class="stock-modal-overlay" id="etfEditModalOverlay" onclick="if(event.target===this) closeEditEtfModal()">
+  <div class="stock-modal etf-lots-modal">
+    <h3 id="etfEditModalTitle">Edit Lots</h3>
+    <div class="stock-modal-sub">Every purchase lot in the "ETF" tab for this symbol — edit Buy Date / Quantity / Buy Price per lot, or 🗑 to delete a lot outright. 🗑 deletes immediately; other changes save when you click "Save Changes".</div>
+    <div class="etf-lots-table-wrap">
+      <table class="etf-lots-table">
+        <thead><tr><th>Buy Date</th><th>Quantity</th><th>Buy Price</th><th></th></tr></thead>
+        <tbody id="etfEditLotsBody"><tr><td colspan="4" class="etf-lots-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="stock-modal-status" id="etfEditModalStatus"></div>
+    <div class="stock-modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeEditEtfModal()">Cancel</button>
+      <button type="button" class="btn-save" id="etfEditSaveBtn" onclick="submitEditEtfLots()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="stock-modal-overlay" id="etfSellModalOverlay" onclick="if(event.target===this) closeSellEtfModal()">
+  <div class="stock-modal etf-lots-modal">
+    <h3 id="etfSellModalTitle">Log Sale</h3>
+    <div class="stock-modal-sub">Pick which lot(s) to sell from and how much of each — leave a lot's Sell Qty blank or 0 to leave it untouched. One Sell Date / Sell Price / Reason applies to everything sold here.</div>
+    <div class="etf-lots-table-wrap">
+      <table class="etf-lots-table">
+        <thead><tr><th>Buy Date</th><th>Held</th><th>Buy Price</th><th>Sell Qty</th></tr></thead>
+        <tbody id="etfSellLotsBody"><tr><td colspan="4" class="etf-lots-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="etf-lots-shared-fields">
+      <div class="stock-field">
+        <label for="etfSellSellDate">Sell Date <span class="req">*</span></label>
+        <div class="stock-field-row">
+          <input type="date" id="etfSellSellDate">
+          <button type="button" class="cal-btn" title="Pick a custom date" onclick="const el=document.getElementById('etfSellSellDate'); if(el.showPicker) el.showPicker(); else el.focus();">📅</button>
+        </div>
+      </div>
+      <div class="stock-field">
+        <label for="etfSellSellPrice">Sell Price <span class="req">*</span></label>
+        <input type="number" id="etfSellSellPrice" min="0" step="0.01" placeholder="e.g. 265.00">
+      </div>
+    </div>
+    <div class="stock-field">
+      <label for="etfSellReason">Reason <span style="color:var(--text-muted)">(optional)</span></label>
+      <input type="text" id="etfSellReason" placeholder="e.g. Rebalancing" maxlength="240">
+      <div class="stock-field-note">Saved as "Reasons for sold out" on the Sold Stocks tab, with Category = ETF.</div>
+    </div>
+    <div class="stock-modal-status" id="etfSellModalStatus"></div>
+    <div class="stock-modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeSellEtfModal()">Cancel</button>
+      <button type="button" class="btn-save" id="etfSellSaveBtn" onclick="submitSellEtfForm()">Log Sale</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const SHEET_ID = '19JTwr2EmfZO-ng3x-ydM7gpn5SSAyBaJ3iQIp4KEBaw';
   const STOCKS_SHEET_NAME = 'Portfolio';
@@ -1553,11 +1685,12 @@
   // both renderFundamentals() and renderWatchlist() since they're the same column set (BASE_FUND_COLUMNS)
   // over two different symbol lists. withChartLink adds the TradingView 📈 link Watchlist rows get next
   // to the symbol that Holdings rows don't (Holdings already links out from elsewhere on the dashboard).
-  function fundCellHtml(colKey, r, withChartLink) {
+  function fundCellHtml(colKey, r, withChartLink, withDeleteBtn) {
     switch (colKey) {
       case 'symbol':
         return `<a class="sym-link" href="${screenerUrl(r.symbol)}" target="_blank" rel="noopener" title="Fundamentals on Screener.in">${escapeHtmlText(r.symbol)}</a>` +
-          (withChartLink ? `<a class="sym-chart-link" href="${tradingViewUrl(r.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a>` : '');
+          (withChartLink ? `<a class="sym-chart-link" href="${tradingViewUrl(r.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a>` : '') +
+          (withDeleteBtn ? `<button type="button" class="watchlist-delete-btn" onclick="deleteWatchlistStock('${r.symbol.replace(/'/g, "\\'")}')" title="Remove from Watchlist — deletes the row from the sheet">🗑️</button>` : '');
       case 'pe': return isFinite(r.pe) ? fmtNum(r.pe, 1) : '—';
       case 'roce': return isFinite(r.roce) ? fmtNum(r.roce, 1) + '%' : '—';
       case 'roe': return isFinite(r.roe) ? fmtNum(r.roe, 1) + '%' : '—';
@@ -1586,10 +1719,10 @@
 
   // Renders one <tr>'s worth of <td>s for a Fundamentals/Watchlist row, restricted to `columns` (the
   // currently-visible column list from visibleColumns()) so hidden columns simply aren't emitted.
-  function fundRowTds(r, columns, withChartLink) {
+  function fundRowTds(r, columns, withChartLink, withDeleteBtn) {
     return columns.map(c => {
       const cls = c.key === 'symbol' ? 'sym' : (c.num ? 'num' : '');
-      return `<td${cls ? ` class="${cls}"` : ''}>${fundCellHtml(c.key, r, withChartLink)}</td>`;
+      return `<td${cls ? ` class="${cls}"` : ''}>${fundCellHtml(c.key, r, withChartLink, withDeleteBtn)}</td>`;
     }).join('');
   }
 
@@ -1663,12 +1796,14 @@
     return columns.map(c => stocksFootTd(c.key, view, isFiltered, shareOfBook)).join('');
   }
 
-  // Same idea as stocksCellTd, for the ETF table — same column shape minus Sector/Mkt Cap, and the
-  // symbol cell is plain text (no Screener.in/TradingView links, since ETFs aren't individual companies).
+  // Same idea as stocksCellTd, for the ETF table — same column shape minus Sector/Mkt Cap. The symbol
+  // cell has no Screener.in link (ETFs aren't individual companies, so there's no fundamentals page for
+  // one), but does get the same TradingView 📈 technical-chart link Stock Portfolio/Watchlist rows have —
+  // ETFs trade on NSE just like stocks, so a TradingView chart exists for them too.
   function etfCellTd(colKey, e) {
     const flagged = e.wt > CONCENTRATION_THRESHOLD;
     switch (colKey) {
-      case 'symbol': return `<td class="sym">${escapeHtmlText(e.symbol)}</td>`;
+      case 'symbol': return `<td class="sym">${escapeHtmlText(e.symbol)}<a class="sym-chart-link" href="${tradingViewUrl(e.symbol)}" target="_blank" rel="noopener" title="Technical chart on TradingView">📈</a><button type="button" class="row-edit-btn" onclick="openEditEtfModal('${e.symbol.replace(/'/g, "\\'")}')" title="Edit purchase lots (Buy Date / Qty / Buy Price per lot)">✎</button><button type="button" class="row-sell-btn" onclick="openSellEtfModal('${e.symbol.replace(/'/g, "\\'")}')" title="Log Sale — pick lots and quantities, appends to Sold Stocks, updates this ETF holding">💰</button></td>`;
       case 'qty': return `<td class="num">${fmtNum(e.qty, 0)}</td>`;
       case 'buy': return `<td class="num">${fmtNum(e.buy)}</td>`;
       case 'ltp': return `<td class="num">${fmtNum(e.ltp)}</td>`;
@@ -3967,7 +4102,7 @@
     renderThead('watchlistThead', watchlistVisibleCols, 'watchlist', periods);
 
     document.getElementById('watchlistBody').innerHTML = sortRows(rows.filter(hasFundData), watchlistSort.key, watchlistSort.dir)
-      .map(r => `<tr>${fundRowTds(r, watchlistVisibleCols, true)}</tr>`).join('');
+      .map(r => `<tr>${fundRowTds(r, watchlistVisibleCols, true, true)}</tr>`).join('');
     renderColSettingsButtonState('watchlist');
     renderScorecard();
   }
@@ -5962,6 +6097,344 @@
       setSellModalStatus(err.message || 'Save failed — try again.', 'err');
     } finally {
       saveBtn.disabled = false;
+    }
+  }
+
+  // ---- Add / Edit / Sell ETF (ETF Portfolio panel) ----
+  // Same DashboardSettings Web App as Stocks above, but the "ETF" tab is a per-purchase-lot ledger
+  // (one row per buy) rather than one row per symbol, so Edit and Sell both pull every lot for the
+  // clicked symbol (via the etfLots GET action) and let you act on them lot-by-lot: Edit updates or
+  // deletes individual lots (editEtfLot / deleteEtfLot), Sell lets you pick lots and a quantity from
+  // each in one go (sellEtfLots — explicitly not automatic FIFO, per Arivoli's request) and appends to
+  // "Sold Stocks" with Category = ETF. "ETF Summary" (what's shown in the table) is formula-driven off
+  // the "ETF" tab and recalculates itself — refreshing via syncFromSheet() after any write is enough.
+  function etfLotDateToIso(s) {
+    s = String(s || '').trim();
+    if (!s) return '';
+    // Already ISO (yyyy-mm-dd), which is what the backend actually returns for etfLots — optionally
+    // followed by a time portion (e.g. a raw Date's toISOString()).
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    // Legacy/typed d/m/yyyy fallback, in case a row's Buy Date was ever stored as plain slash text.
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) {
+      const [, d, mo, y] = m;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    // Last resort — let the JS Date parser take a shot at whatever format this is.
+    const dt = new Date(s);
+    if (!isNaN(dt.getTime())) {
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    }
+    return '';
+  }
+
+  async function fetchEtfLots(symbol) {
+    const url = `${SETTINGS_WEBAPP_URL}?action=etfLots&symbol=${encodeURIComponent(symbol)}&token=${encodeURIComponent(SETTINGS_TOKEN)}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message || 'Could not load lots');
+    return data.lots || [];
+  }
+
+  async function postEtfAction(payload) {
+    const resp = await fetch(SETTINGS_WEBAPP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ token: SETTINGS_TOKEN }, payload))
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message || 'Save failed');
+    return data;
+  }
+
+  // -- Add ETF --
+  function setEtfAddModalStatus(text, cls) {
+    const el = document.getElementById('etfAddModalStatus');
+    el.textContent = text || '';
+    el.className = 'stock-modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function openAddEtfModal() {
+    document.getElementById('etfAddSymbol').value = '';
+    document.getElementById('etfAddBuyDate').value = todayIsoDate();
+    document.getElementById('etfAddQty').value = '';
+    document.getElementById('etfAddBuyPrice').value = '';
+    setEtfAddModalStatus('');
+    document.getElementById('etfAddModalOverlay').classList.add('show');
+    document.getElementById('etfAddSymbol').focus();
+  }
+
+  function closeAddEtfModal() {
+    document.getElementById('etfAddModalOverlay').classList.remove('show');
+  }
+
+  async function submitAddEtfForm() {
+    const saveBtn = document.getElementById('etfAddSaveBtn');
+    const symbol = document.getElementById('etfAddSymbol').value.trim().toUpperCase();
+    const buyDate = document.getElementById('etfAddBuyDate').value;
+    const qty = Number(document.getElementById('etfAddQty').value);
+    const buyPrice = Number(document.getElementById('etfAddBuyPrice').value);
+
+    if (!symbol) { setEtfAddModalStatus('Symbol is required.', 'err'); return; }
+    if (!buyDate) { setEtfAddModalStatus('Buy Date is required.', 'err'); return; }
+    if (!isFinite(qty) || qty <= 0) { setEtfAddModalStatus('Enter a valid Quantity (greater than 0).', 'err'); return; }
+    if (!isFinite(buyPrice) || buyPrice <= 0) { setEtfAddModalStatus('Enter a valid Buy Price (greater than 0).', 'err'); return; }
+
+    saveBtn.disabled = true;
+    setEtfAddModalStatus('Adding…');
+    try {
+      await postEtfAction({ action: 'addEtf', symbol, buyDate, qty, buyPrice });
+      setEtfAddModalStatus('Added ✓ Refreshing…', 'ok');
+      await syncFromSheet();
+      closeAddEtfModal();
+    } catch (err) {
+      setEtfAddModalStatus(err.message || 'Save failed — try again.', 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  // -- Edit ETF Lots --
+  let etfEditSymbol = null;
+  let etfEditLots = [];
+
+  function setEtfEditModalStatus(text, cls) {
+    const el = document.getElementById('etfEditModalStatus');
+    el.textContent = text || '';
+    el.className = 'stock-modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function renderEtfEditLotsRows() {
+    const body = document.getElementById('etfEditLotsBody');
+    if (!etfEditLots.length) {
+      body.innerHTML = '<tr><td colspan="4" class="etf-lots-empty">No lots left for this symbol.</td></tr>';
+      return;
+    }
+    body.innerHTML = etfEditLots.map(l => `<tr data-row="${l.rowNumber}">
+      <td><input type="date" class="etf-edit-buydate" value="${etfLotDateToIso(l.buyDate)}"></td>
+      <td><input type="number" class="etf-edit-qty" min="0" step="any" value="${l.qty}"></td>
+      <td><input type="number" class="etf-edit-buyprice" min="0" step="0.01" value="${l.buyPrice}"></td>
+      <td><button type="button" class="etf-lot-delete-btn" onclick="deleteEtfLotRow(${l.rowNumber})" title="Delete this lot">🗑</button></td>
+    </tr>`).join('');
+  }
+
+  async function openEditEtfModal(symbol) {
+    etfEditSymbol = symbol;
+    document.getElementById('etfEditModalTitle').textContent = 'Edit Lots — ' + symbol;
+    document.getElementById('etfEditLotsBody').innerHTML = '<tr><td colspan="4" class="etf-lots-empty">Loading…</td></tr>';
+    setEtfEditModalStatus('');
+    document.getElementById('etfEditModalOverlay').classList.add('show');
+    try {
+      etfEditLots = await fetchEtfLots(symbol);
+      renderEtfEditLotsRows();
+    } catch (err) {
+      document.getElementById('etfEditLotsBody').innerHTML = '<tr><td colspan="4" class="etf-lots-empty">Could not load lots.</td></tr>';
+      setEtfEditModalStatus(err.message || 'Could not load lots.', 'err');
+    }
+  }
+
+  function closeEditEtfModal() {
+    document.getElementById('etfEditModalOverlay').classList.remove('show');
+  }
+
+  async function deleteEtfLotRow(rowNumber) {
+    if (!confirm('Delete this lot? This can\'t be undone.')) return;
+    setEtfEditModalStatus('Deleting…');
+    try {
+      await postEtfAction({ action: 'deleteEtfLot', symbol: etfEditSymbol, rowNumber });
+      etfEditLots = etfEditLots.filter(l => l.rowNumber !== rowNumber);
+      renderEtfEditLotsRows();
+      setEtfEditModalStatus('Deleted ✓', 'ok');
+      await syncFromSheet();
+    } catch (err) {
+      setEtfEditModalStatus(err.message || 'Delete failed — try again.', 'err');
+    }
+  }
+
+  async function submitEditEtfLots() {
+    const saveBtn = document.getElementById('etfEditSaveBtn');
+    const rows = Array.from(document.querySelectorAll('#etfEditLotsBody tr[data-row]'));
+    if (!rows.length) { closeEditEtfModal(); return; }
+
+    const updates = [];
+    for (const row of rows) {
+      const rowNumber = Number(row.getAttribute('data-row'));
+      const buyDate = row.querySelector('.etf-edit-buydate').value;
+      const qty = Number(row.querySelector('.etf-edit-qty').value);
+      const buyPrice = Number(row.querySelector('.etf-edit-buyprice').value);
+      if (!buyDate) { setEtfEditModalStatus('Every lot needs a Buy Date.', 'err'); return; }
+      if (!isFinite(qty) || qty <= 0) { setEtfEditModalStatus('Every lot needs a Quantity greater than 0.', 'err'); return; }
+      if (!isFinite(buyPrice) || buyPrice <= 0) { setEtfEditModalStatus('Every lot needs a Buy Price greater than 0.', 'err'); return; }
+      updates.push({ rowNumber, buyDate, qty, buyPrice });
+    }
+
+    saveBtn.disabled = true;
+    setEtfEditModalStatus('Saving…');
+    try {
+      for (const u of updates) {
+        await postEtfAction({ action: 'editEtfLot', symbol: etfEditSymbol, rowNumber: u.rowNumber, buyDate: u.buyDate, qty: u.qty, buyPrice: u.buyPrice });
+      }
+      setEtfEditModalStatus('Saved ✓ Refreshing…', 'ok');
+      await syncFromSheet();
+      closeEditEtfModal();
+    } catch (err) {
+      setEtfEditModalStatus(err.message || 'Save failed — try again.', 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  // -- Sell ETF Lots --
+  let etfSellSymbol = null;
+  let etfSellLots = [];
+
+  function setEtfSellModalStatus(text, cls) {
+    const el = document.getElementById('etfSellModalStatus');
+    el.textContent = text || '';
+    el.className = 'stock-modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function renderEtfSellLotsRows() {
+    const body = document.getElementById('etfSellLotsBody');
+    if (!etfSellLots.length) {
+      body.innerHTML = '<tr><td colspan="4" class="etf-lots-empty">No lots to sell for this symbol.</td></tr>';
+      return;
+    }
+    body.innerHTML = etfSellLots.map(l => `<tr data-row="${l.rowNumber}" data-qty="${l.qty}">
+      <td class="lot-held">${escapeHtmlText(l.buyDate)}</td>
+      <td class="lot-held">${fmtNum(l.qty, 0)}</td>
+      <td class="lot-held">${fmtNum(l.buyPrice)}</td>
+      <td><input type="number" class="etf-sell-qty" min="0" max="${l.qty}" step="any" placeholder="0"></td>
+    </tr>`).join('');
+  }
+
+  async function openSellEtfModal(symbol) {
+    etfSellSymbol = symbol;
+    document.getElementById('etfSellModalTitle').textContent = 'Log Sale — ' + symbol;
+    document.getElementById('etfSellLotsBody').innerHTML = '<tr><td colspan="4" class="etf-lots-empty">Loading…</td></tr>';
+    document.getElementById('etfSellSellDate').value = todayIsoDate();
+    document.getElementById('etfSellSellPrice').value = '';
+    document.getElementById('etfSellReason').value = '';
+    setEtfSellModalStatus('');
+    document.getElementById('etfSellModalOverlay').classList.add('show');
+    try {
+      etfSellLots = await fetchEtfLots(symbol);
+      renderEtfSellLotsRows();
+    } catch (err) {
+      document.getElementById('etfSellLotsBody').innerHTML = '<tr><td colspan="4" class="etf-lots-empty">Could not load lots.</td></tr>';
+      setEtfSellModalStatus(err.message || 'Could not load lots.', 'err');
+    }
+  }
+
+  function closeSellEtfModal() {
+    document.getElementById('etfSellModalOverlay').classList.remove('show');
+  }
+
+  async function submitSellEtfForm() {
+    const saveBtn = document.getElementById('etfSellSaveBtn');
+    const sellDate = document.getElementById('etfSellSellDate').value;
+    const sellPrice = Number(document.getElementById('etfSellSellPrice').value);
+    const reason = document.getElementById('etfSellReason').value.trim();
+
+    if (!sellDate) { setEtfSellModalStatus('Sell Date is required.', 'err'); return; }
+    if (!isFinite(sellPrice) || sellPrice <= 0) { setEtfSellModalStatus('Enter a valid Sell Price (greater than 0).', 'err'); return; }
+
+    const rows = Array.from(document.querySelectorAll('#etfSellLotsBody tr[data-row]'));
+    const lots = [];
+    for (const row of rows) {
+      const rowNumber = Number(row.getAttribute('data-row'));
+      const heldQty = Number(row.getAttribute('data-qty'));
+      const sellQtyRaw = row.querySelector('.etf-sell-qty').value.trim();
+      if (sellQtyRaw === '') continue;
+      const sellQty = Number(sellQtyRaw);
+      if (sellQty === 0) continue;
+      if (!isFinite(sellQty) || sellQty < 0) { setEtfSellModalStatus('Sell Qty must be a positive number.', 'err'); return; }
+      if (sellQty > heldQty) { setEtfSellModalStatus(`That lot only holds ${fmtNum(heldQty, 0)} — lower its Sell Qty.`, 'err'); return; }
+      lots.push({ rowNumber, sellQty });
+    }
+    if (!lots.length) { setEtfSellModalStatus('Enter a Sell Qty for at least one lot.', 'err'); return; }
+
+    saveBtn.disabled = true;
+    setEtfSellModalStatus('Logging sale…');
+    try {
+      await postEtfAction({ action: 'sellEtfLots', symbol: etfSellSymbol, sellDate, sellPrice, reason, lots });
+      setEtfSellModalStatus('Logged ✓ Refreshing…', 'ok');
+      await syncFromSheet();
+      closeSellEtfModal();
+    } catch (err) {
+      setEtfSellModalStatus(err.message || 'Save failed — try again.', 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  // ---- Add / Delete Watchlist Stock (Fundamentals (Watchlist) panel) ----
+  // Much simpler than Add/Edit/Sell Stock above — a Watchlist row only needs the symbol; every other
+  // column (P/E, ROCE, ROE, growth %, etc.) is filled in by the next scheduled run of updateWatchlist()
+  // in Fundamentals.gs, same as any symbol typed directly into the sheet's column A. Delete removes the
+  // row outright from the "Watchlist" tab. Both actions go through the same DashboardSettings Web App
+  // (SETTINGS_WEBAPP_URL/SETTINGS_TOKEN) as Add/Edit/Sell Stock, and are gated server-side by the same
+  // EditMode flag (isEditModeOn_() in DashboardSettings.gs) — the .stock-add-btn/.watchlist-delete-btn
+  // CSS classes just hide the controls client-side to match, per Arivoli's explicit request.
+  function setWatchlistAddModalStatus(text, cls) {
+    const el = document.getElementById('watchlistAddModalStatus');
+    el.textContent = text || '';
+    el.className = 'stock-modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function openAddWatchlistModal() {
+    document.getElementById('watchlistAddSymbol').value = '';
+    setWatchlistAddModalStatus('');
+    document.getElementById('watchlistAddModalOverlay').classList.add('show');
+    document.getElementById('watchlistAddSymbol').focus();
+  }
+
+  function closeAddWatchlistModal() {
+    document.getElementById('watchlistAddModalOverlay').classList.remove('show');
+  }
+
+  async function submitAddWatchlistForm() {
+    const saveBtn = document.getElementById('watchlistAddSaveBtn');
+    const symbol = document.getElementById('watchlistAddSymbol').value.trim().toUpperCase();
+    if (!symbol) { setWatchlistAddModalStatus('Symbol is required.', 'err'); return; }
+
+    saveBtn.disabled = true;
+    setWatchlistAddModalStatus('Adding…');
+    try {
+      const resp = await fetch(SETTINGS_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ token: SETTINGS_TOKEN, action: 'addWatchlist', symbol })
+      });
+      const data = await resp.json();
+      if (data.status !== 'ok') throw new Error(data.message || 'Save failed');
+      setWatchlistAddModalStatus('Added ✓ Refreshing…', 'ok');
+      await syncWatchlist();
+      closeAddWatchlistModal();
+    } catch (err) {
+      setWatchlistAddModalStatus(err.message || 'Save failed — try again.', 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  // Called from the 🗑️ icon next to each Watchlist symbol (see fundCellHtml's 'symbol' case). Confirms,
+  // then deletes the row outright from the sheet — nothing downstream references a Watchlist row by
+  // number, so no reconciliation step is needed the way a Portfolio delete would need.
+  async function deleteWatchlistStock(symbol) {
+    if (!confirm(`Remove ${symbol} from the Watchlist? This deletes the row from the sheet.`)) return;
+    try {
+      const resp = await fetch(SETTINGS_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ token: SETTINGS_TOKEN, action: 'deleteWatchlist', symbol })
+      });
+      const data = await resp.json();
+      if (data.status !== 'ok') throw new Error(data.message || 'Delete failed');
+      await syncWatchlist();
+    } catch (err) {
+      alert(err.message || 'Delete failed — try again.');
     }
   }
 
